@@ -13,130 +13,127 @@ datasource db {
   provider = "postgresql"
 }
 
-model tiendas {
-  id              String            @id @default(cuid())
-  nombre          String
-  almacenes       almacenes[]
-  areas_venta     areas_venta[]
-  salidas_almacen salidas_almacen[]
+model stores {
+  id         String       @id @default(cuid())
+  name       String
+  warehouses warehouses[]
+  areas      areas[]
+  outflows   outflows[]
 }
 
-model almacenes {
-  id               String             @id @default(cuid())
-  tienda_id        String
-  nombre           String
-  tiendas          tiendas            @relation(fields: [tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  entradas_almacen entradas_almacen[]
-  salidas_almacen  salidas_almacen[]
-  ventas_factura   ventas_factura[]
+model warehouses {
+  id       String     @id @default(cuid())
+  store_id String
+  name     String
+  stores   stores     @relation(fields: [store_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  inflows  inflows[]
+  outflows outflows[]
+  invoices invoices[]
 }
 
-model areas_venta {
-  id              String            @id @default(cuid())
-  tienda_id       String
-  nombre          String
-  tiendas         tiendas           @relation(fields: [tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  caja_extra      caja_extra[]
-  salidas_almacen salidas_almacen[]
-  ventas_area     ventas_area[]
+model areas {
+  id        String      @id @default(cuid())
+  store_id  String
+  name      String
+  stores    stores      @relation(fields: [store_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  withdraws withdraws[]
+  outflows  outflows[]
+  sales     sales[]
 
-  @@unique([nombre, tienda_id], map: "unique_area_nombre_tienda")
+  @@unique([name, store_id], map: "unique_area_name_store")
 }
 
-model cuentas {
-  id        String      @id
-  nombre    String      @unique
-  productos productos[]
+model codes {
+  id       String     @id
+  name     String     @unique
+  products products[]
 }
 
-model productos {
-  id               String             @id
-  cuenta_id        String
-  nombre           String             @unique
-  precio_costo     Decimal            @db.Decimal(10, 2)
-  precio_venta     Decimal            @db.Decimal(10, 2)
-  unidad_medida    String
-  cuenta           cuentas            @relation(fields: [cuenta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  entradas_almacen entradas_almacen[]
-  salidas_almacen  salidas_almacen[]
-  ventas_area      ventas_area[]
-  ventas_factura   ventas_factura[]
+model products {
+  id         String     @id
+  code_id    String
+  name       String     @unique
+  cost_price Decimal    @db.Decimal(10, 2)
+  sale_price Decimal    @db.Decimal(10, 2)
+  um         String
+  code       codes      @relation(fields: [code_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  inflows    inflows[]
+  outflows   outflows[]
+  sales      sales[]
+  invoices   invoices[]
 }
 
-model empresas {
-  id               String             @id @default(cuid())
-  nombre           String             @unique
-  proveedor        Boolean            @default(false)
-  entradas_almacen entradas_almacen[]
-  ventas_factura   ventas_factura[]
+model companies {
+  id       String     @id @default(cuid())
+  name     String     @unique
+  provider Boolean    @default(false)
+  inflows  inflows[]
+  invoices invoices[]
 }
 
-model entradas_almacen {
-  id                     String    @id @default(cuid())
-  almacen_id             String
-  tipo                   String
-  fecha                  DateTime  @default(now()) @db.Date
-  proveedor_id           String?
-  metodo_pago            String?
-  num_factura_o_traslado String?
-  num_consecutivo        String
-  producto_id            String
-  cantidad               Int
-  importe                Decimal   @db.Decimal(10, 2)
-  almacenes              almacenes @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  productos              productos @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  empresas               empresas? @relation(fields: [proveedor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model inflows {
+  id           String     @id @default(cuid())
+  warehouse_id String
+  type         String
+  date         DateTime   @default(now()) @db.Date
+  provider_id  String?
+  payment      String?
+  in_number    String?
+  serial       String
+  product_id   String
+  quantity     Int
+  amount       Decimal    @db.Decimal(10, 2)
+  warehouses   warehouses @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products     products   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  companies    companies? @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model caja_extra {
-  id            String      @id @default(cuid())
-  area_venta_id String
-  fecha         DateTime    @default(now()) @db.Date
-  monto         Decimal     @db.Decimal(10, 2)
-  areas_venta   areas_venta @relation(fields: [area_venta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model withdraws {
+  id      String   @id @default(cuid())
+  area_id String
+  date    DateTime @default(now()) @db.Date
+  amount  Decimal  @db.Decimal(10, 2)
+  areas   areas    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model salidas_almacen {
-  id                  String       @id @default(cuid())
-  almacen_id          String
-  tipo                String
-  fecha               DateTime     @default(now()) @db.Date
-  destino_area_id     String?
-  destino_tienda_id   String?
-  num_vale_o_traslado String
-  producto_id         String
-  cantidad            Int
-  importe             Decimal?     @db.Decimal(10, 2)
-  almacenes           almacenes    @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  areas_venta         areas_venta? @relation(fields: [destino_area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tiendas             tiendas?     @relation(fields: [destino_tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  productos           productos    @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model outflows {
+  id           String     @id @default(cuid())
+  warehouse_id String
+  type         String
+  date         DateTime   @default(now()) @db.Date
+  end_area_id  String?
+  end_store_id String?
+  out_number   String
+  product_id   String
+  quantity     Int
+  amount       Decimal?   @db.Decimal(10, 2)
+  warehouses   warehouses @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  areas        areas?     @relation(fields: [end_area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stores       stores?    @relation(fields: [end_store_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products     products   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model ventas_area {
-  id            String      @id @default(cuid())
-  area_venta_id String
-  fecha         DateTime    @default(now()) @db.Date
-  tipo_pago     String
-  producto_id   String
-  cantidad      Int
-  areas_venta   areas_venta @relation(fields: [area_venta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  productos     productos   @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model sales {
+  id         String   @id @default(cuid())
+  area_id    String
+  date       DateTime @default(now()) @db.Date
+  payment    String
+  product_id String
+  quantity   Int
+  areas      areas    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products   products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model ventas_factura {
-  id                String    @id @default(cuid())
-  almacen_id        String
-  fecha             DateTime  @default(now()) @db.Date
-  tipo_pago         String
-  num_venta_factura String
-  producto_id       String
-  cantidad          Int
-  empresa_id        String?
-  almacenes         almacenes @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  empresas          empresas? @relation(fields: [empresa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  productos         productos @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model invoices {
+  id             String     @id @default(cuid())
+  warehouse_id   String
+  date           DateTime   @default(now()) @db.Date
+  payment        String
+  invoice_number String
+  product_id     String
+  quantity       Int
+  company_id     String?
+  warehouses     warehouses @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  companies      companies? @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products       products   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
