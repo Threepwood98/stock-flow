@@ -1,0 +1,142 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model tiendas {
+  id              String            @id @default(cuid())
+  nombre          String
+  almacenes       almacenes[]
+  areas_venta     areas_venta[]
+  salidas_almacen salidas_almacen[]
+}
+
+model almacenes {
+  id               String             @id @default(cuid())
+  tienda_id        String
+  nombre           String
+  tiendas          tiendas            @relation(fields: [tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  entradas_almacen entradas_almacen[]
+  salidas_almacen  salidas_almacen[]
+  ventas_factura   ventas_factura[]
+}
+
+model areas_venta {
+  id              String            @id @default(cuid())
+  tienda_id       String
+  nombre          String
+  tiendas         tiendas           @relation(fields: [tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  caja_extra      caja_extra[]
+  salidas_almacen salidas_almacen[]
+  ventas_area     ventas_area[]
+
+  @@unique([nombre, tienda_id], map: "unique_area_nombre_tienda")
+}
+
+model cuentas {
+  id        String      @id
+  nombre    String      @unique
+  productos productos[]
+}
+
+model productos {
+  id               String             @id
+  cuenta_id        String
+  nombre           String             @unique
+  precio_costo     Decimal            @db.Decimal(10, 2)
+  precio_venta     Decimal            @db.Decimal(10, 2)
+  unidad_medida    String
+  cuenta           cuentas            @relation(fields: [cuenta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  entradas_almacen entradas_almacen[]
+  salidas_almacen  salidas_almacen[]
+  ventas_area      ventas_area[]
+  ventas_factura   ventas_factura[]
+}
+
+model empresas {
+  id               String             @id @default(cuid())
+  nombre           String             @unique
+  proveedor        Boolean            @default(false)
+  entradas_almacen entradas_almacen[]
+  ventas_factura   ventas_factura[]
+}
+
+model entradas_almacen {
+  id                     String    @id @default(cuid())
+  almacen_id             String
+  tipo                   String
+  fecha                  DateTime  @default(now()) @db.Date
+  proveedor_id           String?
+  metodo_pago            String?
+  num_factura_o_traslado String?
+  num_consecutivo        String
+  producto_id            String
+  cantidad               Int
+  importe                Decimal   @db.Decimal(10, 2)
+  almacenes              almacenes @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  productos              productos @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  empresas               empresas? @relation(fields: [proveedor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model caja_extra {
+  id            String      @id @default(cuid())
+  area_venta_id String
+  fecha         DateTime    @default(now()) @db.Date
+  monto         Decimal     @db.Decimal(10, 2)
+  areas_venta   areas_venta @relation(fields: [area_venta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model salidas_almacen {
+  id                  String       @id @default(cuid())
+  almacen_id          String
+  tipo                String
+  fecha               DateTime     @default(now()) @db.Date
+  destino_area_id     String?
+  destino_tienda_id   String?
+  num_vale_o_traslado String
+  producto_id         String
+  cantidad            Int
+  importe             Decimal?     @db.Decimal(10, 2)
+  almacenes           almacenes    @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  areas_venta         areas_venta? @relation(fields: [destino_area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tiendas             tiendas?     @relation(fields: [destino_tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  productos           productos    @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ventas_area {
+  id            String      @id @default(cuid())
+  area_venta_id String
+  fecha         DateTime    @default(now()) @db.Date
+  tipo_pago     String
+  producto_id   String
+  cantidad      Int
+  areas_venta   areas_venta @relation(fields: [area_venta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  productos     productos   @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ventas_factura {
+  id                String    @id @default(cuid())
+  almacen_id        String
+  fecha             DateTime  @default(now()) @db.Date
+  tipo_pago         String
+  num_venta_factura String
+  producto_id       String
+  cantidad          Int
+  empresa_id        String?
+  almacenes         almacenes @relation(fields: [almacen_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  empresas          empresas? @relation(fields: [empresa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  productos         productos @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}

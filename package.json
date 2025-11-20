@@ -9,9 +9,13 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
     "@react-router/node": "^7.9.2",
     "@react-router/serve": "^7.9.2",
+    "dotenv": "^17.2.3",
     "isbot": "^5.1.31",
+    "pg": "^8.16.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router": "^7.9.2"
@@ -20,11 +24,16 @@
     "@react-router/dev": "^7.9.2",
     "@tailwindcss/vite": "^4.1.13",
     "@types/node": "^22",
+    "@types/pg": "^8.15.6",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "prisma": "^7.0.0",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
     "vite": "^7.1.7",
     "vite-tsconfig-paths": "^5.1.4"
+  },
+  "prisma":{
+    "seed": "ts-node prisma/seed.ts"
   }
 }
