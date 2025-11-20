@@ -45,14 +45,14 @@ import type { Route } from "./+types/dashboard.almacen.entrada";
 import { prisma } from "lib/prisma";
 
 // Types
-interface InflowRow {
+interface OutflowRow {
   date: string;
   type: string;
-  provider_id: string;
-  provider_name: string;
-  payment: string;
-  in_number: string;
-  serial: string;
+  end_area_id: string;
+  end_area_name: string;
+  end_store_id: string;
+  end_store_name: string;
+  out_number: string;
   product_id: string;
   product_name: string;
   quantity: string;
@@ -73,6 +73,12 @@ interface Product {
   um: string;
 }
 
+interface Area {
+  id: string;
+  store_id: string;
+  name: string;
+}
+
 // Constants
 const inTypeOptions = [
   { value: "FACTURA", label: "Por Factura" },
@@ -84,14 +90,14 @@ const payTypeOptions = [
   { value: "EFECTIVO", label: "Por Efectivo" },
 ];
 
-const initialFormValues: InflowRow = {
+const initialFormValues: OutflowRow = {
   date: format(new Date(), "dd/MM/yyyy"),
   type: "",
-  provider_id: "",
-  provider_name: "",
-  payment: "",
-  in_number: "",
-  serial: "",
+  end_area_id: "",
+  end_area_name: "",
+  end_store_id: "",
+  end_store_name: "",
+  out_number: "",
   product_id: "",
   product_name: "",
   quantity: "",
@@ -110,7 +116,7 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  let rows: InflowRow[];
+  let rows: OutflowRow[];
   try {
     rows = JSON.parse(rawRows as string);
   } catch {
@@ -146,11 +152,11 @@ export async function action({ request }: Route.ActionArgs) {
         warehouse_id,
         type: row.type,
         date: parsedDate,
-        provider_id: row.provider_id,
+        provider_id: row.providerId,
         payment: row.payment,
         in_number: row.in_number,
         serial: row.serial,
-        product_id: row.product_id,
+        product_id: row.productId,
         quantity,
         amount: row.amount ? Number(row.amount) : 0,
       };
@@ -173,16 +179,17 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 // Component
-export default function InflowsPage() {
-  const { providers, products } = useOutletContext<{
+export default function OutflowsPage() {
+  const { providers, products, areas } = useOutletContext<{
     providers: Provider[];
     products: Product[];
+    areas: Area[];
   }>();
 
   const [searchParams] = useSearchParams();
-  const [rows, setRows] = useState<InflowRow[]>([]);
+  const [rows, setRows] = useState<OutflowRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [formValues, setFormValues] = useState<InflowRow>(initialFormValues);
+  const [formValues, setFormValues] = useState<OutflowRow>(initialFormValues);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
@@ -208,7 +215,7 @@ export default function InflowsPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editIndex]);
 
-  const handleChange = (name: keyof InflowRow, value: string) => {
+  const handleChange = (name: keyof OutflowRow, value: string) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -238,7 +245,7 @@ export default function InflowsPage() {
     }
 
     const amount = calculateAmount(formValues.product_id, formValues.quantity);
-    const rowWithAmount: InflowRow = { ...formValues, amount };
+    const rowWithAmount: OutflowRow = { ...formValues, amount };
 
     if (editIndex !== null) {
       setRows((prev) =>
@@ -303,7 +310,7 @@ export default function InflowsPage() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="in_type" className="pl-1">
-              Tipo de Entrada
+              Tipo de Salida
             </Label>
             <SelectList
               name="in_type"
@@ -316,22 +323,22 @@ export default function InflowsPage() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="provider" className="pl-1">
-              Proveedor
+              Destino
             </Label>
             <Combobox
-              name="provider"
+              name="end_area_id"
               className="w-full min-w-40"
               classNameOptions="w-full min-w-40"
-              options={providers.map((prov) => ({
-                value: prov.id,
-                label: prov.name,
+              options={areas.map((area) => ({
+                value: area.id,
+                label: area.name,
               }))}
-              value={formValues.provider_id}
+              value={formValues.providerId}
               onChange={(value) => {
                 const prov = providers.find((p) => p.id === value);
                 if (prov) {
-                  handleChange("provider_id", prov.id);
-                  handleChange("provider_name", prov.name);
+                  handleChange("providerId", prov.id);
+                  handleChange("providerName", prov.name);
                 }
               }}
               required
@@ -390,12 +397,12 @@ export default function InflowsPage() {
                 value: prod.id,
                 label: prod.name,
               }))}
-              value={formValues.product_id}
+              value={formValues.productId}
               onChange={(value) => {
                 const prod = products.find((p) => p.id === value);
                 if (prod) {
-                  handleChange("product_id", prod.id);
-                  handleChange("product_name", prod.name);
+                  handleChange("productId", prod.id);
+                  handleChange("productName", prod.name);
                 }
               }}
               required
@@ -484,11 +491,11 @@ export default function InflowsPage() {
                 <TableRow key={index}>
                   <TableCell>{row.date}</TableCell>
                   <TableCell>{row.type}</TableCell>
-                  <TableCell>{row.provider_name}</TableCell>
+                  <TableCell>{row.providerName}</TableCell>
                   <TableCell>{row.payment}</TableCell>
                   <TableCell>{row.in_number}</TableCell>
                   <TableCell>{row.serial}</TableCell>
-                  <TableCell>{row.product_name}</TableCell>
+                  <TableCell>{row.productName}</TableCell>
                   <TableCell className="text-right">{row.quantity}</TableCell>
                   <TableCell className="text-right">
                     ${row.amount?.toFixed(2) ?? "0.00"}

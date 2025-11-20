@@ -23,8 +23,12 @@ export async function loader({ params }: Route.LoaderArgs) {
     orderBy: { name: "asc" },
   });
   const products = await prisma.products.findMany({ orderBy: { name: "asc" } });
+  const areas = await prisma.areas.findMany({
+    where: { store_id: "cmi7pmln30000r8w42boh37tb" },
+    orderBy: { name: "asc" },
+  });
 
-  return { providers, products };
+  return { providers, products, areas };
 }
 
 export default function DashboardPage({ loaderData }: Route.ComponentProps) {
