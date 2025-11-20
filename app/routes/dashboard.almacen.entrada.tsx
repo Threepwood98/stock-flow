@@ -110,7 +110,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 }
 
-export default function EntradaPage() {
+export default function InflowsPage() {
   const { providers, products } = useOutletContext<{
     providers: any[];
     products: any[];
