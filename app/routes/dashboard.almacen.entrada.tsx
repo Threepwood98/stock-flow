@@ -26,8 +26,7 @@ import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { Combobox } from "~/components/combobox";
 import type { Route } from "./+types/dashboard.almacen.entrada";
-import { prisma } from "~/db.server";
-// import { prisma } from "~/db.server";
+import { prisma } from "lib/prisma";
 
 const options = [
   { value: "next.js", label: "Next.js" },
@@ -49,12 +48,12 @@ const payTypeOptions = [
 
 const initialFormValues = {
   date: format(new Date(), "dd/MM/yyyy"),
-  in_type: "",
+  type: "",
   providerId: "",
   providerName: "",
-  pay_type: "",
+  payment: "",
   in_number: "",
-  consecutive: "",
+  serial: "",
   productId: "",
   productName: "",
   quantity: "",
@@ -78,28 +77,27 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
-    // Puedes ajustar el almacen_id según el usuario o la tienda activa
-    const almacen_id = "00000000-0000-0000-0000-000000000001";
+    // Puedes ajustar el warehouse_id según el usuario o la tienda activa
+    const warehouse_id = "cmi7pmlnl0002r8w4kedu5n4b";
 
     // Mapea cada fila del frontend a la estructura Prisma
     const data = rows.map((row: any) => {
       return {
-        id: crypto.randomUUID(),
-        almacen_id,
-        tipo: row.in_type,
-        fecha: parse(row.date, "dd/MM/yyyy", new Date()),
-        proveedor_id: row.providerId,
-        metodo_pago: row.pay_type,
-        num_factura_o_traslado: row.in_number,
-        num_consecutivo: row.consecutive,
-        producto_id: row.productId,
-        cantidad: parseInt(row.quantity),
-        importe: Number(row.amount),
+        warehouse_id,
+        type: row.type,
+        date: parse(row.date, "dd/MM/yyyy", new Date()),
+        provider_id: row.providerId,
+        payment: row.payment,
+        in_number: row.in_number,
+        serial: row.serial,
+        product_id: row.productId,
+        quantity: parseInt(row.quantity),
+        amount: Number(row.amount),
       };
     });
 
     await prisma.$transaction(
-      data.map((entry) => prisma.entradas_almacen.create({ data: entry }))
+      data.map((entry) => prisma.inflows.create({ data: entry }))
     );
 
     return redirect("/dashboard/almacen/entrada?success=1");
@@ -131,7 +129,7 @@ export default function EntradaPage() {
 
     const product = products.find((p) => p.id === formValues.productId);
     const quantity = parseInt(formValues.quantity) || 0;
-    const amount = product ? quantity * Number(product.precio_venta.d) : null;
+    const amount = product ? quantity * Number(product.sale_price.d) : null;
 
     const rowWithAmount = { ...formValues, amount };
 
@@ -188,8 +186,8 @@ export default function EntradaPage() {
               name="in_type"
               className="w-full min-w-40"
               options={inTypeOptions}
-              value={formValues.in_type}
-              onChange={(value) => handleChange("in_type", value)}
+              value={formValues.type}
+              onChange={(value) => handleChange("type", value)}
               required
             />
           </div>
@@ -203,13 +201,13 @@ export default function EntradaPage() {
               classNameOptions="w-full min-w-40"
               options={providers.map((prov) => ({
                 value: prov.id,
-                label: prov.nombre,
+                label: prov.name,
               }))}
               value={formValues.providerId}
               onChange={(value) => {
                 const prov = providers.find((p) => p.id === value);
                 handleChange("providerId", prov!.id);
-                handleChange("providerName", prov!.nombre);
+                handleChange("providerName", prov!.name);
               }}
               required
             />
@@ -219,11 +217,11 @@ export default function EntradaPage() {
               Método de Pago
             </Label>
             <SelectList
-              name="pay_type"
+              name="payment"
               className="w-full min-w-40"
               options={payTypeOptions}
-              value={formValues.pay_type}
-              onChange={(value) => handleChange("pay_type", value)}
+              value={formValues.payment}
+              onChange={(value) => handleChange("payment", value)}
               required
             />
           </div>
@@ -243,16 +241,14 @@ export default function EntradaPage() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="consecutive" className="pl-1">
+            <Label htmlFor="serial" className="pl-1">
               No. Consecutivo
             </Label>
             <Input
-              id="consecutive"
-              name="consecutive"
-              value={formValues.consecutive}
-              onChange={(event) =>
-                handleChange("consecutive", event.target.value)
-              }
+              id="serial"
+              name="serial"
+              value={formValues.serial}
+              onChange={(event) => handleChange("serial", event.target.value)}
               className="w-full min-w-40"
               required
             />
@@ -267,13 +263,13 @@ export default function EntradaPage() {
               classNameOptions="w-full min-w-40"
               options={products.map((prod) => ({
                 value: prod.id,
-                label: prod.nombre,
+                label: prod.name,
               }))}
               value={formValues.productId}
               onChange={(value) => {
                 const prod = products.find((p) => p.id === value);
                 handleChange("productId", prod!.id);
-                handleChange("productName", prod!.nombre);
+                handleChange("productName", prod!.name);
               }}
               required
             />
@@ -346,11 +342,11 @@ export default function EntradaPage() {
             {rows.map((row, index) => (
               <TableRow key={index}>
                 <TableCell>{row.date}</TableCell>
-                <TableCell>{row.in_type}</TableCell>
+                <TableCell>{row.type}</TableCell>
                 <TableCell>{row.providerName}</TableCell>
-                <TableCell>{row.pay_type}</TableCell>
+                <TableCell>{row.payment}</TableCell>
                 <TableCell>{row.in_number}</TableCell>
-                <TableCell>{row.consecutive}</TableCell>
+                <TableCell>{row.serial}</TableCell>
                 <TableCell>{row.productName}</TableCell>
                 <TableCell>{row.quantity}</TableCell>
                 <TableCell>{row.amount?.toFixed(2)}</TableCell>

@@ -15,16 +15,14 @@ import {
   SidebarTrigger,
 } from "~/components/ui/sidebar";
 import type { Route } from "./+types/dashboard";
-import { prisma } from "~/db.server";
+import { prisma } from "lib/prisma";
 
 export async function loader({ params }: Route.LoaderArgs) {
-  const providers = await prisma.proveedores.findMany({
-    orderBy: { nombre: "asc" },
+  const providers = await prisma.companies.findMany({
+    where: { provider: true },
+    orderBy: { name: "asc" },
   });
-  const products = await prisma.productos.findMany({
-    orderBy: { nombre: "asc" },
-  });
-  // console.log("🚀 ~ loader ~ providers:", providers);
+  const products = await prisma.products.findMany({ orderBy: { name: "asc" } });
 
   return { providers, products };
 }
