@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useEffect } from "react";
 import {
   IconCalculator,
   IconCancel,
@@ -8,8 +8,15 @@ import {
   IconEdit,
   IconPlus,
   IconTrash,
+  IconAlertCircle,
+  IconCheck,
 } from "@tabler/icons-react";
-import { Form, redirect, useOutletContext } from "react-router";
+import {
+  Form,
+  redirect,
+  useOutletContext,
+  useSearchParams,
+} from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -21,21 +28,40 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { format, parse } from "date-fns";
+import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { Combobox } from "~/components/combobox";
 import type { Route } from "./+types/dashboard.almacen.entrada";
 import { prisma } from "lib/prisma";
 
-const options = [
-  { value: "next.js", label: "Next.js" },
-  { value: "sveltekit", label: "SvelteKit" },
-  { value: "nuxt.js", label: "Nuxt.js" },
-  { value: "remix", label: "Remix" },
-  { value: "astro", label: "Astro" },
-];
+// Types
+interface InflowRow {
+  date: string;
+  type: string;
+  providerId: string;
+  providerName: string;
+  payment: string;
+  in_number: string;
+  serial: string;
+  productId: string;
+  productName: string;
+  quantity: string;
+  amount: number | null;
+}
 
+interface Provider {
+  id: string;
+  name: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  sale_price: { d: string | number };
+}
+
+// Constants
 const inTypeOptions = [
   { value: "FACTURA", label: "Por Factura" },
   { value: "TRASLADO", label: "Por Traslado" },
@@ -46,7 +72,7 @@ const payTypeOptions = [
   { value: "EFECTIVO", label: "Por Efectivo" },
 ];
 
-const initialFormValues = {
+const initialFormValues: InflowRow = {
   date: format(new Date(), "dd/MM/yyyy"),
   type: "",
   providerId: "",
@@ -60,39 +86,61 @@ const initialFormValues = {
   amount: null,
 };
 
+// Server Action
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const rawRows = formData.get("rows");
 
   if (!rawRows) {
-    return JSON.stringify({
-      error: "No hay datos para insertar.",
-      status: 400,
-    });
+    return new Response(
+      JSON.stringify({ error: "No hay datos para insertar." }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
   }
-  const rows = JSON.parse(rawRows as string);
+
+  let rows: InflowRow[];
+  try {
+    rows = JSON.parse(rawRows as string);
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Formato inválido de datos." }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
   if (!Array.isArray(rows) || rows.length === 0) {
-    return JSON.stringify({ error: "Formato inválido de filas.", status: 400 });
+    return new Response(
+      JSON.stringify({ error: "No hay filas para insertar." }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   try {
-    // Puedes ajustar el warehouse_id según el usuario o la tienda activa
     const warehouse_id = "cmi7pmlnl0002r8w4kedu5n4b";
 
-    // Mapea cada fila del frontend a la estructura Prisma
-    const data = rows.map((row: any) => {
+    const data = rows.map((row) => {
+      const parsedDate = parse(row.date, "dd/MM/yyyy", new Date());
+
+      if (!isValid(parsedDate)) {
+        throw new Error(`Fecha inválida: ${row.date}`);
+      }
+
+      const quantity = parseInt(row.quantity, 10);
+      if (isNaN(quantity) || quantity <= 0) {
+        throw new Error(`Cantidad inválida: ${row.quantity}`);
+      }
+
       return {
         warehouse_id,
         type: row.type,
-        date: parse(row.date, "dd/MM/yyyy", new Date()),
+        date: parsedDate,
         provider_id: row.providerId,
         payment: row.payment,
         in_number: row.in_number,
         serial: row.serial,
         product_id: row.productId,
-        quantity: parseInt(row.quantity),
-        amount: Number(row.amount),
+        quantity,
+        amount: row.amount ? Number(row.amount) : 0,
       };
     });
 
@@ -103,50 +151,122 @@ export async function action({ request }: Route.ActionArgs) {
     return redirect("/dashboard/almacen/entrada?success=1");
   } catch (error: any) {
     console.error("❌ Error al insertar:", error);
-    return JSON.stringify({
-      error: "Error al guardar en la base de datos.",
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({
+        error: error.message || "Error al guardar en la base de datos.",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
 
+// Component
 export default function InflowsPage() {
   const { providers, products } = useOutletContext<{
-    providers: any[];
-    products: any[];
+    providers: Provider[];
+    products: Product[];
   }>();
 
-  const [rows, setRows] = useState<any[]>([]);
+  const [searchParams] = useSearchParams();
+  const [rows, setRows] = useState<InflowRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [formValues, setFormValues] = useState(initialFormValues);
+  const [formValues, setFormValues] = useState<InflowRow>(initialFormValues);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
-  const handleChange = (name: string, value: string) => {
+  // Show success notification
+  useEffect(() => {
+    if (searchParams.get("success") === "1") {
+      setNotification({
+        type: "success",
+        message: "Entradas contabilizadas exitosamente.",
+      });
+
+      // Clear rows after successful submission
+      setRows([]);
+
+      // Clear notification after 5 seconds
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && editIndex !== null) {
+        handleCancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editIndex]);
+
+  const handleChange = (name: keyof InflowRow, value: string) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const calculateAmount = (
+    productId: string,
+    quantity: string
+  ): number | null => {
+    const product = products.find((p) => p.id === productId);
+    const qty = parseInt(quantity, 10);
+
+    if (!product || isNaN(qty) || qty <= 0) {
+      return null;
+    }
+
+    const price = Number(product.sale_price.d);
+    return qty * price;
   };
 
   const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const product = products.find((p) => p.id === formValues.productId);
-    const quantity = parseInt(formValues.quantity) || 0;
-    const amount = product ? quantity * Number(product.sale_price.d) : null;
+    // Validate quantity
+    const quantity = parseInt(formValues.quantity, 10);
+    if (isNaN(quantity) || quantity <= 0) {
+      setNotification({
+        type: "error",
+        message: "La cantidad debe ser mayor a 0.",
+      });
+      return;
+    }
 
-    const rowWithAmount = { ...formValues, amount };
+    const amount = calculateAmount(formValues.productId, formValues.quantity);
+    const rowWithAmount: InflowRow = { ...formValues, amount };
 
     if (editIndex !== null) {
       setRows((prev) =>
         prev.map((row, i) => (i === editIndex ? rowWithAmount : row))
       );
+      setNotification({
+        type: "success",
+        message: "Fila actualizada correctamente.",
+      });
     } else {
       setRows((prev) => [...prev, rowWithAmount]);
+      setNotification({
+        type: "success",
+        message: "Fila agregada correctamente.",
+      });
     }
 
     handleCancel();
+
+    // Clear notification after 3 seconds
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleClean = () => {
     setFormValues(initialFormValues);
   };
+
   const handleCancel = () => {
     setFormValues(initialFormValues);
     setEditIndex(null);
@@ -154,16 +274,54 @@ export default function InflowsPage() {
 
   const handleEdit = (index: number) => {
     const row = rows[index];
-    setFormValues((prev) => ({ ...prev, ...row }));
+    setFormValues({ ...row });
     setEditIndex(index);
   };
 
   const handleRemove = (index: number) => {
-    setRows((row) => row.filter((_, i) => i !== index));
+    setRows((prevRows) => prevRows.filter((_, i) => i !== index));
+    setNotification({
+      type: "success",
+      message: "Fila eliminada correctamente.",
+    });
+    setTimeout(() => setNotification(null), 3000);
   };
+
+  const handleSubmit = () => {
+    if (rows.length === 0) return;
+
+    const confirmed = window.confirm(
+      `¿Está seguro de contabilizar ${rows.length} entrada(s)?`
+    );
+
+    if (confirmed) {
+      setIsSubmitting(true);
+    }
+  };
+
+  const totalAmount = rows.reduce((sum, row) => sum + (row.amount || 0), 0);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      {/* Notification */}
+      {notification && (
+        <div
+          className={`flex items-center gap-2 p-4 rounded-lg border ${
+            notification.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
+          }`}
+        >
+          {notification.type === "success" ? (
+            <IconCheck className="w-5 h-5" />
+          ) : (
+            <IconAlertCircle className="w-5 h-5" />
+          )}
+          <span>{notification.message}</span>
+        </div>
+      )}
+
+      {/* Form */}
       <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           <div className="flex flex-col gap-2">
@@ -206,8 +364,10 @@ export default function InflowsPage() {
               value={formValues.providerId}
               onChange={(value) => {
                 const prov = providers.find((p) => p.id === value);
-                handleChange("providerId", prov!.id);
-                handleChange("providerName", prov!.name);
+                if (prov) {
+                  handleChange("providerId", prov.id);
+                  handleChange("providerName", prov.name);
+                }
               }}
               required
             />
@@ -268,8 +428,10 @@ export default function InflowsPage() {
               value={formValues.productId}
               onChange={(value) => {
                 const prod = products.find((p) => p.id === value);
-                handleChange("productId", prod!.id);
-                handleChange("productName", prod!.name);
+                if (prod) {
+                  handleChange("productId", prod.id);
+                  handleChange("productName", prod.name);
+                }
               }}
               required
             />
@@ -292,6 +454,7 @@ export default function InflowsPage() {
         </div>
         <div className="flex gap-4 justify-end">
           <Button
+            type="button"
             variant="ghost"
             className="min-w-32 cursor-pointer"
             onClick={editIndex !== null ? handleCancel : handleClean}
@@ -319,6 +482,8 @@ export default function InflowsPage() {
           </Button>
         </div>
       </form>
+
+      {/* Table */}
       <div className="h-full border rounded-lg relative">
         {(rows.length === 0 || editIndex !== null) && (
           <div className="absolute inset-0 bg-white/50 cursor-not-allowed z-10 rounded-lg" />
@@ -333,56 +498,95 @@ export default function InflowsPage() {
               <TableHead>Factura</TableHead>
               <TableHead>Consecutivo</TableHead>
               <TableHead>Producto</TableHead>
-              <TableHead>Cantidad</TableHead>
-              <TableHead>Importe</TableHead>
+              <TableHead className="text-right">Cantidad</TableHead>
+              <TableHead className="text-right">Importe</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row, index) => (
-              <TableRow key={index}>
-                <TableCell>{row.date}</TableCell>
-                <TableCell>{row.type}</TableCell>
-                <TableCell>{row.providerName}</TableCell>
-                <TableCell>{row.payment}</TableCell>
-                <TableCell>{row.in_number}</TableCell>
-                <TableCell>{row.serial}</TableCell>
-                <TableCell>{row.productName}</TableCell>
-                <TableCell>{row.quantity}</TableCell>
-                <TableCell>{row.amount?.toFixed(2)}</TableCell>
-                <TableCell>
-                  <Button
-                    className="cursor-pointer"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(index)}
-                  >
-                    <IconEdit />
-                  </Button>
-                  <Button
-                    className="cursor-pointer"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemove(index)}
-                  >
-                    <IconTrash />
-                  </Button>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={10}
+                  className="text-center text-muted-foreground py-8"
+                >
+                  No hay entradas agregadas. Complete el formulario y haga clic
+                  en "Agregar".
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              rows.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>{row.date}</TableCell>
+                  <TableCell>{row.type}</TableCell>
+                  <TableCell>{row.providerName}</TableCell>
+                  <TableCell>{row.payment}</TableCell>
+                  <TableCell>{row.in_number}</TableCell>
+                  <TableCell>{row.serial}</TableCell>
+                  <TableCell>{row.productName}</TableCell>
+                  <TableCell className="text-right">{row.quantity}</TableCell>
+                  <TableCell className="text-right">
+                    ${row.amount?.toFixed(2) ?? "0.00"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        className="cursor-pointer"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(index)}
+                        title="Editar"
+                      >
+                        <IconEdit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        className="cursor-pointer"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemove(index)}
+                        title="Eliminar"
+                      >
+                        <IconTrash className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
-      <Form method="post" className="flex justify-end">
-        <input type="hidden" name="rows" value={JSON.stringify(rows)} />
-        <Button
-          type="submit"
-          className="min-w-32 cursor-pointer"
-          disabled={rows.length === 0 || editIndex !== null}
+
+      {/* Summary and Submit */}
+      <div className="flex justify-between items-center">
+        <div className="text-lg font-semibold">
+          Total: ${totalAmount.toFixed(2)} ({rows.length} entrada
+          {rows.length !== 1 ? "s" : ""})
+        </div>
+        <Form
+          method="post"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+            if (
+              window.confirm(
+                `¿Está seguro de contabilizar ${rows.length} entrada(s)?`
+              )
+            ) {
+              e.currentTarget.submit();
+            }
+          }}
         >
-          Contabilizar <IconCalculator />
-        </Button>
-      </Form>
+          <input type="hidden" name="rows" value={JSON.stringify(rows)} />
+          <Button
+            type="submit"
+            className="min-w-32 cursor-pointer"
+            disabled={rows.length === 0 || editIndex !== null || isSubmitting}
+          >
+            {isSubmitting ? "Procesando..." : "Contabilizar"} <IconCalculator />
+          </Button>
+        </Form>
+      </div>
     </div>
   );
 }
