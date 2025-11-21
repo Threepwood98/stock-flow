@@ -1,6 +1,5 @@
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { type TablerIcon } from "@tabler/icons-react";
-
+import { Link, redirect, useNavigate } from "react-router";
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,22 +16,25 @@ import {
 type NavItem = {
   title: string;
   url?: string;
-  icon?: LucideIcon | TablerIcon;
+  icon?: LucideIcon;
   isActive?: boolean;
   items?: NavItem[];
 };
 
 function NavItemComponent({ item }: { item: NavItem }) {
   const hasChildren = item.items && item.items.length > 0;
+  const navigate = useNavigate();
 
   if (!hasChildren) {
     return (
       <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <a href={item.url}>
-            {item.icon && <item.icon />}
-            <span>{item.title}</span>
-          </a>
+        <SidebarMenuButton
+          onClick={() => {
+            if (item.url) navigate(item.url);
+          }}
+        >
+          {item.icon && <item.icon />}
+          <span>{item.title}</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     );

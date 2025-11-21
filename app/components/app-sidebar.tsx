@@ -7,6 +7,7 @@ import {
   Command,
   FileChartPie,
   GalleryVerticalEnd,
+  LayoutDashboard,
   PackageMinus,
   PackagePlus,
   Receipt,
@@ -56,19 +57,25 @@ const data = {
   ],
   navMain: [
     {
+      title: "Panel",
+      url: "/main",
+      icon: LayoutDashboard,
+      isActive: true,
+    },
+    {
       title: "Almacen",
       icon: Warehouse,
       isActive: true,
       items: [
         {
           title: "Entrada",
-          url: "main/warehouse/inflow",
+          url: "/main/warehouse/inflow",
           icon: PackagePlus,
           isActive: true,
         },
         {
           title: "Salida",
-          url: "main/warehouse/outflow",
+          url: "/main/warehouse/outflow",
           icon: PackageMinus,
           isActive: true,
         },
