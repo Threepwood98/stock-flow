@@ -1,4 +1,4 @@
-import { Outlet, redirect, useMatches } from "react-router";
+import { Outlet, redirect } from "react-router";
 import { AppSidebar } from "~/components/app-sidebar";
 import {
   Breadcrumb,
@@ -17,15 +17,14 @@ import {
 import type { Route } from "./+types/main";
 import { prisma } from "~/lib/prisma";
 import { auth } from "~/lib/auth";
-import { authClient } from "~/lib/auth-client";
 
-export async function loader({ params, request }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const session = await auth.api.getSession({
     headers: request.headers,
   });
 
   if (!session) {
-    throw redirect("/login");
+    throw redirect("/signin");
   }
 
   try {
@@ -52,23 +51,11 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
 export default function Main({ loaderData }: Route.ComponentProps) {
   const { session, providers, products, areas } = loaderData;
-
-  const handleSignOut = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          window.location.href = "/login";
-        },
-        onError: (error) => {
-          console.error("Error signing out:", error);
-        },
-      },
-    });
-  };
+  const user = session.user;
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar user={user} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">

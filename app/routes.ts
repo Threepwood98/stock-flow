@@ -6,10 +6,12 @@ export default [
   route("signup", "routes/signup.tsx"),
   // Better Auth API routes
   route("api/auth/*", "routes/api.auth.$.tsx"),
-  //Rutas protegidas
+  // Rutas protegidas
   route("main", "routes/main.tsx", [
     index("routes/main/dashboard.tsx"),
-    route("inflows", "routes/main/inflows.tsx"),
-    route("outflows", "routes/main/outflows.tsx"),
+    route("warehouse/inflow", "routes/main/warehouse/inflow.tsx"),
+    route("warehouse/outflow", "routes/main/warehouse/outflow.tsx"),
   ]),
+  // 404
+  route("*", "routes/404.tsx"),
 ] satisfies RouteConfig;

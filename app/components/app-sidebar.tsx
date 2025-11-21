@@ -1,6 +1,18 @@
 "use client";
 
-import { AudioWaveform, Command, GalleryVerticalEnd } from "lucide-react";
+import {
+  AudioWaveform,
+  BanknoteArrowDown,
+  BanknoteArrowUp,
+  Command,
+  FileChartPie,
+  GalleryVerticalEnd,
+  PackageMinus,
+  PackagePlus,
+  Receipt,
+  Store,
+  Warehouse,
+} from "lucide-react";
 import {
   IconBuildingStore,
   IconBuildingWarehouse,
@@ -25,11 +37,6 @@ import {
 
 // This is sample data.
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   teams: [
     {
       name: "Acme Inc",
@@ -50,25 +57,25 @@ const data = {
   navMain: [
     {
       title: "Almacen",
-      icon: IconBuildingWarehouse,
+      icon: Warehouse,
       isActive: true,
       items: [
         {
           title: "Entrada",
-          url: "dashboard/almacen/entrada",
-          icon: IconPackageImport,
+          url: "main/warehouse/inflow",
+          icon: PackagePlus,
           isActive: true,
         },
         {
           title: "Salida",
-          url: "#",
-          icon: IconPackageExport,
+          url: "main/warehouse/outflow",
+          icon: PackageMinus,
           isActive: true,
         },
         {
           title: "Venta",
           url: "#",
-          icon: IconReceiptDollar,
+          icon: Receipt,
           isActive: true,
         },
       ],
@@ -76,24 +83,24 @@ const data = {
     {
       title: "Área de Venta",
       url: "#",
-      icon: IconBuildingStore,
+      icon: Store,
       items: [
         {
           title: "Venta",
           url: "#",
-          icon: IconCashPlus,
+          icon: BanknoteArrowUp,
         },
         {
           title: "Caja Extra",
           url: "#",
-          icon: IconCashMove,
+          icon: BanknoteArrowDown,
         },
       ],
     },
     {
       title: "Reporte",
       url: "#",
-      icon: IconReport,
+      icon: FileChartPie,
       items: [
         {
           title: "General",
@@ -116,7 +123,10 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { user: any }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -126,7 +136,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

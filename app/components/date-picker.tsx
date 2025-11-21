@@ -3,15 +3,13 @@
 import { useState, type ChangeEvent } from "react";
 import { format, isValid, parse } from "date-fns";
 import { es } from "date-fns/locale";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Calendar } from "~/components/ui/calendar";
-import { IconCalendar, IconInfoCircle, IconStar } from "@tabler/icons-react";
+import { CalendarIcon } from "lucide-react";
 import {
   InputGroup,
   InputGroupAddon,
@@ -126,8 +124,8 @@ export function DatePicker({
       <Popover>
         <PopoverTrigger asChild>
           <InputGroupAddon align="inline-end">
-            <InputGroupButton variant="ghost" size="icon-xs">
-              <IconCalendar />
+            <InputGroupButton variant="ghost">
+              <CalendarIcon />
             </InputGroupButton>
           </InputGroupAddon>
         </PopoverTrigger>

@@ -1,15 +1,5 @@
-"use client";
-
 import { useState, type FormEvent, useEffect } from "react";
 import { toast } from "sonner";
-import {
-  IconCalculator,
-  IconCancel,
-  IconClearAll,
-  IconEdit,
-  IconPlus,
-  IconTrash,
-} from "@tabler/icons-react";
 import {
   Form,
   redirect,
@@ -41,20 +31,29 @@ import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { Combobox } from "~/components/combobox";
-import type { Route } from "./+types/outflows";
+import type { Route } from "./+types/inflow";
 import { prisma } from "~/lib/prisma";
+import {
+  Ban,
+  Calculator,
+  Eraser,
+  PencilLine,
+  Plus,
+  Save,
+  Trash,
+} from "lucide-react";
 
 // Types
-interface OutflowRow {
+interface InflowRow {
   date: string;
   type: string;
-  end_area_id: string;
-  end_area_name: string;
-  end_store_id: string;
-  end_store_name: string;
-  out_number: string;
-  product_id: string;
-  product_name: string;
+  providerId: string;
+  providerName: string;
+  payment: string;
+  inNumber: string;
+  serial: string;
+  productId: string;
+  productName: string;
   quantity: string;
   amount: number | null;
 }
@@ -66,17 +65,11 @@ interface Provider {
 
 interface Product {
   id: string;
-  code_id: string;
+  codeId: string;
   name: string;
-  cost_price: { d: string | number };
-  sale_price: { d: string | number };
-  um: string;
-}
-
-interface Area {
-  id: string;
-  store_id: string;
-  name: string;
+  costPrice: { d: string | number };
+  salePrice: { d: string | number };
+  unit: string;
 }
 
 // Constants
@@ -90,16 +83,16 @@ const payTypeOptions = [
   { value: "EFECTIVO", label: "Por Efectivo" },
 ];
 
-const initialFormValues: OutflowRow = {
+const initialFormValues: InflowRow = {
   date: format(new Date(), "dd/MM/yyyy"),
   type: "",
-  end_area_id: "",
-  end_area_name: "",
-  end_store_id: "",
-  end_store_name: "",
-  out_number: "",
-  product_id: "",
-  product_name: "",
+  providerId: "",
+  providerName: "",
+  payment: "",
+  inNumber: "",
+  serial: "",
+  productId: "",
+  productName: "",
   quantity: "",
   amount: null,
 };
@@ -116,7 +109,7 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  let rows: OutflowRow[];
+  let rows: InflowRow[];
   try {
     rows = JSON.parse(rawRows as string);
   } catch {
@@ -134,7 +127,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
-    const warehouse_id = "cmi7pmlnl0002r8w4kedu5n4b";
+    const warehouseId = "cmi7pmlnl0002r8w4kedu5n4b";
 
     const data = rows.map((row) => {
       const parsedDate = parse(row.date, "dd/MM/yyyy", new Date());
@@ -149,24 +142,24 @@ export async function action({ request }: Route.ActionArgs) {
       }
 
       return {
-        warehouse_id,
+        warehouseId,
         type: row.type,
         date: parsedDate,
-        provider_id: row.providerId,
+        providerId: row.providerId,
         payment: row.payment,
-        in_number: row.in_number,
+        inNumber: row.inNumber,
         serial: row.serial,
-        product_id: row.productId,
+        productId: row.productId,
         quantity,
         amount: row.amount ? Number(row.amount) : 0,
       };
     });
 
     await prisma.$transaction(
-      data.map((entry) => prisma.inflows.create({ data: entry }))
+      data.map((entry) => prisma.inflow.create({ data: entry }))
     );
 
-    return redirect("/dashboard/almacen/entrada?success=1");
+    return redirect("/main/warehouse/inflow?success=1");
   } catch (error: any) {
     console.error("❌ Error al insertar:", error);
     return new Response(
@@ -179,17 +172,16 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 // Component
-export default function OutflowsPage() {
-  const { providers, products, areas } = useOutletContext<{
+export default function Inflow() {
+  const { providers, products } = useOutletContext<{
     providers: Provider[];
     products: Product[];
-    areas: Area[];
   }>();
 
   const [searchParams] = useSearchParams();
-  const [rows, setRows] = useState<OutflowRow[]>([]);
+  const [rows, setRows] = useState<InflowRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [formValues, setFormValues] = useState<OutflowRow>(initialFormValues);
+  const [formValues, setFormValues] = useState<InflowRow>(initialFormValues);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
@@ -215,7 +207,7 @@ export default function OutflowsPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editIndex]);
 
-  const handleChange = (name: keyof OutflowRow, value: string) => {
+  const handleChange = (name: keyof InflowRow, value: string) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -230,7 +222,7 @@ export default function OutflowsPage() {
       return null;
     }
 
-    const price = Number(product.sale_price.d);
+    const price = Number(product.salePrice.d);
     return qty * price;
   };
 
@@ -244,8 +236,8 @@ export default function OutflowsPage() {
       return;
     }
 
-    const amount = calculateAmount(formValues.product_id, formValues.quantity);
-    const rowWithAmount: OutflowRow = { ...formValues, amount };
+    const amount = calculateAmount(formValues.productId, formValues.quantity);
+    const rowWithAmount: InflowRow = { ...formValues, amount };
 
     if (editIndex !== null) {
       setRows((prev) =>
@@ -309,11 +301,11 @@ export default function OutflowsPage() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="in_type" className="pl-1">
-              Tipo de Salida
+            <Label htmlFor="type" className="pl-1">
+              Tipo de Entrada
             </Label>
             <SelectList
-              name="in_type"
+              name="type"
               className="w-full min-w-40"
               options={inTypeOptions}
               value={formValues.type}
@@ -323,15 +315,15 @@ export default function OutflowsPage() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="provider" className="pl-1">
-              Destino
+              Proveedor
             </Label>
             <Combobox
-              name="end_area_id"
+              name="provider"
               className="w-full min-w-40"
               classNameOptions="w-full min-w-40"
-              options={areas.map((area) => ({
-                value: area.id,
-                label: area.name,
+              options={providers.map((prov) => ({
+                value: prov.id,
+                label: prov.name,
               }))}
               value={formValues.providerId}
               onChange={(value) => {
@@ -345,7 +337,7 @@ export default function OutflowsPage() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="pay_type" className="pl-1">
+            <Label htmlFor="payment" className="pl-1">
               Método de Pago
             </Label>
             <SelectList
@@ -358,16 +350,14 @@ export default function OutflowsPage() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="in_number" className="pl-1">
+            <Label htmlFor="inNumber" className="pl-1">
               No. de Factura
             </Label>
             <Input
-              id="in_number"
-              name="in_number"
-              value={formValues.in_number}
-              onChange={(event) =>
-                handleChange("in_number", event.target.value)
-              }
+              id="inNumber"
+              name="inNumber"
+              value={formValues.inNumber}
+              onChange={(event) => handleChange("inNumber", event.target.value)}
               className="w-full min-w-40"
               required
             />
@@ -433,22 +423,22 @@ export default function OutflowsPage() {
           >
             {editIndex !== null ? (
               <div className="flex items-center gap-2">
-                Cancelar <IconCancel />
+                Cancelar <Ban />
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                Limpiar <IconClearAll />
+                Borrar <Eraser />
               </div>
             )}
           </Button>
           <Button type="submit" className="min-w-32 cursor-pointer">
             {editIndex !== null ? (
               <div className="flex items-center gap-2">
-                Guardar <IconEdit />
+                Guardar <Save />
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                Agregar <IconPlus />
+                Agregar <Plus />
               </div>
             )}
           </Button>
@@ -493,7 +483,7 @@ export default function OutflowsPage() {
                   <TableCell>{row.type}</TableCell>
                   <TableCell>{row.providerName}</TableCell>
                   <TableCell>{row.payment}</TableCell>
-                  <TableCell>{row.in_number}</TableCell>
+                  <TableCell>{row.inNumber}</TableCell>
                   <TableCell>{row.serial}</TableCell>
                   <TableCell>{row.productName}</TableCell>
                   <TableCell className="text-right">{row.quantity}</TableCell>
@@ -509,7 +499,7 @@ export default function OutflowsPage() {
                         onClick={() => handleEdit(index)}
                         title="Editar"
                       >
-                        <IconEdit className="w-4 h-4" />
+                        <PencilLine />
                       </Button>
                       <Button
                         className="cursor-pointer"
@@ -518,7 +508,7 @@ export default function OutflowsPage() {
                         onClick={() => handleRemove(index)}
                         title="Eliminar"
                       >
-                        <IconTrash className="w-4 h-4" />
+                        <Trash />
                       </Button>
                     </div>
                   </TableCell>
@@ -541,7 +531,7 @@ export default function OutflowsPage() {
           disabled={rows.length === 0 || editIndex !== null || isSubmitting}
           onClick={() => setShowConfirmDialog(true)}
         >
-          {isSubmitting ? "Procesando..." : "Contabilizar"} <IconCalculator />
+          {isSubmitting ? "Procesando..." : "Contabilizar"} <Calculator />
         </Button>
       </div>
 
