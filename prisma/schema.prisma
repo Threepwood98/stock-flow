@@ -13,127 +13,236 @@ datasource db {
   provider = "postgresql"
 }
 
-model stores {
-  id         String       @id @default(cuid())
-  name       String
-  warehouses warehouses[]
-  areas      areas[]
-  outflows   outflows[]
+// ============================================
+// AUTHENTICATION MODELS
+// ============================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  name          String?
+  avatar        String?
+  provider      String? // "google", "github", etc.
+  providerId    String? // User ID from OAuth provider
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  @@index([email])
+  @@index([providerId])
 }
 
-model warehouses {
-  id       String     @id @default(cuid())
-  store_id String
-  name     String
-  stores   stores     @relation(fields: [store_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  inflows  inflows[]
-  outflows outflows[]
-  invoices invoices[]
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refreshToken      String? @db.Text
+  accessToken       String? @db.Text
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String? @db.Text
+  sessionState      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
-model areas {
-  id        String      @id @default(cuid())
-  store_id  String
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// BUSINESS MODELS
+// ============================================
+
+model Store {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  warehouses Warehouse[]
+  areas      Area[]
+  outflows   Outflow[]
+
+  @@index([name])
+}
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  storeId   String
   name      String
-  stores    stores      @relation(fields: [store_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  withdraws withdraws[]
-  outflows  outflows[]
-  sales     sales[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@unique([name, store_id], map: "unique_area_name_store")
+  store    Store     @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  inflows  Inflow[]
+  outflows Outflow[]
+
+  @@unique([name, storeId])
+  @@index([storeId])
 }
 
-model codes {
-  id       String     @id
-  name     String     @unique
-  products products[]
+model Area {
+  id        String   @id @default(cuid())
+  storeId   String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  store     Store      @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  withdraws Withdraw[]
+  outflows  Outflow[]
+  sales     Sale[]
+
+  @@unique([name, storeId])
+  @@index([storeId])
 }
 
-model products {
-  id         String     @id
-  code_id    String
-  name       String     @unique
-  cost_price Decimal    @db.Decimal(10, 2)
-  sale_price Decimal    @db.Decimal(10, 2)
-  um         String
-  code       codes      @relation(fields: [code_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  inflows    inflows[]
-  outflows   outflows[]
-  sales      sales[]
-  invoices   invoices[]
+model Code {
+  id        String   @id
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@index([name])
 }
 
-model companies {
-  id       String     @id @default(cuid())
-  name     String     @unique
-  provider Boolean    @default(false)
-  inflows  inflows[]
-  invoices invoices[]
+model Product {
+  id        String   @id
+  codeId    String
+  name      String   @unique
+  costPrice Decimal  @db.Decimal(10, 2)
+  salePrice Decimal  @db.Decimal(10, 2)
+  unit      String // Measurement unit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  code     Code      @relation(fields: [codeId], references: [id], onDelete: Restrict)
+  inflows  Inflow[]
+  outflows Outflow[]
+  sales    Sale[]
+
+  @@index([codeId])
+  @@index([name])
 }
 
-model inflows {
-  id           String     @id @default(cuid())
-  warehouse_id String
-  type         String
-  date         DateTime   @default(now()) @db.Date
-  provider_id  String?
-  payment      String?
-  in_number    String?
-  serial       String
-  product_id   String
-  quantity     Int
-  amount       Decimal    @db.Decimal(10, 2)
-  warehouses   warehouses @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  products     products   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  companies    companies? @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model withdraws {
-  id      String   @id @default(cuid())
-  area_id String
-  date    DateTime @default(now()) @db.Date
-  amount  Decimal  @db.Decimal(10, 2)
-  areas   areas    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model outflows {
-  id           String     @id @default(cuid())
-  warehouse_id String
-  type         String
-  date         DateTime   @default(now()) @db.Date
-  end_area_id  String?
-  end_store_id String?
-  out_number   String
-  product_id   String
-  quantity     Int
-  amount       Decimal?   @db.Decimal(10, 2)
-  warehouses   warehouses @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  areas        areas?     @relation(fields: [end_area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  stores       stores?    @relation(fields: [end_store_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  products     products   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model sales {
+model Company {
   id         String   @id @default(cuid())
-  area_id    String
-  date       DateTime @default(now()) @db.Date
-  payment    String
-  product_id String
-  quantity   Int
-  areas      areas    @relation(fields: [area_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  products   products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name       String   @unique
+  isProvider Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  inflows Inflow[]
+
+  @@index([name])
+  @@index([isProvider])
 }
 
-model invoices {
-  id             String     @id @default(cuid())
-  warehouse_id   String
-  date           DateTime   @default(now()) @db.Date
-  payment        String
-  invoice_number String
-  product_id     String
-  quantity       Int
-  company_id     String?
-  warehouses     warehouses @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  companies      companies? @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  products       products   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+// ============================================
+// TRANSACTION MODELS
+// ============================================
+
+model Inflow {
+  id          String   @id @default(cuid())
+  warehouseId String
+  type        String
+  date        DateTime @default(now()) @db.Date
+  providerId  String?
+  payment     String?
+  inNumber    String?
+  serial      String
+  productId   String
+  quantity    Int      @default(0)
+  amount      Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  provider  Company?  @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@index([warehouseId])
+  @@index([productId])
+  @@index([providerId])
+  @@index([date])
+  @@index([type])
+}
+
+model Withdraw {
+  id        String   @id @default(cuid())
+  areaId    String
+  date      DateTime @default(now()) @db.Date
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  area Area @relation(fields: [areaId], references: [id], onDelete: Restrict)
+
+  @@index([areaId])
+  @@index([date])
+}
+
+model Outflow {
+  id          String   @id @default(cuid())
+  warehouseId String
+  type        String
+  date        DateTime @default(now()) @db.Date
+  endAreaId   String?
+  endStoreId  String?
+  outNumber   String
+  productId   String
+  quantity    Int      @default(0)
+  amount      Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  endArea   Area?     @relation(fields: [endAreaId], references: [id], onDelete: SetNull)
+  endStore  Store?    @relation(fields: [endStoreId], references: [id], onDelete: SetNull)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([warehouseId])
+  @@index([endAreaId])
+  @@index([endStoreId])
+  @@index([productId])
+  @@index([date])
+  @@index([type])
+}
+
+model Sale {
+  id        String   @id @default(cuid())
+  areaId    String
+  date      DateTime @default(now()) @db.Date
+  payment   String
+  productId String
+  quantity  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  area    Area    @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([areaId])
+  @@index([productId])
+  @@index([date])
+  @@index([payment])
 }

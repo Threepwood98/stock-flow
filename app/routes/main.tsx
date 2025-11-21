@@ -1,4 +1,4 @@
-import { Outlet, useMatches } from "react-router";
+import { Outlet, redirect, useMatches } from "react-router";
 import { AppSidebar } from "~/components/app-sidebar";
 import {
   Breadcrumb,
@@ -15,26 +15,35 @@ import {
   SidebarTrigger,
 } from "~/components/ui/sidebar";
 import type { Route } from "./+types/main";
-import { prisma } from "lib/prisma";
+import { prisma } from "~/lib/prisma";
+import { auth } from "~/lib/auth";
+import { authClient } from "~/lib/auth-client";
 
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params, request }: Route.LoaderArgs) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session) {
+    throw redirect("/login");
+  }
+
   try {
-    // Considera hacer estas consultas en paralelo
     const [providers, products, areas] = await Promise.all([
-      prisma.companies.findMany({
-        where: { provider: true },
+      prisma.company.findMany({
+        where: { isProvider: true },
         orderBy: { name: "asc" },
       }),
-      prisma.products.findMany({
+      prisma.product.findMany({
         orderBy: { name: "asc" },
       }),
-      prisma.areas.findMany({
-        where: { store_id: "cmi7pmln30000r8w42boh37tb" }, // ⚠️ Considera hacer esto dinámico
+      prisma.area.findMany({
+        where: { storeId: "cmi7pmln30000r8w42boh37tb" }, // ⚠️ Considera hacer esto dinámico
         orderBy: { name: "asc" },
       }),
     ]);
 
-    return { providers, products, areas };
+    return { session, providers, products, areas };
   } catch (error) {
     console.error("Error loading data:", error);
     throw new Response("Error loading data", { status: 500 });
@@ -42,15 +51,20 @@ export async function loader({ params }: Route.LoaderArgs) {
 }
 
 export default function Main({ loaderData }: Route.ComponentProps) {
-  const matches = useMatches();
+  const { session, providers, products, areas } = loaderData;
 
-  // Genera breadcrumbs dinámicamente basado en la ruta actual
-  const breadcrumbs = matches
-    .filter((match) => match.handle?.breadcrumb)
-    .map((match) => ({
-      label: match.handle.breadcrumb,
-      path: match.pathname,
-    }));
+  const handleSignOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          window.location.href = "/login";
+        },
+        onError: (error) => {
+          console.error("Error signing out:", error);
+        },
+      },
+    });
+  };
 
   return (
     <SidebarProvider>
@@ -65,28 +79,15 @@ export default function Main({ loaderData }: Route.ComponentProps) {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                {breadcrumbs.length > 0 ? (
-                  breadcrumbs.map((crumb, index) => (
-                    <div key={crumb.path} className="contents">
-                      <BreadcrumbItem className="hidden md:block">
-                        {index === breadcrumbs.length - 1 ? (
-                          <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                        ) : (
-                          <BreadcrumbLink href={crumb.path}>
-                            {crumb.label}
-                          </BreadcrumbLink>
-                        )}
-                      </BreadcrumbItem>
-                      {index < breadcrumbs.length - 1 && (
-                        <BreadcrumbSeparator className="hidden md:block" />
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Dashboard</BreadcrumbPage>
-                  </BreadcrumbItem>
-                )}
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="#">
+                    Building Your Application
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>

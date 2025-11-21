@@ -41,8 +41,8 @@ import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { Combobox } from "~/components/combobox";
-// import type { Route } from "./+types/dashboard.almacen.entrada";
-import { prisma } from "lib/prisma";
+import type { Route } from "./+types/outflows";
+import { prisma } from "~/lib/prisma";
 
 // Types
 interface OutflowRow {
