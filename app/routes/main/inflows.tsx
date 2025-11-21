@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type FormEvent, useEffect } from "react";
 import { toast } from "sonner";
 import {
@@ -41,7 +39,7 @@ import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { Combobox } from "~/components/combobox";
-import type { Route } from "./+types/dashboard.almacen.entrada";
+// import type { Route } from "./+types/inflows";
 import { prisma } from "lib/prisma";
 
 // Types
@@ -173,7 +171,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 // Component
-export default function InflowsPage() {
+export default function Inflows() {
   const { providers, products } = useOutletContext<{
     providers: Provider[];
     products: Product[];

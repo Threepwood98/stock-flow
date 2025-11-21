@@ -1,5 +1,5 @@
 import { Form, Link, redirect, useActionData } from "react-router";
-import type { Route } from "./+types/login";
+import type { Route } from "./+types/signup";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -14,42 +14,41 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  // Aquí podrías verificar si el usuario ya está autenticado
-  // y redirigir a /main si es necesario
   return null;
 }
 
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
+  const name = formData.get("name");
   const email = formData.get("email");
   const password = formData.get("password");
 
-  // Aquí iría tu lógica de autenticación
-  console.log("Login:", { email, password });
+  // Aquí iría tu lógica de registro
+  console.log("Signup:", { name, email, password });
 
   // Simular validación
-  if (!email || !password) {
+  if (!name || !email || !password) {
     return { error: "Todos los campos son requeridos" };
   }
 
-  // Redirigir al main después del login exitoso
+  // Redirigir al main después del registro exitoso
   return redirect("/main");
 }
 
-export default function Login() {
+export default function Signup() {
   const actionData = useActionData<typeof action>();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
+          <CardTitle>Create an account</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your information below to create your account
           </CardDescription>
           <CardAction>
-            <Link to="/signup">
-              <Button variant="link">Sign Up</Button>
+            <Link to="/login">
+              <Button variant="link">Login</Button>
             </Link>
           </CardAction>
         </CardHeader>
@@ -59,6 +58,16 @@ export default function Login() {
               {actionData?.error && (
                 <div className="text-sm text-red-600">{actionData.error}</div>
               )}
+              <div className="grid gap-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -70,30 +79,18 @@ export default function Login() {
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
+                <Label htmlFor="password">Password</Label>
                 <Input id="password" name="password" type="password" required />
               </div>
+              <Button type="submit" className="w-full">
+                Sign Up
+              </Button>
             </div>
           </Form>
         </CardContent>
-        <CardFooter className="flex-col gap-2">
-          <Form method="post" className="w-full">
-            <Input type="hidden" name="email" id="hidden-email" />
-            <Input type="hidden" name="password" id="hidden-password" />
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
-          </Form>
+        <CardFooter>
           <Button variant="outline" className="w-full">
-            Login with Google
+            Sign up with Google
           </Button>
         </CardFooter>
       </Card>
