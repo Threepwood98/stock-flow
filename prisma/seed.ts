@@ -11,7 +11,7 @@ async function main() {
   await prisma.product.deleteMany();
   await prisma.code.deleteMany();
   await prisma.company.deleteMany();
-  await prisma.area.deleteMany();
+  await prisma.salesArea.deleteMany();
   await prisma.warehouse.deleteMany();
   await prisma.store.deleteMany();
 
@@ -50,21 +50,21 @@ async function main() {
   console.log("✅ Created warehouses");
 
   // 3. Crear Areas
-  const area1 = await prisma.area.create({
+  const area1 = await prisma.salesArea.create({
     data: {
       storeId: store1.id,
       name: "Área de Ventas 1",
     },
   });
 
-  const area2 = await prisma.area.create({
+  const area2 = await prisma.salesArea.create({
     data: {
       storeId: store1.id,
       name: "Área de Ventas 2",
     },
   });
 
-  const area3 = await prisma.area.create({
+  const area3 = await prisma.salesArea.create({
     data: {
       storeId: store2.id,
       name: "Área Norte",

@@ -4,6 +4,8 @@ export default [
   index("routes/home.tsx"),
   route("signin", "routes/signin.tsx"),
   route("signup", "routes/signup.tsx"),
+  route("registration", "routes/registration.tsx"),
+
   // Better Auth API routes
   route("api/auth/*", "routes/api.auth.$.tsx"),
   // Rutas protegidas

@@ -8,12 +8,27 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    autoSignIn: true,
+    requireEmailVerification: false,
+    // autoSignIn: true,
   },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
+  },
+  user: {
+    additionalFields: {
+      stores: {
+        type: "string[]",
+        required: true,
+        input: true,
+      },
+    },
+  },
+  account: {
+    accountLinking: {
+      enabled: false,
     },
   },
 });

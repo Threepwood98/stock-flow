@@ -14,7 +14,7 @@ export default function Home() {
         }}
       >
         <Link
-          to="/login"
+          to="/signin"
           style={{
             padding: "0.5rem 1rem",
             background: "#007bff",

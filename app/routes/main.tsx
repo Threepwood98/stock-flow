@@ -19,9 +19,7 @@ import { prisma } from "~/lib/prisma";
 import { auth } from "~/lib/auth";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
+  const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session) {
     throw redirect("/signin");
@@ -36,7 +34,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       prisma.product.findMany({
         orderBy: { name: "asc" },
       }),
-      prisma.area.findMany({
+      prisma.salesArea.findMany({
         where: { storeId: "cmi7pmln30000r8w42boh37tb" }, // ⚠️ Considera hacer esto dinámico
         orderBy: { name: "asc" },
       }),
