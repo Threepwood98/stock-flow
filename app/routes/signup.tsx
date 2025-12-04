@@ -41,7 +41,7 @@ export default function Signup() {
       { name, email, password },
       {
         onSuccess: () => {
-          window.location.href = "/main";
+          window.location.href = "/registration";
         },
         onError: (ctx) => {
           alert(ctx.error.message);
@@ -54,7 +54,7 @@ export default function Signup() {
   const handleGoogleSignup = async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/main",
+      callbackURL: "/registration",
     });
   };
 

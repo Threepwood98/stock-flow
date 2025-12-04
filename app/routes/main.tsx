@@ -15,8 +15,17 @@ import {
   SidebarTrigger,
 } from "~/components/ui/sidebar";
 import type { Route } from "./+types/main";
-import { prisma } from "~/lib/prisma";
 import { auth } from "~/lib/auth";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { prisma } from "~/lib/prisma";
+import { useEffect, useState } from "react";
+import { se } from "date-fns/locale";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -24,32 +33,76 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (!session) {
     throw redirect("/signin");
   }
+  const user = session.user;
 
-  try {
-    const [providers, products, areas] = await Promise.all([
-      prisma.company.findMany({
-        where: { isProvider: true },
-        orderBy: { name: "asc" },
-      }),
-      prisma.product.findMany({
-        orderBy: { name: "asc" },
-      }),
-      prisma.salesArea.findMany({
-        where: { storeId: "cmi7pmln30000r8w42boh37tb" }, // ⚠️ Considera hacer esto dinámico
-        orderBy: { name: "asc" },
-      }),
-    ]);
+  const userStores = await prisma.userStore.findMany({
+    where: { userId: user.id },
+    include: {
+      store: {
+        include: {
+          warehouses: {
+            include: {
+              warehouseInventories: {
+                include: { product: true },
+                orderBy: { product: { name: "asc" } },
+              },
+            },
+            orderBy: { name: "asc" },
+          },
+          salesAreas: {
+            include: {
+              salesAreaInventories: {
+                include: { product: true },
+                orderBy: { product: { name: "asc" } },
+              },
+            },
+            orderBy: { name: "asc" },
+          },
+        },
+      },
+    },
+    orderBy: { store: { name: "asc" } },
+  });
 
-    return { session, providers, products, areas };
-  } catch (error) {
-    console.error("Error loading data:", error);
-    throw new Response("Error loading data", { status: 500 });
-  }
+  const companies = await prisma.company.findMany({
+    orderBy: { name: "asc" },
+  });
+
+  const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
+
+  return { user, userStores, companies, products };
 }
 
 export default function Main({ loaderData }: Route.ComponentProps) {
-  const { session, providers, products, areas } = loaderData;
-  const user = session.user;
+  const { user, userStores, companies, products } = loaderData;
+
+  const [selectedStoreId, setSelectedStoreId] = useState(
+    userStores[0]?.storeId || ""
+  );
+
+  const currrentStore = userStores.find(
+    (us) => us.storeId === selectedStoreId
+  )?.store;
+
+  const warehouses = currrentStore?.warehouses || [];
+
+  const salesAreas = currrentStore?.salesAreas || [];
+
+  const warehouseInventories = warehouses.flatMap(
+    (wh) => wh.warehouseInventories || []
+  );
+
+  const salesAreaInventories = salesAreas.flatMap(
+    (sa) => sa.salesAreaInventories || []
+  );
+
+  const stores = userStores
+    .map((us) => us.store)
+    .filter((store) => store.id !== selectedStoreId);
+
+  const providers = { companies, stores };
+
+  const destinations = { stores, salesAreas };
 
   return (
     <SidebarProvider>
@@ -62,22 +115,44 @@ export default function Main({ loaderData }: Route.ComponentProps) {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+            {userStores.length === 1 && (
+              <p className="text-lg">{userStores[0].store.name}</p>
+            )}
+            {userStores.length > 1 && (
+              <Select
+                defaultValue={selectedStoreId}
+                onValueChange={setSelectedStoreId}
+              >
+                <SelectTrigger
+                  className="w-64 text-lg"
+                  style={{ color: "oklch(0.205 0 0)" }}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {userStores.map((us) => (
+                    <SelectItem key={us.storeId} value={us.storeId}>
+                      {us.store.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </header>
-        <Outlet context={loaderData} />
+        <Outlet
+          context={{
+            user,
+            selectedStoreId,
+            warehouses,
+            salesAreas,
+            warehouseInventories,
+            salesAreaInventories,
+            providers,
+            destinations,
+            products,
+          }}
+        />
       </SidebarInset>
     </SidebarProvider>
   );

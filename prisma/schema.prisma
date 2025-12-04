@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -23,27 +17,37 @@ model User {
   email            String      @unique
   emailVerified    Boolean     @default(false)
   image            String?
-  sessions         Session[]
-  accounts         Account[]
   role             String      @default("user")
   phones           Phone[]
-  userStores       UserStore[]
   profileCompleted Boolean     @default(false)
+  sessions         Session[]
+  accounts         Account[]
+  inflow           Inflow[]
+  sale             Sale[]
+  outflow          Outflow[]
+  userStore        UserStore[]
   createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @default(now()) @updatedAt
+  updatedAt        DateTime    @updatedAt
+  withdraws        Withdraw[]
+
+  @@index([email])
+  @@index([role])
 }
 
 model Session {
   id        String   @id
   expiresAt DateTime
   token     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
   ipAddress String?
   userAgent String?
   userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }
 
 model Account {
@@ -62,6 +66,9 @@ model Account {
   updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountId, providerId])
 }
 
 model Verification {
@@ -70,7 +77,9 @@ model Verification {
   value      String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
 }
 
 // ============================================
@@ -83,78 +92,75 @@ model Phone {
   isPrimary Boolean  @default(false)
   userId    String
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, number])
   @@index([userId])
+  @@index([number])
 }
 
 model Store {
-  id         String      @id @default(cuid())
-  name       String      @unique
-  isActive   Boolean     @default(true)
-  warehouses Warehouse[]
-  salesAreas SalesArea[]
-  outflows   Outflow[]
-  userStores UserStore[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @default(now()) @updatedAt
+  id                  String      @id @default(cuid())
+  name                String      @unique
+  warehouses          Warehouse[]
+  salesAreas          SalesArea[]
+  providedInflows     Inflow[]
+  destinationOutflows Outflow[]
+  userStores          UserStore[]
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   @@index([name])
 }
 
 model UserStore {
-  id        String   @id @default(cuid())
   userId    String
   storeId   String
-  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  updatedAt DateTime @updatedAt
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
-  // IMPORTANTE: Esto previene duplicados
-  @@unique([userId, storeId])
+  @@id([userId, storeId])
   @@index([userId])
   @@index([storeId])
 }
 
 model Warehouse {
-  id        String    @id @default(cuid())
-  storeId   String
-  name      String
-  isActive  Boolean   @default(true)
-  inflows   Inflow[]
-  outflows  Outflow[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
+  id                   String               @id @default(cuid())
+  name                 String
+  storeId              String
+  products             Product[]
+  inflows              Inflow[]
+  outflows             Outflow[]
+  warehouseInventories WarehouseInventory[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Restrict)
 
   @@unique([name, storeId])
   @@index([storeId])
-  @@index([name])
 }
 
 model SalesArea {
-  id        String     @id @default(cuid())
-  storeId   String
-  name      String
-  isActive  Boolean    @default(true)
-  withdraws Withdraw[]
-  outflows  Outflow[]
-  sales     Sale[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @default(now()) @updatedAt
+  id                   String               @id @default(cuid())
+  name                 String
+  storeId              String
+  products             Product[]
+  outflows             Outflow[]
+  sales                Sale[]
+  withdraws            Withdraw[]
+  salesAreaInventories SalesAreaInventory[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Restrict)
 
   @@unique([name, storeId])
   @@index([storeId])
-  @@index([name])
 }
 
 model Code {
@@ -162,39 +168,85 @@ model Code {
   name      String    @unique
   products  Product[]
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
+  updatedAt DateTime  @updatedAt
 
   @@index([name])
 }
 
 model Product {
-  id        String    @id
-  codeId    String
-  name      String    @unique
-  costPrice Decimal   @db.Decimal(10, 2)
-  salePrice Decimal   @db.Decimal(10, 2)
-  unit      String
-  inflows   Inflow[]
-  outflows  Outflow[]
-  sales     Sale[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
+  id          String  @id
+  codeId      String
+  warehouseId String?
+  salesAreaId String?
+  name        String  @unique
+  costPrice   Decimal @db.Decimal(10, 2)
+  salePrice   Decimal @db.Decimal(10, 2)
+  unit        String
 
-  code Code @relation(fields: [codeId], references: [id], onDelete: Restrict)
+  inflow             Inflow[]
+  sale               Sale[]
+  outflow            Outflow[]
+  warehouseInventory WarehouseInventory[]
+  salesAreaInventory SalesAreaInventory[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
-  @@index([name])
+  code      Code       @relation(fields: [codeId], references: [id], onDelete: Restrict)
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
+  salesArea SalesArea? @relation(fields: [salesAreaId], references: [id])
+
   @@index([codeId])
+  @@index([name])
 }
 
 model Company {
-  id         String   @id @default(cuid())
-  name       String   @unique
-  isProvider Boolean  @default(false)
-  inflows    Inflow[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  id              String   @id @default(cuid())
+  name            String   @unique
+  providedInflows Inflow[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([name])
+}
+
+// ============================================
+// INVENTORY MODELS
+// ============================================
+
+model WarehouseInventory {
+  id          String   @id @default(cuid())
+  warehouseId String
+  productId   String
+  quantity    Int      @default(0)
+  minStock    Int?     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([warehouseId, productId])
+  @@index([warehouseId])
+  @@index([productId])
+  @@index([quantity])
+}
+
+model SalesAreaInventory {
+  id          String   @id @default(cuid())
+  salesAreaId String
+  productId   String
+  quantity    Int      @default(0)
+  minStock    Int?     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  salesArea SalesArea @relation(fields: [salesAreaId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([salesAreaId, productId])
+  @@index([salesAreaId])
+  @@index([productId])
+  @@index([quantity])
 }
 
 // ============================================
@@ -202,84 +254,107 @@ model Company {
 // ============================================
 
 model Inflow {
-  id          String   @id @default(cuid())
-  warehouseId String
-  type        String
-  date        DateTime @default(now()) @db.Date
-  providerId  String?
-  payment     String
-  inNumber    String
-  serial      String
-  productId   String
-  quantity    Int      @default(0)
-  amount      Decimal  @db.Decimal(10, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  id                String   @id @default(cuid())
+  userId            String
+  warehouseId       String
+  date              DateTime @default(now()) @db.Date
+  inType            String
+  providerCompanyId String?
+  providerStoreId   String?
+  payMethod         String?
+  invoiceNumber     String?
+  inNumber          String
+  productId         String
+  quantity          Int      @default(0)
+  costAmount        Decimal  @db.Decimal(10, 2)
+  saleAmount        Decimal  @db.Decimal(10, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
-  provider  Company?  @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  warehouse       Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  providerCompany Company?  @relation(fields: [providerCompanyId], references: [id], onDelete: SetNull)
+  providerStore   Store?    @relation(fields: [providerStoreId], references: [id], onDelete: SetNull)
 
+  @@index([userId])
   @@index([warehouseId])
   @@index([productId])
-  @@index([providerId])
+  @@index([providerCompanyId])
+  @@index([providerStoreId])
   @@index([date])
-}
-
-model Withdraw {
-  id        String   @id @default(cuid())
-  areaId    String
-  date      DateTime @default(now()) @db.Date
-  amount    Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  area SalesArea @relation(fields: [areaId], references: [id], onDelete: Restrict)
-
-  @@index([areaId])
-  @@index([date])
+  @@index([inType])
 }
 
 model Outflow {
-  id          String   @id @default(cuid())
-  warehouseId String
-  type        String
-  date        DateTime @default(now()) @db.Date
-  endAreaId   String?
-  endStoreId  String?
-  outNumber   String
-  productId   String
-  quantity    Int      @default(0)
-  amount      Decimal  @default(0) @db.Decimal(10, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  id                     String   @id @default(cuid())
+  userId                 String
+  warehouseId            String
+  date                   DateTime @default(now()) @db.Date
+  outType                String
+  destinationStoreId     String?
+  destinationSalesAreaId String?
+  payMethod              String?
+  outNumber              String
+  productId              String
+  quantity               Int      @default(0)
+  saleAmount             Decimal  @db.Decimal(10, 2)
+  costAmount             Decimal  @db.Decimal(10, 2)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
-  warehouse Warehouse  @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  endArea   SalesArea? @relation(fields: [endAreaId], references: [id], onDelete: SetNull)
-  endStore  Store?     @relation(fields: [endStoreId], references: [id], onDelete: SetNull)
-  product   Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  warehouse            Warehouse  @relation(fields: [warehouseId], references: [id])
+  product              Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  destinationStore     Store?     @relation(fields: [destinationStoreId], references: [id], onDelete: SetNull)
+  destinationSalesArea SalesArea? @relation(fields: [destinationSalesAreaId], references: [id], onDelete: SetNull)
 
+  @@index([userId])
   @@index([warehouseId])
   @@index([productId])
-  @@index([endAreaId])
-  @@index([endStoreId])
+  @@index([destinationStoreId])
+  @@index([destinationSalesAreaId])
   @@index([date])
+  @@index([outType])
 }
 
 model Sale {
-  id        String   @id @default(cuid())
-  areaId    String
-  date      DateTime @default(now()) @db.Date
-  payment   String
-  productId String
-  quantity  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  salesAreaId String
+  date        DateTime @default(now()) @db.Date
+  payMethod   String
+  productId   String
+  quantity    Int      @default(0)
+  saleAmount  Decimal  @db.Decimal(10, 2)
+  costAmount  Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  area    SalesArea @relation(fields: [areaId], references: [id], onDelete: Restrict)
-  product Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  salesArea SalesArea @relation(fields: [salesAreaId], references: [id], onDelete: Restrict)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  @@index([areaId])
+  @@index([userId])
+  @@index([salesAreaId])
   @@index([productId])
+  @@index([date])
+  @@index([payMethod])
+}
+
+model Withdraw {
+  id          String   @id @default(cuid())
+  userId      String
+  salesAreaId String
+  date        DateTime @default(now()) @db.Date
+  amount      Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  salesArea SalesArea @relation(fields: [salesAreaId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([salesAreaId])
   @@index([date])
 }

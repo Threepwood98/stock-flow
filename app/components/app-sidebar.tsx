@@ -1,5 +1,3 @@
-"use client";
-
 import {
   AudioWaveform,
   BanknoteArrowDown,
@@ -14,16 +12,6 @@ import {
   Store,
   Warehouse,
 } from "lucide-react";
-import {
-  IconBuildingStore,
-  IconBuildingWarehouse,
-  IconCashMove,
-  IconCashPlus,
-  IconPackageExport,
-  IconPackageImport,
-  IconReceiptDollar,
-  IconReport,
-} from "@tabler/icons-react";
 
 import { NavMain } from "~/components/nav-main";
 import { NavUser } from "~/components/nav-user";
@@ -77,12 +65,6 @@ const data = {
           title: "Salida",
           url: "/main/warehouse/outflow",
           icon: PackageMinus,
-          isActive: true,
-        },
-        {
-          title: "Venta",
-          url: "#",
-          icon: Receipt,
           isActive: true,
         },
       ],

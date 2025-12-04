@@ -1,15 +1,5 @@
-"use client";
-
 import { useState, type FormEvent, useEffect } from "react";
 import { toast } from "sonner";
-import {
-  IconCalculator,
-  IconCancel,
-  IconClearAll,
-  IconEdit,
-  IconPlus,
-  IconTrash,
-} from "@tabler/icons-react";
 import {
   Form,
   redirect,
@@ -41,67 +31,93 @@ import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { Combobox } from "~/components/combobox";
-import type { Route } from "../+types/outflows";
+import type { Route } from "./+types/inflow";
 import { prisma } from "~/lib/prisma";
+import {
+  Ban,
+  Calculator,
+  Eraser,
+  PencilLine,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 
 // Types
 interface OutflowRow {
+  userId: string;
+  warehouseId: string;
+  warehouseName: string;
   date: string;
-  type: string;
-  end_area_id: string;
-  end_area_name: string;
-  end_store_id: string;
-  end_store_name: string;
-  out_number: string;
-  product_id: string;
-  product_name: string;
+  outType: string;
+  destinationId: string;
+  destinationName: string;
+  payMethod: string;
+  outNumber: string;
+  productId: string;
+  productName: string;
   quantity: string;
-  amount: number | null;
+  saleAmount: number | null;
+  costAmount: number | null;
 }
 
-interface Provider {
+interface Warehouse {
+  id: string;
+  name: string;
+}
+
+interface Destination {
   id: string;
   name: string;
 }
 
 interface Product {
   id: string;
-  code_id: string;
   name: string;
-  cost_price: { d: string | number };
-  sale_price: { d: string | number };
-  um: string;
+  warehouseId: string;
+  costPrice: { d: Number };
+  salePrice: { d: Number };
 }
 
-interface Area {
-  id: string;
-  store_id: string;
-  name: string;
+interface OutletContext {
+  user: any;
+  selectedStoreId: string;
+  warehouses: Warehouse[];
+  destinations: {
+    stores: Destination[];
+    salesAreas: Destination[];
+  };
+  products: Product[];
 }
 
 // Constants
-const inTypeOptions = [
-  { value: "FACTURA", label: "Por Factura" },
+const outTypeOptions = [
   { value: "TRASLADO", label: "Por Traslado" },
+  { value: "VALE", label: "Por Vale" },
+  { value: "VENTA", label: "Por Venta" },
 ];
 
-const payTypeOptions = [
-  { value: "CHEQUE", label: "Por Cheque" },
-  { value: "EFECTIVO", label: "Por Efectivo" },
+const payMethods = [
+  { value: "EFECTIVO", label: "EFECTIVO" },
+  { value: "TRANSFERMOVIL", label: "TRANSFERMOVIL" },
+  { value: "ENZONA", label: "ENZONA" },
 ];
 
 const initialFormValues: OutflowRow = {
+  userId: "",
+  warehouseId: "",
+  warehouseName: "",
   date: format(new Date(), "dd/MM/yyyy"),
-  type: "",
-  end_area_id: "",
-  end_area_name: "",
-  end_store_id: "",
-  end_store_name: "",
-  out_number: "",
-  product_id: "",
-  product_name: "",
+  outType: "",
+  destinationId: "",
+  destinationName: "",
+  payMethod: "",
+  outNumber: "",
+  productId: "",
+  productName: "",
   quantity: "",
-  amount: null,
+  saleAmount: null,
+  costAmount: null,
 };
 
 // Server Action
@@ -134,8 +150,6 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
-    const warehouse_id = "cmi7pmlnl0002r8w4kedu5n4b";
-
     const data = rows.map((row) => {
       const parsedDate = parse(row.date, "dd/MM/yyyy", new Date());
 
@@ -148,25 +162,31 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Cantidad inválida: ${row.quantity}`);
       }
 
+      const isTRASLADO = row.outType === "TRASLADO";
+      const isVALE = row.outType === "VALE";
+      const isVENTA = row.outType === "VENTA";
+
       return {
-        warehouse_id,
-        type: row.type,
+        userId: row.userId,
+        warehouseId: row.warehouseId,
+        outType: row.outType,
         date: parsedDate,
-        provider_id: row.providerId,
-        payment: row.payment,
-        in_number: row.in_number,
-        serial: row.serial,
-        product_id: row.productId,
+        destinationStoreId: isTRASLADO ? row.destinationId : null,
+        destinationSalesAreaId: isVALE ? row.destinationId : null,
+        payMethod: isVENTA ? row.payMethod : null,
+        outNumber: row.outNumber,
+        productId: row.productId,
         quantity,
-        amount: row.amount ? Number(row.amount) : 0,
+        costAmount: row.costAmount ? Number(row.costAmount) : 0,
+        saleAmount: row.saleAmount ? Number(row.saleAmount) : 0,
       };
     });
 
     await prisma.$transaction(
-      data.map((entry) => prisma.inflows.create({ data: entry }))
+      data.map((entry) => prisma.outflow.create({ data: entry }))
     );
 
-    return redirect("/dashboard/almacen/entrada?success=1");
+    return redirect("/main/warehouse/outflow?success=1");
   } catch (error: any) {
     console.error("❌ Error al insertar:", error);
     return new Response(
@@ -180,25 +200,28 @@ export async function action({ request }: Route.ActionArgs) {
 
 // Component
 export default function Outflow() {
-  const { providers, products, areas } = useOutletContext<{
-    providers: Provider[];
-    products: Product[];
-    areas: Area[];
-  }>();
+  const { user, warehouses, destinations, products } =
+    useOutletContext<OutletContext>();
 
   const [searchParams] = useSearchParams();
   const [rows, setRows] = useState<OutflowRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [formValues, setFormValues] = useState<OutflowRow>(initialFormValues);
+  const [formValues, setFormValues] = useState<OutflowRow>({
+    ...initialFormValues,
+    userId: user.id,
+    warehouseId: warehouses[0]?.id || "",
+    warehouseName: warehouses[0]?.name || "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [currentDestinations, setCurrentDestinations] = useState<Destination[]>(
+    []
+  );
 
   // Show success notification
   useEffect(() => {
     if (searchParams.get("success") === "1") {
       toast.success("Entradas contabilizadas exitosamente.");
-
-      // Clear rows after successful submission
       setRows([]);
     }
   }, [searchParams]);
@@ -217,35 +240,81 @@ export default function Outflow() {
 
   const handleChange = (name: keyof OutflowRow, value: string) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "outType") {
+      switch (value) {
+        case "TRASLADO":
+          setCurrentDestinations(destinations.stores);
+          break;
+        case "VALE":
+          setCurrentDestinations(destinations.salesAreas);
+          break;
+        case "VENTA":
+          setCurrentDestinations([]);
+          break;
+      }
+
+      setFormValues((prev) => ({
+        ...prev,
+        outType: value,
+        destinationId: "",
+        destinationName: "",
+        payMethod: "",
+      }));
+    }
   };
 
   const calculateAmount = (
     productId: string,
     quantity: string
-  ): number | null => {
+  ): { costAmount: number | null; saleAmount: number | null } => {
     const product = products.find((p) => p.id === productId);
     const qty = parseInt(quantity, 10);
 
     if (!product || isNaN(qty) || qty <= 0) {
-      return null;
+      return { costAmount: null, saleAmount: null };
     }
 
-    const price = Number(product.sale_price.d);
-    return qty * price;
+    const costPrice = Number(product.costPrice.d);
+    const salePrice = Number(product.salePrice.d);
+    return { costAmount: qty * costPrice, saleAmount: qty * salePrice };
   };
 
   const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Validate quantity
     const quantity = parseInt(formValues.quantity, 10);
-    if (isNaN(quantity) || quantity <= 0) {
+
+    if (quantity <= 0) {
       toast.error("La cantidad debe ser mayor a 0.");
       return;
     }
 
-    const amount = calculateAmount(formValues.product_id, formValues.quantity);
-    const rowWithAmount: OutflowRow = { ...formValues, amount };
+    if (!formValues.warehouseId) {
+      toast.error("Debe seleccionar un almacén.");
+      return;
+    }
+
+    if (
+      (formValues.outType === "TRASLADO" || formValues.outType === "VALE") &&
+      !formValues.destinationId
+    ) {
+      toast.error("Debe seleccionar un destino.");
+      return;
+    }
+
+    if (formValues.outType === "VENTA" && !formValues.payMethod) {
+      toast.error("Debe seleccionar un método de pago.");
+      return;
+    }
+
+    const amount = calculateAmount(formValues.productId, formValues.quantity);
+
+    const rowWithAmount: OutflowRow = {
+      ...formValues,
+      costAmount: amount.costAmount,
+      saleAmount: amount.saleAmount,
+    };
 
     if (editIndex !== null) {
       setRows((prev) =>
@@ -261,18 +330,42 @@ export default function Outflow() {
   };
 
   const handleClean = () => {
-    setFormValues(initialFormValues);
+    setFormValues({
+      ...initialFormValues,
+      userId: user.id,
+      warehouseId: warehouses[0]?.id || "",
+      warehouseName: warehouses[0]?.name || "",
+    });
+    setCurrentDestinations([]);
   };
 
   const handleCancel = () => {
-    setFormValues(initialFormValues);
+    setFormValues({
+      ...initialFormValues,
+      userId: user.id,
+      warehouseId: warehouses[0]?.id || "",
+      warehouseName: warehouses[0]?.name || "",
+    });
     setEditIndex(null);
+    setCurrentDestinations([]);
   };
 
   const handleEdit = (index: number) => {
     const row = rows[index];
     setFormValues({ ...row });
     setEditIndex(index);
+
+    switch (row.outType) {
+      case "TRASLADO":
+        setCurrentDestinations(destinations.stores);
+        break;
+      case "VALE":
+        setCurrentDestinations(destinations.salesAreas);
+        break;
+      case "VENTA":
+        setCurrentDestinations([]);
+        break;
+    }
   };
 
   const handleRemove = (index: number) => {
@@ -283,20 +376,25 @@ export default function Outflow() {
   const handleConfirmSubmit = () => {
     setShowConfirmDialog(false);
     setIsSubmitting(true);
-    // El formulario se enviará automáticamente
     document
       .getElementById("submit-form")
       ?.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
   };
 
-  const totalAmount = rows.reduce((sum, row) => sum + (row.amount || 0), 0);
+  const totalAmount = rows.reduce((sum, row) => sum + (row.costAmount || 0), 0);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       {/* Form */}
       <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <div className="flex flex-col gap-2">
+          <input
+            name="userId"
+            defaultValue={user.id}
+            className="hidden"
+            required
+          />
+          <div className="grid gap-2">
             <Label htmlFor="date" className="pl-1">
               Fecha
             </Label>
@@ -308,79 +406,101 @@ export default function Outflow() {
               required
             />
           </div>
+          {warehouses.length > 1 && (
+            <div className="grid gap-2">
+              <Label htmlFor="warehouseId" className="pl-1">
+                Almacén
+              </Label>
+              <Combobox
+                name="warehouseId"
+                className="w-full min-w-40"
+                classNameOptions="w-full min-w-40"
+                options={warehouses.map((wh) => ({
+                  value: wh.id,
+                  label: wh.name,
+                }))}
+                value={formValues.warehouseId}
+                onChange={(value) => {
+                  const wh = warehouses.find((w) => w.id === value);
+                  if (wh) {
+                    handleChange("warehouseId", value);
+                    setFormValues((prev) => ({
+                      ...prev,
+                      warehouseName: wh.name,
+                    }));
+                  }
+                }}
+                required
+              />
+            </div>
+          )}
           <div className="grid gap-2">
-            <Label htmlFor="in_type" className="pl-1">
+            <Label htmlFor="outType" className="pl-1">
               Tipo de Salida
             </Label>
             <SelectList
-              name="in_type"
+              name="outType"
               className="w-full min-w-40"
-              options={inTypeOptions}
-              value={formValues.type}
-              onChange={(value) => handleChange("type", value)}
+              options={outTypeOptions}
+              value={formValues.outType}
+              onChange={(value) => handleChange("outType", value)}
               required
             />
           </div>
+          {formValues.outType !== "VENTA" && (
+            <div className="grid gap-2">
+              <Label htmlFor="destination" className="pl-1">
+                Destino
+              </Label>
+              <Combobox
+                name="destination"
+                className="w-full min-w-40"
+                classNameOptions="w-full min-w-40"
+                options={currentDestinations.map((dest) => ({
+                  value: dest.id,
+                  label: dest.name,
+                }))}
+                value={formValues.destinationId}
+                onChange={(value) => {
+                  const dest = currentDestinations.find((d) => d.id === value);
+                  if (dest) {
+                    handleChange("destinationId", dest.id);
+                    setFormValues((prev) => ({
+                      ...prev,
+                      destinationName: dest.name,
+                    }));
+                  }
+                }}
+                required
+              />
+            </div>
+          )}
+          {formValues.outType === "VENTA" && (
+            <div className="grid gap-2">
+              <Label htmlFor="payMethod" className="pl-1">
+                Método de Pago
+              </Label>
+              <SelectList
+                name="payMethod"
+                className="w-full min-w-40"
+                options={payMethods}
+                value={formValues.payMethod}
+                onChange={(value) => handleChange("payMethod", value)}
+                required
+              />
+            </div>
+          )}
           <div className="grid gap-2">
-            <Label htmlFor="provider" className="pl-1">
-              Destino
-            </Label>
-            <Combobox
-              name="end_area_id"
-              className="w-full min-w-40"
-              classNameOptions="w-full min-w-40"
-              options={areas.map((area) => ({
-                value: area.id,
-                label: area.name,
-              }))}
-              value={formValues.providerId}
-              onChange={(value) => {
-                const prov = providers.find((p) => p.id === value);
-                if (prov) {
-                  handleChange("providerId", prov.id);
-                  handleChange("providerName", prov.name);
-                }
-              }}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="pay_type" className="pl-1">
-              Método de Pago
-            </Label>
-            <SelectList
-              name="payment"
-              className="w-full min-w-40"
-              options={payTypeOptions}
-              value={formValues.payment}
-              onChange={(value) => handleChange("payment", value)}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="in_number" className="pl-1">
-              No. de Factura
+            <Label htmlFor="outNumber" className="pl-1">
+              No. de Salida
             </Label>
             <Input
-              id="in_number"
-              name="in_number"
-              value={formValues.in_number}
+              id="outNumber"
+              name="outNumber"
+              value={formValues.outNumber}
               onChange={(event) =>
-                handleChange("in_number", event.target.value)
+                handleChange("outNumber", event.target.value)
               }
-              className="w-full min-w-40"
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="serial" className="pl-1">
-              No. Consecutivo
-            </Label>
-            <Input
-              id="serial"
-              name="serial"
-              value={formValues.serial}
-              onChange={(event) => handleChange("serial", event.target.value)}
               className="w-full min-w-40"
               required
             />
@@ -393,16 +513,18 @@ export default function Outflow() {
               name="product"
               className="w-full min-w-40"
               classNameOptions="w-full min-w-40"
-              options={products.map((prod) => ({
-                value: prod.id,
-                label: prod.name,
-              }))}
+              options={products
+                .filter((prod) => prod.warehouseId === formValues.warehouseId)
+                .map((prod) => ({ value: prod.id, label: prod.name }))}
               value={formValues.productId}
               onChange={(value) => {
                 const prod = products.find((p) => p.id === value);
                 if (prod) {
                   handleChange("productId", prod.id);
-                  handleChange("productName", prod.name);
+                  setFormValues((prev) => ({
+                    ...prev,
+                    productName: prod.name,
+                  }));
                 }
               }}
               required
@@ -433,22 +555,22 @@ export default function Outflow() {
           >
             {editIndex !== null ? (
               <div className="flex items-center gap-2">
-                Cancelar <IconCancel />
+                Cancelar <Ban />
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                Limpiar <IconClearAll />
+                Borrar <Eraser />
               </div>
             )}
           </Button>
-          <Button type="submit" className="min-w-32 cursor-pointer">
+          <Button type="submit" className="min-w-32">
             {editIndex !== null ? (
               <div className="flex items-center gap-2">
-                Guardar <IconEdit />
+                Guardar <Save />
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                Agregar <IconPlus />
+                Agregar <Plus />
               </div>
             )}
           </Button>
@@ -464,14 +586,15 @@ export default function Outflow() {
           <TableHeader>
             <TableRow>
               <TableHead>Fecha</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Proveedor</TableHead>
-              <TableHead>Pago</TableHead>
-              <TableHead>Factura</TableHead>
-              <TableHead>Consecutivo</TableHead>
+              {warehouses.length > 1 && <TableHead>Almacén</TableHead>}
+              <TableHead>Tipo de Salida</TableHead>
+              <TableHead>Destino</TableHead>
+              <TableHead>Método de Pago</TableHead>
+              <TableHead>No. de Salida</TableHead>
               <TableHead>Producto</TableHead>
-              <TableHead className="text-right">Cantidad</TableHead>
-              <TableHead className="text-right">Importe</TableHead>
+              <TableHead>Cantidad</TableHead>
+              <TableHead>Importe de Costo</TableHead>
+              <TableHead>Importe de Venta</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -479,10 +602,10 @@ export default function Outflow() {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={10}
+                  colSpan={warehouses.length > 1 ? 10 : 9}
                   className="text-center text-muted-foreground py-8"
                 >
-                  No hay entradas agregadas. Complete el formulario y haga clic
+                  No hay salidas agregadas. Complete el formulario y haga clic
                   en "Agregar".
                 </TableCell>
               </TableRow>
@@ -490,16 +613,17 @@ export default function Outflow() {
               rows.map((row, index) => (
                 <TableRow key={index}>
                   <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.type}</TableCell>
-                  <TableCell>{row.providerName}</TableCell>
-                  <TableCell>{row.payment}</TableCell>
-                  <TableCell>{row.in_number}</TableCell>
-                  <TableCell>{row.serial}</TableCell>
+                  {warehouses.length > 1 && (
+                    <TableCell>{row.warehouseName}</TableCell>
+                  )}
+                  <TableCell>{row.outType}</TableCell>
+                  <TableCell>{row.destinationName}</TableCell>
+                  <TableCell>{row.payMethod || "-"}</TableCell>
+                  <TableCell>{row.outNumber}</TableCell>
                   <TableCell>{row.productName}</TableCell>
-                  <TableCell className="text-right">{row.quantity}</TableCell>
-                  <TableCell className="text-right">
-                    ${row.amount?.toFixed(2) ?? "0.00"}
-                  </TableCell>
+                  <TableCell>{row.quantity}</TableCell>
+                  <TableCell>${row.costAmount?.toFixed(2) ?? "0.00"}</TableCell>
+                  <TableCell>${row.saleAmount?.toFixed(2) ?? "0.00"}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button
@@ -509,7 +633,7 @@ export default function Outflow() {
                         onClick={() => handleEdit(index)}
                         title="Editar"
                       >
-                        <IconEdit className="w-4 h-4" />
+                        <PencilLine />
                       </Button>
                       <Button
                         className="cursor-pointer"
@@ -518,7 +642,7 @@ export default function Outflow() {
                         onClick={() => handleRemove(index)}
                         title="Eliminar"
                       >
-                        <IconTrash className="w-4 h-4" />
+                        <Trash2 />
                       </Button>
                     </div>
                   </TableCell>
@@ -532,16 +656,15 @@ export default function Outflow() {
       {/* Summary and Submit */}
       <div className="flex justify-between items-center">
         <div className="text-lg font-semibold">
-          Total: ${totalAmount.toFixed(2)} ({rows.length} entrada
+          Total: ${totalAmount.toFixed(2)} ({rows.length} salida
           {rows.length !== 1 ? "s" : ""})
         </div>
         <Button
-          type="button"
           className="min-w-32 cursor-pointer"
           disabled={rows.length === 0 || editIndex !== null || isSubmitting}
           onClick={() => setShowConfirmDialog(true)}
         >
-          {isSubmitting ? "Procesando..." : "Contabilizar"} <IconCalculator />
+          {isSubmitting ? "Procesando..." : "Contabilizar"} <Calculator />
         </Button>
       </div>
 
@@ -551,12 +674,12 @@ export default function Outflow() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Confirmar contabilización?</AlertDialogTitle>
             <AlertDialogDescription>
-              Está a punto de contabilizar <strong>{rows.length}</strong>{" "}
-              entrada{rows.length !== 1 ? "s" : ""} por un total de{" "}
+              Está a punto de contabilizar <strong>{rows.length}</strong> salida
+              {rows.length !== 1 ? "s" : ""} por un total de{" "}
               <strong>${totalAmount.toFixed(2)}</strong>.
               <br />
               <br />
-              Esta acción registrará las entradas en el sistema de manera
+              Esta acción registrará las salidas en el sistema de manera
               permanente.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -8,7 +8,7 @@ CREATE TABLE "User" (
     "role" TEXT NOT NULL DEFAULT 'user',
     "profileCompleted" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -18,11 +18,11 @@ CREATE TABLE "Session" (
     "id" TEXT NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "token" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
     "ipAddress" TEXT,
     "userAgent" TEXT,
     "userId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
@@ -53,7 +53,7 @@ CREATE TABLE "Verification" (
     "value" TEXT NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Verification_pkey" PRIMARY KEY ("id")
 );
@@ -65,7 +65,7 @@ CREATE TABLE "Phone" (
     "isPrimary" BOOLEAN NOT NULL DEFAULT false,
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Phone_pkey" PRIMARY KEY ("id")
 );
@@ -74,33 +74,29 @@ CREATE TABLE "Phone" (
 CREATE TABLE "Store" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Store_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "UserStore" (
-    "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "storeId" TEXT NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "UserStore_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "UserStore_pkey" PRIMARY KEY ("userId","storeId")
 );
 
 -- CreateTable
 CREATE TABLE "Warehouse" (
     "id" TEXT NOT NULL,
-    "storeId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "storeId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Warehouse_pkey" PRIMARY KEY ("id")
 );
@@ -108,11 +104,10 @@ CREATE TABLE "Warehouse" (
 -- CreateTable
 CREATE TABLE "SalesArea" (
     "id" TEXT NOT NULL,
-    "storeId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "storeId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "SalesArea_pkey" PRIMARY KEY ("id")
 );
@@ -122,7 +117,7 @@ CREATE TABLE "Code" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Code_pkey" PRIMARY KEY ("id")
 );
@@ -131,12 +126,14 @@ CREATE TABLE "Code" (
 CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
     "codeId" TEXT NOT NULL,
+    "warehouseId" TEXT,
+    "salesAreaId" TEXT,
     "name" TEXT NOT NULL,
     "costPrice" DECIMAL(10,2) NOT NULL,
     "salePrice" DECIMAL(10,2) NOT NULL,
     "unit" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
 );
@@ -145,58 +142,78 @@ CREATE TABLE "Product" (
 CREATE TABLE "Company" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "isProvider" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Company_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Inflow" (
+CREATE TABLE "WarehouseInventory" (
     "id" TEXT NOT NULL,
     "warehouseId" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
-    "date" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "providerId" TEXT,
-    "payment" TEXT NOT NULL,
-    "inNumber" TEXT NOT NULL,
-    "serial" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL DEFAULT 0,
-    "amount" DECIMAL(10,2) NOT NULL,
+    "minStock" INTEGER DEFAULT 0,
+    "maxStock" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WarehouseInventory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SalesAreaInventory" (
+    "id" TEXT NOT NULL,
+    "salesAreaId" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL DEFAULT 0,
+    "minStock" INTEGER DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SalesAreaInventory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Inflow" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "warehouseId" TEXT NOT NULL,
+    "date" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "inType" TEXT NOT NULL,
+    "providerCompanyId" TEXT,
+    "providerStoreId" TEXT,
+    "payMethod" TEXT,
+    "invoiceNumber" TEXT,
+    "inNumber" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL DEFAULT 0,
+    "costAmount" DECIMAL(10,2) NOT NULL,
+    "saleAmount" DECIMAL(10,2) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Inflow_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Withdraw" (
-    "id" TEXT NOT NULL,
-    "areaId" TEXT NOT NULL,
-    "date" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "amount" DECIMAL(10,2) NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Withdraw_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Outflow" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "warehouseId" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
     "date" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "endAreaId" TEXT,
-    "endStoreId" TEXT,
+    "outType" TEXT NOT NULL,
+    "destinationStoreId" TEXT,
+    "destinationSalesAreaId" TEXT,
+    "payMethod" TEXT,
     "outNumber" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL DEFAULT 0,
-    "amount" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "saleAmount" DECIMAL(10,2) NOT NULL,
+    "costAmount" DECIMAL(10,2) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Outflow_pkey" PRIMARY KEY ("id")
 );
@@ -204,28 +221,65 @@ CREATE TABLE "Outflow" (
 -- CreateTable
 CREATE TABLE "Sale" (
     "id" TEXT NOT NULL,
-    "areaId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "salesAreaId" TEXT NOT NULL,
     "date" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "payment" TEXT NOT NULL,
+    "payMethod" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL DEFAULT 0,
+    "saleAmount" DECIMAL(10,2) NOT NULL,
+    "costAmount" DECIMAL(10,2) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Sale_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Withdraw" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "salesAreaId" TEXT NOT NULL,
+    "date" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "amount" DECIMAL(10,2) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Withdraw_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "User_email_idx" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_role_idx" ON "User"("role");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Session_token_key" ON "Session"("token");
+
+-- CreateIndex
+CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+
+-- CreateIndex
+CREATE INDEX "Session_token_idx" ON "Session"("token");
+
+-- CreateIndex
+CREATE INDEX "Account_userId_idx" ON "Account"("userId");
+
+-- CreateIndex
+CREATE INDEX "Account_accountId_providerId_idx" ON "Account"("accountId", "providerId");
+
+-- CreateIndex
+CREATE INDEX "Verification_identifier_idx" ON "Verification"("identifier");
 
 -- CreateIndex
 CREATE INDEX "Phone_userId_idx" ON "Phone"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Phone_userId_number_key" ON "Phone"("userId", "number");
+CREATE INDEX "Phone_number_idx" ON "Phone"("number");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Store_name_key" ON "Store"("name");
@@ -240,22 +294,13 @@ CREATE INDEX "UserStore_userId_idx" ON "UserStore"("userId");
 CREATE INDEX "UserStore_storeId_idx" ON "UserStore"("storeId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserStore_userId_storeId_key" ON "UserStore"("userId", "storeId");
-
--- CreateIndex
 CREATE INDEX "Warehouse_storeId_idx" ON "Warehouse"("storeId");
-
--- CreateIndex
-CREATE INDEX "Warehouse_name_idx" ON "Warehouse"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Warehouse_name_storeId_key" ON "Warehouse"("name", "storeId");
 
 -- CreateIndex
 CREATE INDEX "SalesArea_storeId_idx" ON "SalesArea"("storeId");
-
--- CreateIndex
-CREATE INDEX "SalesArea_name_idx" ON "SalesArea"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SalesArea_name_storeId_key" ON "SalesArea"("name", "storeId");
@@ -270,10 +315,10 @@ CREATE INDEX "Code_name_idx" ON "Code"("name");
 CREATE UNIQUE INDEX "Product_name_key" ON "Product"("name");
 
 -- CreateIndex
-CREATE INDEX "Product_name_idx" ON "Product"("name");
+CREATE INDEX "Product_codeId_idx" ON "Product"("codeId");
 
 -- CreateIndex
-CREATE INDEX "Product_codeId_idx" ON "Product"("codeId");
+CREATE INDEX "Product_name_idx" ON "Product"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Company_name_key" ON "Company"("name");
@@ -282,22 +327,52 @@ CREATE UNIQUE INDEX "Company_name_key" ON "Company"("name");
 CREATE INDEX "Company_name_idx" ON "Company"("name");
 
 -- CreateIndex
+CREATE INDEX "WarehouseInventory_warehouseId_idx" ON "WarehouseInventory"("warehouseId");
+
+-- CreateIndex
+CREATE INDEX "WarehouseInventory_productId_idx" ON "WarehouseInventory"("productId");
+
+-- CreateIndex
+CREATE INDEX "WarehouseInventory_quantity_idx" ON "WarehouseInventory"("quantity");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "WarehouseInventory_warehouseId_productId_key" ON "WarehouseInventory"("warehouseId", "productId");
+
+-- CreateIndex
+CREATE INDEX "SalesAreaInventory_salesAreaId_idx" ON "SalesAreaInventory"("salesAreaId");
+
+-- CreateIndex
+CREATE INDEX "SalesAreaInventory_productId_idx" ON "SalesAreaInventory"("productId");
+
+-- CreateIndex
+CREATE INDEX "SalesAreaInventory_quantity_idx" ON "SalesAreaInventory"("quantity");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SalesAreaInventory_salesAreaId_productId_key" ON "SalesAreaInventory"("salesAreaId", "productId");
+
+-- CreateIndex
+CREATE INDEX "Inflow_userId_idx" ON "Inflow"("userId");
+
+-- CreateIndex
 CREATE INDEX "Inflow_warehouseId_idx" ON "Inflow"("warehouseId");
 
 -- CreateIndex
 CREATE INDEX "Inflow_productId_idx" ON "Inflow"("productId");
 
 -- CreateIndex
-CREATE INDEX "Inflow_providerId_idx" ON "Inflow"("providerId");
+CREATE INDEX "Inflow_providerCompanyId_idx" ON "Inflow"("providerCompanyId");
+
+-- CreateIndex
+CREATE INDEX "Inflow_providerStoreId_idx" ON "Inflow"("providerStoreId");
 
 -- CreateIndex
 CREATE INDEX "Inflow_date_idx" ON "Inflow"("date");
 
 -- CreateIndex
-CREATE INDEX "Withdraw_areaId_idx" ON "Withdraw"("areaId");
+CREATE INDEX "Inflow_inType_idx" ON "Inflow"("inType");
 
 -- CreateIndex
-CREATE INDEX "Withdraw_date_idx" ON "Withdraw"("date");
+CREATE INDEX "Outflow_userId_idx" ON "Outflow"("userId");
 
 -- CreateIndex
 CREATE INDEX "Outflow_warehouseId_idx" ON "Outflow"("warehouseId");
@@ -306,22 +381,40 @@ CREATE INDEX "Outflow_warehouseId_idx" ON "Outflow"("warehouseId");
 CREATE INDEX "Outflow_productId_idx" ON "Outflow"("productId");
 
 -- CreateIndex
-CREATE INDEX "Outflow_endAreaId_idx" ON "Outflow"("endAreaId");
+CREATE INDEX "Outflow_destinationStoreId_idx" ON "Outflow"("destinationStoreId");
 
 -- CreateIndex
-CREATE INDEX "Outflow_endStoreId_idx" ON "Outflow"("endStoreId");
+CREATE INDEX "Outflow_destinationSalesAreaId_idx" ON "Outflow"("destinationSalesAreaId");
 
 -- CreateIndex
 CREATE INDEX "Outflow_date_idx" ON "Outflow"("date");
 
 -- CreateIndex
-CREATE INDEX "Sale_areaId_idx" ON "Sale"("areaId");
+CREATE INDEX "Outflow_outType_idx" ON "Outflow"("outType");
+
+-- CreateIndex
+CREATE INDEX "Sale_userId_idx" ON "Sale"("userId");
+
+-- CreateIndex
+CREATE INDEX "Sale_salesAreaId_idx" ON "Sale"("salesAreaId");
 
 -- CreateIndex
 CREATE INDEX "Sale_productId_idx" ON "Sale"("productId");
 
 -- CreateIndex
 CREATE INDEX "Sale_date_idx" ON "Sale"("date");
+
+-- CreateIndex
+CREATE INDEX "Sale_payMethod_idx" ON "Sale"("payMethod");
+
+-- CreateIndex
+CREATE INDEX "Withdraw_userId_idx" ON "Withdraw"("userId");
+
+-- CreateIndex
+CREATE INDEX "Withdraw_salesAreaId_idx" ON "Withdraw"("salesAreaId");
+
+-- CreateIndex
+CREATE INDEX "Withdraw_date_idx" ON "Withdraw"("date");
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -348,31 +441,64 @@ ALTER TABLE "SalesArea" ADD CONSTRAINT "SalesArea_storeId_fkey" FOREIGN KEY ("st
 ALTER TABLE "Product" ADD CONSTRAINT "Product_codeId_fkey" FOREIGN KEY ("codeId") REFERENCES "Code"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Product" ADD CONSTRAINT "Product_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Product" ADD CONSTRAINT "Product_salesAreaId_fkey" FOREIGN KEY ("salesAreaId") REFERENCES "SalesArea"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WarehouseInventory" ADD CONSTRAINT "WarehouseInventory_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WarehouseInventory" ADD CONSTRAINT "WarehouseInventory_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SalesAreaInventory" ADD CONSTRAINT "SalesAreaInventory_salesAreaId_fkey" FOREIGN KEY ("salesAreaId") REFERENCES "SalesArea"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SalesAreaInventory" ADD CONSTRAINT "SalesAreaInventory_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Inflow" ADD CONSTRAINT "Inflow_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Inflow" ADD CONSTRAINT "Inflow_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Inflow" ADD CONSTRAINT "Inflow_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Inflow" ADD CONSTRAINT "Inflow_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Company"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Inflow" ADD CONSTRAINT "Inflow_providerCompanyId_fkey" FOREIGN KEY ("providerCompanyId") REFERENCES "Company"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Withdraw" ADD CONSTRAINT "Withdraw_areaId_fkey" FOREIGN KEY ("areaId") REFERENCES "SalesArea"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Inflow" ADD CONSTRAINT "Inflow_providerStoreId_fkey" FOREIGN KEY ("providerStoreId") REFERENCES "Store"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Outflow" ADD CONSTRAINT "Outflow_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Outflow" ADD CONSTRAINT "Outflow_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Outflow" ADD CONSTRAINT "Outflow_endAreaId_fkey" FOREIGN KEY ("endAreaId") REFERENCES "SalesArea"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Outflow" ADD CONSTRAINT "Outflow_endStoreId_fkey" FOREIGN KEY ("endStoreId") REFERENCES "Store"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Outflow" ADD CONSTRAINT "Outflow_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Sale" ADD CONSTRAINT "Sale_areaId_fkey" FOREIGN KEY ("areaId") REFERENCES "SalesArea"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Outflow" ADD CONSTRAINT "Outflow_destinationStoreId_fkey" FOREIGN KEY ("destinationStoreId") REFERENCES "Store"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Outflow" ADD CONSTRAINT "Outflow_destinationSalesAreaId_fkey" FOREIGN KEY ("destinationSalesAreaId") REFERENCES "SalesArea"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Sale" ADD CONSTRAINT "Sale_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Sale" ADD CONSTRAINT "Sale_salesAreaId_fkey" FOREIGN KEY ("salesAreaId") REFERENCES "SalesArea"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Sale" ADD CONSTRAINT "Sale_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Withdraw" ADD CONSTRAINT "Withdraw_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Withdraw" ADD CONSTRAINT "Withdraw_salesAreaId_fkey" FOREIGN KEY ("salesAreaId") REFERENCES "SalesArea"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
