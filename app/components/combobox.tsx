@@ -1,6 +1,4 @@
-"use client";
-
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import {
@@ -17,6 +15,7 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { useState } from "react";
+import { ButtonGroup } from "./ui/button-group";
 
 interface ComboboxOption {
   value: string;
@@ -38,7 +37,6 @@ export function Combobox({
   name,
   placeholder = "Selecciona...",
   className,
-  classNameOptions,
   options = [],
   value,
   onChange,
@@ -51,7 +49,7 @@ export function Combobox({
     : placeholder;
 
   return (
-    <>
+    <div className={`${className}`}>
       <input
         id={name}
         type="hidden"
@@ -60,21 +58,33 @@ export function Combobox({
         required={required}
       />
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={`font-normal ${className} ${
-              label ? "justify-between" : "justify-end"
-            }`}
-          >
-            {label}
-            <ChevronsUpDown className="opacity-50" />
+        <ButtonGroup className="w-full">
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="font-normal justify-between flex-1"
+            >
+              <div
+                className={`${
+                  label === placeholder ? "text-muted-foreground" : ""
+                }`}
+              >
+                {label}
+              </div>
+              <ChevronsUpDown />
+            </Button>
+          </PopoverTrigger>
+          <Button type="button" variant="outline">
+            <Plus />
           </Button>
-        </PopoverTrigger>
-        <PopoverContent className={`p-0 ${classNameOptions}`}>
+        </ButtonGroup>
+        <PopoverContent
+          className="p-0 w-(--radix-popover-trigger-width)"
+          align="start"
+        >
           <Command>
             <CommandInput placeholder="Buscar..." className="h-9" />
             <CommandList>
@@ -104,6 +114,6 @@ export function Combobox({
           </Command>
         </PopoverContent>
       </Popover>
-    </>
+    </div>
   );
 }

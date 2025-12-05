@@ -42,7 +42,6 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import type { entry } from "virtual:react-router/server-build";
 
 // Types
 interface InflowRow {
@@ -174,40 +173,37 @@ export async function action({ request }: Route.ActionArgs) {
       };
     });
 
-    await prisma.$transaction(
-      async (tx) => {
-        data.forEach(async (entry) => {
-          await tx.inflow.create({ data: entry });
+    await prisma.$transaction(async (tx) => {
+      data.forEach(async (entry) => {
+        await tx.inflow.create({ data: entry });
 
-          const extingInventory = await tx.warehouseInventory.findUnique({
-            where: {
-              warehouseId_productId: {
-                warehouseId: entry.warehouseId,
-                productId: entry.productId,
-              },
+        const extingInventory = await tx.warehouseInventory.findUnique({
+          where: {
+            warehouseId_productId: {
+              warehouseId: entry.warehouseId,
+              productId: entry.productId,
+            },
+          },
+        });
+
+        if (extingInventory) {
+          await tx.warehouseInventory.update({
+            where: { id: extingInventory.id },
+            data: { quantity: { increment: entry.quantity } },
+          });
+        } else {
+          // Si no existe, crear nuevo registro de inventario
+          await tx.warehouseInventory.create({
+            data: {
+              warehouseId: entry.warehouseId,
+              productId: entry.productId,
+              quantity: entry.quantity,
+              minStock: 0,
             },
           });
-
-          if (extingInventory) {
-            await tx.warehouseInventory.update({
-              where: { id: extingInventory.id },
-              data: { quantity: { increment: entry.quantity } },
-            });
-          } else {
-            // Si no existe, crear nuevo registro de inventario
-            await tx.warehouseInventory.create({
-              data: {
-                warehouseId: entry.warehouseId,
-                productId: entry.productId,
-                quantity: entry.quantity,
-                minStock: 0,
-              },
-            });
-          }
-        });
-      }
-      // data.map((entry) => prisma.inflow.create({ data: entry }))
-    );
+        }
+      });
+    });
 
     return redirect("/main/warehouse/inflow?success=1");
   } catch (error: any) {
@@ -414,7 +410,6 @@ export default function Inflow() {
               <Combobox
                 name="warehouseId"
                 className="w-full min-w-40"
-                classNameOptions="w-full min-w-40"
                 options={warehouses.map((wh) => ({
                   value: wh.id,
                   label: wh.name,
@@ -454,7 +449,6 @@ export default function Inflow() {
             <Combobox
               name="provider"
               className="w-full min-w-40"
-              classNameOptions="w-full min-w-40"
               options={currentProviders.map((prov) => ({
                 value: prov.id,
                 label: prov.name,
@@ -510,7 +504,6 @@ export default function Inflow() {
             <Combobox
               name="product"
               className="w-full min-w-40"
-              classNameOptions="w-full min-w-40"
               options={products.map((prod) => ({
                 value: prod.id,
                 label: prod.name,
