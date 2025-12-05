@@ -14,39 +14,57 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ButtonGroup } from "./ui/button-group";
+import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 
 interface ComboboxOption {
   value: string;
   label: string;
 }
 
+interface DialogContentProps {
+  onClose: (shouldClose: boolean) => void;
+  onSuccess: (newOption: ComboboxOption) => void;
+}
+
+type DialogContentType = ReactNode | ((props: DialogContentProps) => ReactNode);
+
 interface ComboboxProps {
   name?: string;
   placeholder?: string;
   className?: string;
-  classNameOptions?: string;
   options?: ComboboxOption[];
   value?: string;
   onChange?: (value: string) => void;
+  dialogContent?: DialogContentType;
+  onDialogSuccess?: (newOption: ComboboxOption) => void;
+  showAddButton?: boolean;
   required?: boolean;
 }
 
-export function Combobox({
+export function ComboboxPlus({
   name,
   placeholder = "Selecciona...",
   className,
   options = [],
   value,
   onChange,
+  dialogContent,
+  onDialogSuccess,
+  showAddButton = false,
   required = false,
 }: ComboboxProps) {
   const [open, setOpen] = useState<boolean>(false);
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
   const label = value
     ? options.find((opt) => opt.value === value)?.label
     : placeholder;
+
+  const handleDialogClose = (shouldClose: boolean) => {
+    setDialogOpen(!shouldClose);
+  };
 
   return (
     <div className={`${className}`}>
@@ -77,9 +95,26 @@ export function Combobox({
               <ChevronsUpDown />
             </Button>
           </PopoverTrigger>
-          <Button type="button" variant="outline">
-            <Plus />
-          </Button>
+          {showAddButton && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="outline">
+                  <Plus />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                {dialogContent && typeof dialogContent === "function"
+                  ? dialogContent({
+                      onClose: handleDialogClose,
+                      onSuccess: (newOption: ComboboxOption) => {
+                        onDialogSuccess?.(newOption);
+                        setDialogOpen(false);
+                      },
+                    })
+                  : dialogContent}
+              </DialogContent>
+            </Dialog>
+          )}
         </ButtonGroup>
         <PopoverContent
           className="p-0 w-(--radix-popover-trigger-width)"

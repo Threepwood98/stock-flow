@@ -30,7 +30,7 @@ import {
 import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
-import { Combobox } from "~/components/combobox";
+import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/inflow";
 import { prisma } from "~/lib/prisma";
 import {
@@ -411,7 +411,7 @@ export default function Outflow() {
               <Label htmlFor="warehouseId" className="pl-1">
                 Almacén
               </Label>
-              <Combobox
+              <ComboboxPlus
                 name="warehouseId"
                 className="w-full min-w-40"
                 classNameOptions="w-full min-w-40"
@@ -452,7 +452,7 @@ export default function Outflow() {
               <Label htmlFor="destination" className="pl-1">
                 Destino
               </Label>
-              <Combobox
+              <ComboboxPlus
                 name="destination"
                 className="w-full min-w-40"
                 classNameOptions="w-full min-w-40"
@@ -509,7 +509,7 @@ export default function Outflow() {
             <Label htmlFor="product" className="pl-1">
               Producto
             </Label>
-            <Combobox
+            <ComboboxPlus
               name="product"
               className="w-full min-w-40"
               classNameOptions="w-full min-w-40"
