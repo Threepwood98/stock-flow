@@ -30,7 +30,7 @@ import {
 import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
-import { ComboboxPlus } from "~/components/combobox-plus";
+import { ComboboxPlus, type ComboboxOption } from "~/components/combobox-plus";
 import type { Route } from "./+types/inflow";
 import { prisma } from "~/lib/prisma";
 import {
@@ -42,18 +42,20 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
+import { AddProvider } from "~/components/add-provider";
+import { AddProduct } from "~/components/add-product";
 
 // Types
-interface OutflowRow {
+interface InflowRow {
   userId: string;
   warehouseId: string;
   warehouseName: string;
   date: string;
-  outType: string;
-  destinationId: string;
-  destinationName: string;
-  payMethod: string;
-  outNumber: string;
+  inType: string;
+  providerId: string;
+  providerName: string;
+  invoiceNumber: string;
+  inNumber: string;
   productId: string;
   productName: string;
   quantity: string;
@@ -66,7 +68,7 @@ interface Warehouse {
   name: string;
 }
 
-interface Destination {
+interface Provider {
   id: string;
   name: string;
 }
@@ -74,45 +76,43 @@ interface Destination {
 interface Product {
   id: string;
   name: string;
-  warehouseId: string;
   costPrice: { d: Number };
   salePrice: { d: Number };
+}
+
+export interface Code {
+  id: string;
+  name: string;
 }
 
 interface OutletContext {
   user: any;
   selectedStoreId: string;
   warehouses: Warehouse[];
-  destinations: {
-    stores: Destination[];
-    salesAreas: Destination[];
+  providers: {
+    companies: Provider[];
+    stores: Provider[];
   };
   products: Product[];
+  codes: Code[];
 }
 
 // Constants
-const outTypeOptions = [
+const inTypeOptions = [
+  { value: "FACTURA", label: "Por Factura" },
   { value: "TRASLADO", label: "Por Traslado" },
-  { value: "VALE", label: "Por Vale" },
-  { value: "VENTA", label: "Por Venta" },
 ];
 
-const payMethods = [
-  { value: "EFECTIVO", label: "EFECTIVO" },
-  { value: "TRANSFERMOVIL", label: "TRANSFERMOVIL" },
-  { value: "ENZONA", label: "ENZONA" },
-];
-
-const initialFormValues: OutflowRow = {
+const initialFormValues: InflowRow = {
   userId: "",
   warehouseId: "",
   warehouseName: "",
   date: format(new Date(), "dd/MM/yyyy"),
-  outType: "",
-  destinationId: "",
-  destinationName: "",
-  payMethod: "",
-  outNumber: "",
+  inType: "",
+  providerId: "",
+  providerName: "",
+  invoiceNumber: "",
+  inNumber: "",
   productId: "",
   productName: "",
   quantity: "",
@@ -132,7 +132,7 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  let rows: OutflowRow[];
+  let rows: InflowRow[];
   try {
     rows = JSON.parse(rawRows as string);
   } catch {
@@ -162,19 +162,18 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Cantidad inválida: ${row.quantity}`);
       }
 
-      const isTRASLADO = row.outType === "TRASLADO";
-      const isVALE = row.outType === "VALE";
-      const isVENTA = row.outType === "VENTA";
+      const isFACTURA = row.inType === "FACTURA";
 
       return {
         userId: row.userId,
         warehouseId: row.warehouseId,
-        outType: row.outType,
+        inType: row.inType,
         date: parsedDate,
-        destinationStoreId: isTRASLADO ? row.destinationId : null,
-        destinationSalesAreaId: isVALE ? row.destinationId : null,
-        payMethod: isVENTA ? row.payMethod : null,
-        outNumber: row.outNumber,
+        providerCompanyId: isFACTURA ? row.providerId : null,
+        providerStoreId: !isFACTURA ? row.providerId : null,
+        payMethod: isFACTURA ? "CHEQUE" : null,
+        invoiceNumber: isFACTURA ? row.invoiceNumber : null,
+        inNumber: row.inNumber,
         productId: row.productId,
         quantity,
         costAmount: row.costAmount ? Number(row.costAmount) : 0,
@@ -182,11 +181,40 @@ export async function action({ request }: Route.ActionArgs) {
       };
     });
 
-    await prisma.$transaction(
-      data.map((entry) => prisma.outflow.create({ data: entry }))
-    );
+    await prisma.$transaction(async (tx) => {
+      await Promise.all(
+        data.map(async (entry) => {
+          await tx.inflow.create({ data: entry });
 
-    return redirect("/main/warehouse/outflow?success=1");
+          const extingInventory = await tx.warehouseInventory.findUnique({
+            where: {
+              warehouseId_productId: {
+                warehouseId: entry.warehouseId,
+                productId: entry.productId,
+              },
+            },
+          });
+
+          if (extingInventory) {
+            await tx.warehouseInventory.update({
+              where: { id: extingInventory.id },
+              data: { quantity: { increment: entry.quantity } },
+            });
+          } else {
+            await tx.warehouseInventory.create({
+              data: {
+                warehouseId: entry.warehouseId,
+                productId: entry.productId,
+                quantity: entry.quantity,
+                minStock: 0,
+              },
+            });
+          }
+        })
+      );
+    });
+
+    return redirect("/main/warehouse/inflow?success=1");
   } catch (error: any) {
     console.error("❌ Error al insertar:", error);
     return new Response(
@@ -199,14 +227,19 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 // Component
-export default function Outflow() {
-  const { user, warehouses, destinations, products } =
-    useOutletContext<OutletContext>();
+export default function Inflow() {
+  const {
+    user,
+    warehouses,
+    providers,
+    products: initialProducts,
+    codes,
+  } = useOutletContext<OutletContext>();
 
   const [searchParams] = useSearchParams();
-  const [rows, setRows] = useState<OutflowRow[]>([]);
+  const [rows, setRows] = useState<InflowRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [formValues, setFormValues] = useState<OutflowRow>({
+  const [formValues, setFormValues] = useState<InflowRow>({
     ...initialFormValues,
     userId: user.id,
     warehouseId: warehouses[0]?.id || "",
@@ -214,9 +247,11 @@ export default function Outflow() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [currentDestinations, setCurrentDestinations] = useState<Destination[]>(
-    []
+  const [currentProviders, setCurrentProviders] = useState<Provider[]>([]);
+  const [providerType, setProviderType] = useState<"company" | "store">(
+    "company"
   );
+  const [products, setProducts] = useState<Product[]>(initialProducts);
 
   // Show success notification
   useEffect(() => {
@@ -238,28 +273,23 @@ export default function Outflow() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editIndex]);
 
-  const handleChange = (name: keyof OutflowRow, value: string) => {
+  const handleChange = (name: keyof InflowRow, value: string) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
 
-    if (name === "outType") {
-      switch (value) {
-        case "TRASLADO":
-          setCurrentDestinations(destinations.stores);
-          break;
-        case "VALE":
-          setCurrentDestinations(destinations.salesAreas);
-          break;
-        case "VENTA":
-          setCurrentDestinations([]);
-          break;
+    if (name === "inType") {
+      if (value === "FACTURA") {
+        setCurrentProviders(providers.companies);
+        setProviderType("company");
+      } else if (value === "TRASLADO") {
+        setCurrentProviders(providers.stores);
+        setProviderType("store");
       }
 
       setFormValues((prev) => ({
         ...prev,
-        outType: value,
-        destinationId: "",
-        destinationName: "",
-        payMethod: "",
+        inType: value,
+        providerId: "",
+        providerName: "",
       }));
     }
   };
@@ -295,22 +325,14 @@ export default function Outflow() {
       return;
     }
 
-    if (
-      (formValues.outType === "TRASLADO" || formValues.outType === "VALE") &&
-      !formValues.destinationId
-    ) {
-      toast.error("Debe seleccionar un destino.");
-      return;
-    }
-
-    if (formValues.outType === "VENTA" && !formValues.payMethod) {
-      toast.error("Debe seleccionar un método de pago.");
+    if (!formValues.providerId) {
+      toast.error("Debe seleccionar un proveedor.");
       return;
     }
 
     const amount = calculateAmount(formValues.productId, formValues.quantity);
 
-    const rowWithAmount: OutflowRow = {
+    const rowWithAmount: InflowRow = {
       ...formValues,
       costAmount: amount.costAmount,
       saleAmount: amount.saleAmount,
@@ -336,7 +358,7 @@ export default function Outflow() {
       warehouseId: warehouses[0]?.id || "",
       warehouseName: warehouses[0]?.name || "",
     });
-    setCurrentDestinations([]);
+    setCurrentProviders([]);
   };
 
   const handleCancel = () => {
@@ -347,7 +369,7 @@ export default function Outflow() {
       warehouseName: warehouses[0]?.name || "",
     });
     setEditIndex(null);
-    setCurrentDestinations([]);
+    setCurrentProviders([]);
   };
 
   const handleEdit = (index: number) => {
@@ -355,16 +377,10 @@ export default function Outflow() {
     setFormValues({ ...row });
     setEditIndex(index);
 
-    switch (row.outType) {
-      case "TRASLADO":
-        setCurrentDestinations(destinations.stores);
-        break;
-      case "VALE":
-        setCurrentDestinations(destinations.salesAreas);
-        break;
-      case "VENTA":
-        setCurrentDestinations([]);
-        break;
+    if (row.inType === "FACTURA") {
+      setCurrentProviders(providers.companies);
+    } else if (row.inType === "TRASLADO") {
+      setCurrentProviders(providers.stores);
     }
   };
 
@@ -381,6 +397,43 @@ export default function Outflow() {
       ?.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
   };
 
+  const handleNewProvider = (newProvider: ComboboxOption) => {
+    setCurrentProviders((prev) => [
+      ...prev,
+      {
+        id: newProvider.value,
+        name: newProvider.label,
+      },
+    ]);
+
+    setFormValues((prev) => ({
+      ...prev,
+      providerId: newProvider.value,
+      providerName: newProvider.label,
+    }));
+
+    toast.success("Proveedor agregado y seleccionado exitosamente");
+  };
+
+  const handleNewProduct = (newProduct: ComboboxOption) => {
+    const productToAdd: Product = {
+      id: newProduct.value,
+      name: newProduct.label,
+      costPrice: newProduct.costPrice || { d: 0 },
+      salePrice: newProduct.salePrice || { d: 0 },
+    };
+
+    setProducts((prev) => [...prev, productToAdd]);
+
+    setFormValues((prev) => ({
+      ...prev,
+      productId: newProduct.value,
+      productName: newProduct.label,
+    }));
+
+    toast.success("Producto agregado y seleccionado exitosamente");
+  };
+
   const totalAmount = rows.reduce((sum, row) => sum + (row.costAmount || 0), 0);
 
   return (
@@ -388,12 +441,7 @@ export default function Outflow() {
       {/* Form */}
       <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <input
-            name="userId"
-            defaultValue={user.id}
-            className="hidden"
-            required
-          />
+          <input type="hidden" name="userId" defaultValue={user.id} required />
           <div className="grid gap-2">
             <Label htmlFor="date" className="pl-1">
               Fecha
@@ -414,7 +462,6 @@ export default function Outflow() {
               <ComboboxPlus
                 name="warehouseId"
                 className="w-full min-w-40"
-                classNameOptions="w-full min-w-40"
                 options={warehouses.map((wh) => ({
                   value: wh.id,
                   label: wh.name,
@@ -435,72 +482,74 @@ export default function Outflow() {
             </div>
           )}
           <div className="grid gap-2">
-            <Label htmlFor="outType" className="pl-1">
-              Tipo de Salida
+            <Label htmlFor="type" className="pl-1">
+              Tipo de Entrada
             </Label>
             <SelectList
-              name="outType"
+              name="type"
               className="w-full min-w-40"
-              options={outTypeOptions}
-              value={formValues.outType}
-              onChange={(value) => handleChange("outType", value)}
+              options={inTypeOptions}
+              value={formValues.inType}
+              onChange={(value) => handleChange("inType", value)}
               required
             />
           </div>
-          {formValues.outType !== "VENTA" && (
+          <div className="grid gap-2">
+            <Label htmlFor="provider" className="pl-1">
+              Proveedor
+            </Label>
+            <ComboboxPlus
+              name="provider"
+              className="w-full min-w-40"
+              options={currentProviders.map((prov) => ({
+                value: prov.id,
+                label: prov.name,
+              }))}
+              value={formValues.providerId}
+              onChange={(value) => {
+                const prov = currentProviders.find((p) => p.id === value);
+                if (prov) {
+                  handleChange("providerId", prov.id);
+                  setFormValues((prev) => ({
+                    ...prev,
+                    providerName: prov.name,
+                  }));
+                }
+              }}
+              showAddButton={currentProviders.length > 0}
+              dialogContent={(props) => (
+                <AddProvider {...props} providerType={providerType} />
+              )}
+              onDialogSuccess={handleNewProvider}
+              required
+            />
+          </div>
+          {formValues.inType === "FACTURA" && (
             <div className="grid gap-2">
-              <Label htmlFor="destination" className="pl-1">
-                Destino
+              <Label htmlFor="invoiceNumber" className="pl-1">
+                No. de Factura
               </Label>
-              <ComboboxPlus
-                name="destination"
+              <Input
+                id="invoiceNumber"
+                name="invoiceNumber"
+                value={formValues.invoiceNumber}
+                onChange={(event) =>
+                  handleChange("invoiceNumber", event.target.value)
+                }
                 className="w-full min-w-40"
-                classNameOptions="w-full min-w-40"
-                options={currentDestinations.map((dest) => ({
-                  value: dest.id,
-                  label: dest.name,
-                }))}
-                value={formValues.destinationId}
-                onChange={(value) => {
-                  const dest = currentDestinations.find((d) => d.id === value);
-                  if (dest) {
-                    handleChange("destinationId", dest.id);
-                    setFormValues((prev) => ({
-                      ...prev,
-                      destinationName: dest.name,
-                    }));
-                  }
-                }}
-                required
-              />
-            </div>
-          )}
-          {formValues.outType === "VENTA" && (
-            <div className="grid gap-2">
-              <Label htmlFor="payMethod" className="pl-1">
-                Método de Pago
-              </Label>
-              <SelectList
-                name="payMethod"
-                className="w-full min-w-40"
-                options={payMethods}
-                value={formValues.payMethod}
-                onChange={(value) => handleChange("payMethod", value)}
                 required
               />
             </div>
           )}
           <div className="grid gap-2">
-            <Label htmlFor="outNumber" className="pl-1">
-              No. de Salida
+            <Label htmlFor="inNumber" className="pl-1">
+              No. de Entrada
             </Label>
             <Input
-              id="outNumber"
-              name="outNumber"
-              value={formValues.outNumber}
-              onChange={(event) =>
-                handleChange("outNumber", event.target.value)
-              }
+              id="inNumber"
+              name="inNumber"
+              value={formValues.inNumber}
+              onChange={(event) => handleChange("inNumber", event.target.value)}
               className="w-full min-w-40"
               required
             />
@@ -512,10 +561,10 @@ export default function Outflow() {
             <ComboboxPlus
               name="product"
               className="w-full min-w-40"
-              classNameOptions="w-full min-w-40"
-              options={products
-                .filter((prod) => prod.warehouseId === formValues.warehouseId)
-                .map((prod) => ({ value: prod.id, label: prod.name }))}
+              options={products.map((prod) => ({
+                value: prod.id,
+                label: prod.name,
+              }))}
               value={formValues.productId}
               onChange={(value) => {
                 const prod = products.find((p) => p.id === value);
@@ -527,6 +576,15 @@ export default function Outflow() {
                   }));
                 }
               }}
+              showAddButton
+              dialogContent={(props) => (
+                <AddProduct
+                  {...props}
+                  codes={codes}
+                  warehouseId={formValues.warehouseId}
+                />
+              )}
+              onDialogSuccess={handleNewProduct}
               required
             />
           </div>
@@ -587,10 +645,10 @@ export default function Outflow() {
             <TableRow>
               <TableHead>Fecha</TableHead>
               {warehouses.length > 1 && <TableHead>Almacén</TableHead>}
-              <TableHead>Tipo de Salida</TableHead>
-              <TableHead>Destino</TableHead>
-              <TableHead>Método de Pago</TableHead>
-              <TableHead>No. de Salida</TableHead>
+              <TableHead>Tipo de Entrada</TableHead>
+              <TableHead>Proveedor</TableHead>
+              <TableHead>No. de Factura</TableHead>
+              <TableHead>No. de Entrada</TableHead>
               <TableHead>Producto</TableHead>
               <TableHead>Cantidad</TableHead>
               <TableHead>Importe de Costo</TableHead>
@@ -605,7 +663,7 @@ export default function Outflow() {
                   colSpan={warehouses.length > 1 ? 10 : 9}
                   className="text-center text-muted-foreground py-8"
                 >
-                  No hay salidas agregadas. Complete el formulario y haga clic
+                  No hay entradas agregadas. Complete el formulario y haga clic
                   en "Agregar".
                 </TableCell>
               </TableRow>
@@ -616,10 +674,10 @@ export default function Outflow() {
                   {warehouses.length > 1 && (
                     <TableCell>{row.warehouseName}</TableCell>
                   )}
-                  <TableCell>{row.outType}</TableCell>
-                  <TableCell>{row.destinationName}</TableCell>
-                  <TableCell>{row.payMethod || "-"}</TableCell>
-                  <TableCell>{row.outNumber}</TableCell>
+                  <TableCell>{row.inType}</TableCell>
+                  <TableCell>{row.providerName}</TableCell>
+                  <TableCell>{row.invoiceNumber || "-"}</TableCell>
+                  <TableCell>{row.inNumber}</TableCell>
                   <TableCell>{row.productName}</TableCell>
                   <TableCell>{row.quantity}</TableCell>
                   <TableCell>${row.costAmount?.toFixed(2) ?? "0.00"}</TableCell>
@@ -656,7 +714,7 @@ export default function Outflow() {
       {/* Summary and Submit */}
       <div className="flex justify-between items-center">
         <div className="text-lg font-semibold">
-          Total: ${totalAmount.toFixed(2)} ({rows.length} salida
+          Total: ${totalAmount.toFixed(2)} ({rows.length} entrada
           {rows.length !== 1 ? "s" : ""})
         </div>
         <Button
@@ -674,12 +732,12 @@ export default function Outflow() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Confirmar contabilización?</AlertDialogTitle>
             <AlertDialogDescription>
-              Está a punto de contabilizar <strong>{rows.length}</strong> salida
-              {rows.length !== 1 ? "s" : ""} por un total de{" "}
+              Está a punto de contabilizar <strong>{rows.length}</strong>{" "}
+              entrada{rows.length !== 1 ? "s" : ""} por un total de{" "}
               <strong>${totalAmount.toFixed(2)}</strong>.
               <br />
               <br />
-              Esta acción registrará las salidas en el sistema de manera
+              Esta acción registrará las entradas en el sistema de manera
               permanente.
             </AlertDialogDescription>
           </AlertDialogHeader>

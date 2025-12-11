@@ -70,11 +70,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
 
-  return { user, userStores, companies, products };
+  const codes = await prisma.code.findMany({ orderBy: { name: "asc" } });
+
+  return { user, userStores, companies, products, codes };
 }
 
 export default function Main({ loaderData }: Route.ComponentProps) {
-  const { user, userStores, companies, products } = loaderData;
+  const { user, userStores, companies, products, codes } = loaderData;
 
   const [selectedStoreId, setSelectedStoreId] = useState(
     userStores[0]?.storeId || ""
@@ -115,16 +117,14 @@ export default function Main({ loaderData }: Route.ComponentProps) {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            {userStores.length === 1 && (
-              <p className="text-lg">{userStores[0].store.name}</p>
-            )}
+            {userStores.length === 1 && <p>{userStores[0].store.name}</p>}
             {userStores.length > 1 && (
               <Select
                 defaultValue={selectedStoreId}
                 onValueChange={setSelectedStoreId}
               >
                 <SelectTrigger
-                  className="w-64 text-lg"
+                  className="w-64"
                   style={{ color: "oklch(0.205 0 0)" }}
                 >
                   <SelectValue />
@@ -151,6 +151,7 @@ export default function Main({ loaderData }: Route.ComponentProps) {
             providers,
             destinations,
             products,
+            codes
           }}
         />
       </SidebarInset>

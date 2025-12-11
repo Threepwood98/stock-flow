@@ -18,9 +18,11 @@ import { useState, type ReactNode } from "react";
 import { ButtonGroup } from "./ui/button-group";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 
-interface ComboboxOption {
+export interface ComboboxOption {
   value: string;
   label: string;
+  costPrice?: { d: Number };
+  salePrice?: { d: Number };
 }
 
 interface DialogContentProps {
@@ -37,9 +39,9 @@ interface ComboboxProps {
   options?: ComboboxOption[];
   value?: string;
   onChange?: (value: string) => void;
+  showAddButton?: boolean;
   dialogContent?: DialogContentType;
   onDialogSuccess?: (newOption: ComboboxOption) => void;
-  showAddButton?: boolean;
   required?: boolean;
 }
 
@@ -50,9 +52,9 @@ export function ComboboxPlus({
   options = [],
   value,
   onChange,
+  showAddButton = false,
   dialogContent,
   onDialogSuccess,
-  showAddButton = false,
   required = false,
 }: ComboboxProps) {
   const [open, setOpen] = useState<boolean>(false);
@@ -102,7 +104,7 @@ export function ComboboxPlus({
                   <Plus />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent>
                 {dialogContent && typeof dialogContent === "function"
                   ? dialogContent({
                       onClose: handleDialogClose,

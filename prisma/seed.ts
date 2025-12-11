@@ -437,21 +437,18 @@ async function main() {
         productId: laptop.id,
         quantity: 40,
         minStock: 10,
-        maxStock: 100,
       },
       {
         warehouseId: mainWarehouse.id,
         productId: mouse.id,
         quantity: 150,
         minStock: 30,
-        maxStock: 300,
       },
       {
         warehouseId: mainWarehouse.id,
         productId: keyboard.id,
         quantity: 80,
         minStock: 20,
-        maxStock: 150,
       },
 
       // Secondary Warehouse
@@ -460,7 +457,6 @@ async function main() {
         productId: tshirt.id,
         quantity: 200,
         minStock: 50,
-        maxStock: 500,
       },
 
       // Downtown Warehouse
@@ -469,14 +465,12 @@ async function main() {
         productId: laptop.id,
         quantity: 10,
         minStock: 5,
-        maxStock: 50,
       },
       {
         warehouseId: downtownWarehouse.id,
         productId: coffee.id,
         quantity: 97,
         minStock: 20,
-        maxStock: 200,
       },
 
       // North Warehouse
@@ -485,7 +479,6 @@ async function main() {
         productId: laptop.id,
         quantity: 5,
         minStock: 5,
-        maxStock: 30,
       },
     ],
   });
@@ -883,6 +876,33 @@ async function main() {
     `   - Total Withdraws: $${Number(totalWithdraws._sum.amount || 0).toFixed(
       2
     )}`
+  );
+
+  // Low stock alerts
+  const warehouseInventories = await prisma.warehouseInventory.findMany({
+    where: {
+      minStock: { not: null },
+    },
+  });
+  const lowStockWarehouse = warehouseInventories.filter(
+    (inv) => inv.minStock !== null && inv.quantity <= inv.minStock
+  ).length;
+
+  const salesAreaInventories = await prisma.salesAreaInventory.findMany({
+    where: {
+      minStock: { not: null },
+    },
+  });
+  const lowStockSalesArea = salesAreaInventories.filter(
+    (inv) => inv.minStock !== null && inv.quantity <= inv.minStock
+  ).length;
+
+  console.log(`\n⚠️  Stock Alerts:`);
+  console.log(
+    `   - Warehouse products below minimum stock: ${lowStockWarehouse}`
+  );
+  console.log(
+    `   - Sales area products below minimum stock: ${lowStockSalesArea}`
   );
 }
 

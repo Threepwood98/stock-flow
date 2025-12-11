@@ -126,8 +126,6 @@ CREATE TABLE "Code" (
 CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
     "codeId" TEXT NOT NULL,
-    "warehouseId" TEXT,
-    "salesAreaId" TEXT,
     "name" TEXT NOT NULL,
     "costPrice" DECIMAL(10,2) NOT NULL,
     "salePrice" DECIMAL(10,2) NOT NULL,
@@ -155,7 +153,6 @@ CREATE TABLE "WarehouseInventory" (
     "productId" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL DEFAULT 0,
     "minStock" INTEGER DEFAULT 0,
-    "maxStock" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -439,12 +436,6 @@ ALTER TABLE "SalesArea" ADD CONSTRAINT "SalesArea_storeId_fkey" FOREIGN KEY ("st
 
 -- AddForeignKey
 ALTER TABLE "Product" ADD CONSTRAINT "Product_codeId_fkey" FOREIGN KEY ("codeId") REFERENCES "Code"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_salesAreaId_fkey" FOREIGN KEY ("salesAreaId") REFERENCES "SalesArea"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "WarehouseInventory" ADD CONSTRAINT "WarehouseInventory_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE;
