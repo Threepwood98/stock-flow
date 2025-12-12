@@ -9,7 +9,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { ComboboxPlus, type ComboboxOption } from "./combobox-plus";
 import { useFetcher } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { SelectList } from "./select-list";
 import type { Code } from "~/routes/inflow";
@@ -37,19 +37,29 @@ export function AddProduct({
 
   const isSubmitting = fetcher.state === "submitting";
 
+  const hasRun = useRef(false);
+
   useEffect(() => {
-    if (fetcher.data?.success && fetcher.data.product) {
+    if (!fetcher.data || hasRun.current) return;
+
+    if (fetcher.data.success && fetcher.data.product) {
+      hasRun.current = true;
       onSuccess(fetcher.data.product);
     }
-  }, [fetcher.data, onSuccess]);
+  }, [fetcher.data]);
+
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.stopPropagation();
+  };
 
   return (
     <fetcher.Form
       method="post"
       action="/api/add-product"
       className="flex flex-col gap-4"
+      onSubmit={handleFormSubmit}
     >
-      <input type="hidden" name="warehouseId" defaultValue={warehouseId} />
+      <input type="hidden" name="warehouseId" value={warehouseId} />
       <DialogHeader>
         <DialogTitle>Agregar Producto</DialogTitle>
         <DialogDescription>

@@ -76,8 +76,8 @@ interface Provider {
 interface Product {
   id: string;
   name: string;
-  costPrice: { d: Number };
-  salePrice: { d: Number };
+  costPrice: { d: number };
+  salePrice: { d: number };
 }
 
 export interface Code {

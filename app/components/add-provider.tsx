@@ -9,7 +9,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import type { ComboboxOption } from "./combobox-plus";
 import { useFetcher } from "react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "~/components/ui/button";
 
 interface AddProviderProps {
@@ -31,17 +31,22 @@ export function AddProvider({
 
   const isSubmitting = fetcher.state === "submitting";
 
+  const hasRun = useRef(false);
+
   useEffect(() => {
-    if (fetcher.data?.success && fetcher.data.provider) {
+    if (!fetcher.data || hasRun.current) return;
+
+    if (fetcher.data.success && fetcher.data.provider) {
       onSuccess(fetcher.data.provider);
     }
-  }, [fetcher.data, onSuccess]);
+  }, [fetcher.data]);
 
   return (
     <fetcher.Form
       method="post"
       action="/api/add-provider"
       className="flex flex-col gap-4"
+      onSubmit={(e) => e.stopPropagation()}
     >
       <input type="hidden" name="type" defaultValue={providerType} />
       <DialogHeader>

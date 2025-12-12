@@ -22,13 +22,11 @@ export async function action({ request }: Route.ActionArgs) {
     !salePriceStr ||
     !unit
   ) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Todos los campos son requeridos",
-      }),
-      { status: 400 }
-    );
+    return {
+      success: false,
+      error: "Todos los campos son requeridos",
+      status: 400,
+    };
   }
 
   const costPrice = new Decimal(costPriceStr);
@@ -40,13 +38,11 @@ export async function action({ request }: Route.ActionArgs) {
     costPrice.isNegative() ||
     salePrice.isNegative()
   ) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Los precios deben ser números válidos y positivos",
-      }),
-      { status: 400 }
-    );
+    return {
+      success: false,
+      error: "Los precios deben ser números válidos y positivos",
+      status: 400,
+    };
   }
 
   try {
@@ -76,46 +72,38 @@ export async function action({ request }: Route.ActionArgs) {
       return newProduct;
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        product: {
-          value: result.id,
-          label: result.name,
-          costPrice: { d: Number(result.costPrice) },
-          salePrice: { d: Number(result.salePrice) },
-        },
-      })
-    );
+    return {
+      success: true,
+      product: {
+        value: result.id,
+        label: result.name,
+        costPrice: { d: Number(result.costPrice) },
+        salePrice: { d: Number(result.salePrice) },
+      },
+    };
   } catch (error: any) {
     console.error("Error al crear producto:", error);
 
     if (error.code === "P2002") {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Ya existe un producto con ese ID o nombre",
-        }),
-        { status: 400 }
-      );
+      return {
+        success: false,
+        error: "Ya existe un producto con ese ID o nombre",
+        status: 400,
+      };
     }
 
     if (error.code === "P2003") {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "El código de categoría no existe",
-        }),
-        { status: 400 }
-      );
+      return {
+        success: false,
+        error: "El código de categoría no existe",
+        status: 400,
+      };
     }
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Error al guardar el producto",
-      }),
-      { status: 500 }
-    );
+    return {
+      success: false,
+      error: "Error al guardar el producto",
+      status: 500,
+    };
   }
 }
