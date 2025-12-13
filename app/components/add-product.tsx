@@ -13,6 +13,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { SelectList } from "./select-list";
 import type { Code } from "~/routes/inflow";
+import { AddCategory } from "./add-category";
+import { toast } from "sonner";
 
 interface AddPrductProps {
   onClose: (shouldClose: boolean) => void;
@@ -24,7 +26,7 @@ interface AddPrductProps {
 export function AddProduct({
   onClose,
   onSuccess,
-  codes = [],
+  codes: initialCodes = [],
   warehouseId = "",
 }: AddPrductProps) {
   const fetcher = useFetcher<{
@@ -34,6 +36,7 @@ export function AddProduct({
   }>();
   const [codeId, setCodeId] = useState<string>("");
   const [unit, setUnit] = useState<string>("");
+  const [codes, setCodes] = useState<Code[]>(initialCodes);
 
   const isSubmitting = fetcher.state === "submitting";
 
@@ -50,6 +53,18 @@ export function AddProduct({
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.stopPropagation();
+  };
+
+  const handleNewCategory = (newCategory: ComboboxOption) => {
+    setCodes((prev) => [
+      ...prev,
+      {
+        id: newCategory.value,
+        name: newCategory.label,
+      },
+    ]);
+
+    toast.success("Categoría agregada y seleccionado exitosamente");
   };
 
   return (
@@ -92,6 +107,8 @@ export function AddProduct({
             value={codeId}
             onChange={(value) => setCodeId(value)}
             showAddButton
+            dialogContent={(props) => <AddCategory {...props} />}
+            onDialogSuccess={handleNewCategory}
             required
           />
         </div>

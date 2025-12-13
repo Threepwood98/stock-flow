@@ -10,6 +10,7 @@ export default [
   route("api/auth/*", "routes/api.auth.$.tsx"),
   route("api/add-provider", "routes/api.add-provider.tsx"),
   route("api/add-product", "routes/api.add-product.tsx"),
+  route("api/add-category", "routes/api.add-category.tsx"),
 
   // Rutas protegidas
   route("main", "routes/main.tsx", [
