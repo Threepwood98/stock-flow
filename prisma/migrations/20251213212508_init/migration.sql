@@ -113,19 +113,19 @@ CREATE TABLE "SalesArea" (
 );
 
 -- CreateTable
-CREATE TABLE "Code" (
+CREATE TABLE "Category" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Code_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Category_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
-    "codeId" TEXT NOT NULL,
+    "categoryId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "costPrice" DECIMAL(10,2) NOT NULL,
     "salePrice" DECIMAL(10,2) NOT NULL,
@@ -303,16 +303,16 @@ CREATE INDEX "SalesArea_storeId_idx" ON "SalesArea"("storeId");
 CREATE UNIQUE INDEX "SalesArea_name_storeId_key" ON "SalesArea"("name", "storeId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Code_name_key" ON "Code"("name");
+CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
 
 -- CreateIndex
-CREATE INDEX "Code_name_idx" ON "Code"("name");
+CREATE INDEX "Category_name_idx" ON "Category"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Product_name_key" ON "Product"("name");
 
 -- CreateIndex
-CREATE INDEX "Product_codeId_idx" ON "Product"("codeId");
+CREATE INDEX "Product_categoryId_idx" ON "Product"("categoryId");
 
 -- CreateIndex
 CREATE INDEX "Product_name_idx" ON "Product"("name");
@@ -435,7 +435,7 @@ ALTER TABLE "Warehouse" ADD CONSTRAINT "Warehouse_storeId_fkey" FOREIGN KEY ("st
 ALTER TABLE "SalesArea" ADD CONSTRAINT "SalesArea_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_codeId_fkey" FOREIGN KEY ("codeId") REFERENCES "Code"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "WarehouseInventory" ADD CONSTRAINT "WarehouseInventory_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE;
