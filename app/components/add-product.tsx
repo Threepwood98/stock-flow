@@ -12,21 +12,21 @@ import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { SelectList } from "./select-list";
-import type { Code } from "~/routes/inflow";
+import type { Category } from "~/routes/inflow";
 import { AddCategory } from "./add-category";
 import { toast } from "sonner";
 
 interface AddPrductProps {
   onClose: (shouldClose: boolean) => void;
   onSuccess: (newOption: ComboboxOption) => void;
-  codes: Code[];
+  categories: Category[];
   warehouseId?: string;
 }
 
 export function AddProduct({
   onClose,
   onSuccess,
-  codes: initialCodes = [],
+  categories: initialCategories = [],
   warehouseId = "",
 }: AddPrductProps) {
   const fetcher = useFetcher<{
@@ -34,9 +34,9 @@ export function AddProduct({
     product?: ComboboxOption;
     error?: string;
   }>();
-  const [codeId, setCodeId] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("");
   const [unit, setUnit] = useState<string>("");
-  const [codes, setCodes] = useState<Code[]>(initialCodes);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
 
   const isSubmitting = fetcher.state === "submitting";
 
@@ -56,7 +56,7 @@ export function AddProduct({
   };
 
   const handleNewCategory = (newCategory: ComboboxOption) => {
-    setCodes((prev) => [
+    setCategories((prev) => [
       ...prev,
       {
         id: newCategory.value,
@@ -95,17 +95,17 @@ export function AddProduct({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="codeId" className="pl-1">
+          <Label htmlFor="categoryId" className="pl-1">
             Categoría
           </Label>
           <ComboboxPlus
-            name="codeId"
-            options={codes.map((cd) => ({
-              value: cd.id,
-              label: cd.name,
+            name="categoryId"
+            options={categories.map((ctg) => ({
+              value: ctg.id,
+              label: ctg.name,
             }))}
-            value={codeId}
-            onChange={(value) => setCodeId(value)}
+            value={categoryId}
+            onChange={(value) => setCategoryId(value)}
             showAddButton
             dialogContent={(props) => <AddCategory {...props} />}
             onDialogSuccess={handleNewCategory}

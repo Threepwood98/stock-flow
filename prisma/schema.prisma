@@ -161,7 +161,7 @@ model SalesArea {
   @@index([storeId])
 }
 
-model Code {
+model Category {
   id        String    @id
   name      String    @unique
   products  Product[]
@@ -172,12 +172,12 @@ model Code {
 }
 
 model Product {
-  id        String  @id
-  codeId    String
-  name      String  @unique
-  costPrice Decimal @db.Decimal(10, 2)
-  salePrice Decimal @db.Decimal(10, 2)
-  unit      String
+  id         String  @id
+  categoryId String
+  name       String  @unique
+  costPrice  Decimal @db.Decimal(10, 2)
+  salePrice  Decimal @db.Decimal(10, 2)
+  unit       String
 
   inflow             Inflow[]
   sale               Sale[]
@@ -187,9 +187,9 @@ model Product {
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
-  code Code @relation(fields: [codeId], references: [id], onDelete: Restrict)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
-  @@index([codeId])
+  @@index([categoryId])
   @@index([name])
 }
 

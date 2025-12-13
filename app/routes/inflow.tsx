@@ -80,7 +80,7 @@ interface Product {
   salePrice: { d: number };
 }
 
-export interface Code {
+export interface Category {
   id: string;
   name: string;
 }
@@ -94,7 +94,7 @@ interface OutletContext {
     stores: Provider[];
   };
   products: Product[];
-  codes: Code[];
+  categories: Category[];
 }
 
 // Constants
@@ -233,7 +233,7 @@ export default function Inflow() {
     warehouses,
     providers,
     products: initialProducts,
-    codes,
+    categories,
   } = useOutletContext<OutletContext>();
 
   const [searchParams] = useSearchParams();
@@ -580,7 +580,7 @@ export default function Inflow() {
               dialogContent={(props) => (
                 <AddProduct
                   {...props}
-                  codes={codes}
+                  categories={categories}
                   warehouseId={formValues.warehouseId}
                 />
               )}
