@@ -17,7 +17,7 @@ async function main() {
   await prisma.product.deleteMany();
   await prisma.salesArea.deleteMany();
   await prisma.warehouse.deleteMany();
-  await prisma.code.deleteMany();
+  await prisma.category.deleteMany();
   await prisma.company.deleteMany();
   await prisma.store.deleteMany();
   await prisma.verification.deleteMany();
@@ -227,23 +227,23 @@ async function main() {
   // ============================================
   console.log("📦 Creating product codes...");
 
-  const codeElectronics = await prisma.code.create({
+  const ctgElectronics = await prisma.category.create({
     data: {
-      id: "code_elec_001",
+      id: "ctg_elec_001",
       name: "Electronics",
     },
   });
 
-  const codeClothing = await prisma.code.create({
+  const ctgClothing = await prisma.category.create({
     data: {
-      id: "code_cloth_001",
+      id: "ctg_cloth_001",
       name: "Clothing",
     },
   });
 
-  const codeFood = await prisma.code.create({
+  const ctgFood = await prisma.category.create({
     data: {
-      id: "code_food_001",
+      id: "ctg_food_001",
       name: "Food",
     },
   });
@@ -253,7 +253,7 @@ async function main() {
   const laptop = await prisma.product.create({
     data: {
       id: "prod_001",
-      codeId: codeElectronics.id,
+      categoryId: ctgElectronics.id,
       name: 'Laptop HP 15"',
       costPrice: 450.0,
       salePrice: 699.99,
@@ -264,7 +264,7 @@ async function main() {
   const mouse = await prisma.product.create({
     data: {
       id: "prod_002",
-      codeId: codeElectronics.id,
+      categoryId: ctgElectronics.id,
       name: "Wireless Mouse",
       costPrice: 8.5,
       salePrice: 19.99,
@@ -275,7 +275,7 @@ async function main() {
   const tshirt = await prisma.product.create({
     data: {
       id: "prod_003",
-      codeId: codeClothing.id,
+      categoryId: ctgClothing.id,
       name: "T-Shirt Cotton Blue",
       costPrice: 5.0,
       salePrice: 14.99,
@@ -286,7 +286,7 @@ async function main() {
   const coffee = await prisma.product.create({
     data: {
       id: "prod_004",
-      codeId: codeFood.id,
+      categoryId: ctgFood.id,
       name: "Coffee Beans 1kg",
       costPrice: 12.0,
       salePrice: 24.99,
@@ -297,7 +297,7 @@ async function main() {
   const keyboard = await prisma.product.create({
     data: {
       id: "prod_005",
-      codeId: codeElectronics.id,
+      categoryId: ctgElectronics.id,
       name: "Mechanical Keyboard",
       costPrice: 35.0,
       salePrice: 79.99,
