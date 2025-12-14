@@ -31,7 +31,7 @@ import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { ComboboxPlus } from "~/components/combobox-plus";
-import type { Route } from "./main/warehouse/+types/inflow";
+import type { Route } from "./+types/outflow";
 import { prisma } from "~/lib/prisma";
 import {
   Ban,
@@ -61,9 +61,16 @@ interface OutflowRow {
   costAmount: number | null;
 }
 
+interface WarehouseInventory {
+  id: string;
+  quantity: number;
+  product: Product;
+}
+
 interface Warehouse {
   id: string;
   name: string;
+  warehouseInventories: WarehouseInventory[];
 }
 
 interface Destination {
@@ -77,12 +84,14 @@ interface Product {
   warehouseId: string;
   costPrice: { d: Number };
   salePrice: { d: Number };
+  unit: string;
 }
 
 interface OutletContext {
   user: any;
   selectedStoreId: string;
   warehouses: Warehouse[];
+  warehouseInventories: WarehouseInventory[];
   destinations: {
     stores: Destination[];
     salesAreas: Destination[];
@@ -182,9 +191,58 @@ export async function action({ request }: Route.ActionArgs) {
       };
     });
 
-    await prisma.$transaction(
-      data.map((entry) => prisma.outflow.create({ data: entry }))
-    );
+    await prisma.$transaction(async (tx) => {
+      await Promise.all(
+        data.map(async (entry) => {
+          await tx.outflow.create({ data: entry });
+
+          const warehouseInventory = await tx.warehouseInventory.findUnique({
+            where: {
+              warehouseId_productId: {
+                warehouseId: entry.warehouseId,
+                productId: entry.productId,
+              },
+            },
+          });
+
+          if (warehouseInventory) {
+            await tx.warehouseInventory.update({
+              where: { id: warehouseInventory.id },
+              data: { quantity: { decrement: entry.quantity } },
+            });
+          } else {
+            throw new Error(`No hay inventario del producto en el almacén`);
+          }
+
+          if (entry.destinationSalesAreaId) {
+            const salesAreaInventory = await tx.salesAreaInventory.findUnique({
+              where: {
+                salesAreaId_productId: {
+                  salesAreaId: entry.destinationSalesAreaId,
+                  productId: entry.productId,
+                },
+              },
+            });
+
+            if (salesAreaInventory) {
+              await tx.salesAreaInventory.update({
+                where: { id: salesAreaInventory.id },
+                data: { quantity: { increment: entry.quantity } },
+              });
+            } else {
+              await tx.salesAreaInventory.create({
+                data: {
+                  salesAreaId: entry.destinationSalesAreaId,
+                  productId: entry.productId,
+                  quantity: entry.quantity,
+                  minStock: 0,
+                },
+              });
+            }
+          }
+        })
+      );
+    });
 
     return redirect("/main/warehouse/outflow?success=1");
   } catch (error: any) {
@@ -200,7 +258,7 @@ export async function action({ request }: Route.ActionArgs) {
 
 // Component
 export default function Outflow() {
-  const { user, warehouses, destinations, products } =
+  const { user, warehouses, destinations, warehouseInventories } =
     useOutletContext<OutletContext>();
 
   const [searchParams] = useSearchParams();
@@ -218,10 +276,23 @@ export default function Outflow() {
     []
   );
 
+  const availableProducts =
+    warehouses
+      .find((wh) => wh.id === formValues.warehouseId)
+      ?.warehouseInventories.filter((inv) => inv.quantity > 0)
+      .map((inv) => ({
+        id: inv.product.id,
+        name: inv.product.name,
+        costPrice: inv.product.costPrice,
+        salePrice: inv.product.salePrice,
+        unit: inv.product.unit,
+        availableQuantity: inv.quantity,
+      })) || [];
+
   // Show success notification
   useEffect(() => {
     if (searchParams.get("success") === "1") {
-      toast.success("Entradas contabilizadas exitosamente.");
+      toast.success("Salidas contabilizadas exitosamente.");
       setRows([]);
     }
   }, [searchParams]);
@@ -262,13 +333,22 @@ export default function Outflow() {
         payMethod: "",
       }));
     }
+
+    if (name === "warehouseId") {
+      setFormValues((prev) => ({
+        ...prev,
+        productId: "",
+        productName: "",
+        quantity: "",
+      }));
+    }
   };
 
   const calculateAmount = (
     productId: string,
     quantity: string
   ): { costAmount: number | null; saleAmount: number | null } => {
-    const product = products.find((p) => p.id === productId);
+    const product = availableProducts.find((prod) => prod.id === productId);
     const qty = parseInt(quantity, 10);
 
     if (!product || isNaN(qty) || qty <= 0) {
@@ -292,6 +372,17 @@ export default function Outflow() {
 
     if (!formValues.warehouseId) {
       toast.error("Debe seleccionar un almacén.");
+      return;
+    }
+
+    const product = availableProducts.find(
+      (avp) => avp.id === formValues.productId
+    );
+
+    if (product && quantity > product.availableQuantity) {
+      toast.error(
+        `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`
+      );
       return;
     }
 
@@ -385,7 +476,6 @@ export default function Outflow() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      {/* Form */}
       <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           <input
@@ -414,7 +504,6 @@ export default function Outflow() {
               <ComboboxPlus
                 name="warehouseId"
                 className="w-full min-w-40"
-                classNameOptions="w-full min-w-40"
                 options={warehouses.map((wh) => ({
                   value: wh.id,
                   label: wh.name,
@@ -455,7 +544,6 @@ export default function Outflow() {
               <ComboboxPlus
                 name="destination"
                 className="w-full min-w-40"
-                classNameOptions="w-full min-w-40"
                 options={currentDestinations.map((dest) => ({
                   value: dest.id,
                   label: dest.name,
@@ -512,13 +600,18 @@ export default function Outflow() {
             <ComboboxPlus
               name="product"
               className="w-full min-w-40"
-              classNameOptions="w-full min-w-40"
-              options={products
-                .filter((prod) => prod.warehouseId === formValues.warehouseId)
-                .map((prod) => ({ value: prod.id, label: prod.name }))}
+              placeholder={
+                availableProducts.length === 0
+                  ? "Sin productos disponibles"
+                  : "Selecciona..."
+              }
+              options={availableProducts.map((prod) => ({
+                value: prod.id,
+                label: `${prod.name} (${prod.availableQuantity} ${prod.unit})`,
+              }))}
               value={formValues.productId}
               onChange={(value) => {
-                const prod = products.find((p) => p.id === value);
+                const prod = availableProducts.find((p) => p.id === value);
                 if (prod) {
                   handleChange("productId", prod.id);
                   setFormValues((prev) => ({
@@ -602,7 +695,7 @@ export default function Outflow() {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={warehouses.length > 1 ? 10 : 9}
+                  colSpan={warehouses.length > 1 ? 11 : 9}
                   className="text-center text-muted-foreground py-8"
                 >
                   No hay salidas agregadas. Complete el formulario y haga clic
@@ -617,7 +710,7 @@ export default function Outflow() {
                     <TableCell>{row.warehouseName}</TableCell>
                   )}
                   <TableCell>{row.outType}</TableCell>
-                  <TableCell>{row.destinationName}</TableCell>
+                  <TableCell>{row.destinationName || "-"}</TableCell>
                   <TableCell>{row.payMethod || "-"}</TableCell>
                   <TableCell>{row.outNumber}</TableCell>
                   <TableCell>{row.productName}</TableCell>
