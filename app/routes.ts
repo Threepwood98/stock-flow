@@ -11,6 +11,7 @@ export default [
   route("api/add-provider", "routes/api.add-provider.tsx"),
   route("api/add-product", "routes/api.add-product.tsx"),
   route("api/add-category", "routes/api.add-category.tsx"),
+  route("api/get-available-cash", "routes/api.get-available-cash.tsx"),
 
   // Rutas protegidas
   route("main", "routes/main.tsx", [
@@ -18,6 +19,7 @@ export default [
     route("warehouse/inflow", "routes/inflow.tsx"),
     route("warehouse/outflow", "routes/outflow.tsx"),
     route("sale-area/sale", "routes/sale.tsx"),
+    route("sale-area/withdraw", "routes/withdraw.tsx"),
   ]),
   // 404
   route("*", "routes/404.tsx"),

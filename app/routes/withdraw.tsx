@@ -29,9 +29,8 @@ import {
 } from "~/components/ui/table";
 import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
-import { SelectList } from "~/components/select-list";
 import { ComboboxPlus } from "~/components/combobox-plus";
-import type { Route } from "./+types/sale";
+import type { Route } from "./+types/withdraw";
 import { prisma } from "~/lib/prisma";
 import {
   BanIcon,
@@ -43,19 +42,15 @@ import {
   StoreIcon,
   Trash2Icon,
 } from "lucide-react";
+import { Decimal } from "@prisma/client/runtime/client";
 
 // Types
-interface SaleRow {
+interface WithdrawRow {
   userId: string;
   salesAreaId: string;
   salesAreaName: string;
   date: string;
-  payMethod: string;
-  productId: string;
-  productName: string;
-  quantity: string;
-  saleAmount: number | null;
-  costAmount: number | null;
+  amount: string;
 }
 
 interface SalesAreaInventory {
@@ -97,23 +92,12 @@ interface OutletContext {
 }
 
 // Constants
-const payMethods = [
-  { value: "EFECTIVO", label: "EFECTIVO" },
-  { value: "TRANSFERMOVIL", label: "TRANSFERMOVIL" },
-  { value: "ENZONA", label: "ENZONA" },
-];
-
-const initialFormValues: SaleRow = {
+const initialFormValues: WithdrawRow = {
   userId: "",
   salesAreaId: "",
   salesAreaName: "",
   date: format(new Date(), "dd/MM/yyyy"),
-  payMethod: "",
-  productId: "",
-  productName: "",
-  quantity: "",
-  saleAmount: null,
-  costAmount: null,
+  amount: "",
 };
 
 // Server Action
@@ -128,7 +112,7 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  let rows: SaleRow[];
+  let rows: WithdrawRow[];
   try {
     rows = JSON.parse(rawRows as string);
   } catch {
@@ -153,52 +137,57 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Fecha inválida: ${row.date}`);
       }
 
-      const quantity = parseInt(row.quantity, 10);
-      if (isNaN(quantity) || quantity <= 0) {
-        throw new Error(`Cantidad inválida: ${row.quantity}`);
+      const amount = parseInt(row.amount, 10);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error(`Cantidad inválida: ${row.amount}`);
       }
 
       return {
         userId: row.userId,
         salesAreaId: row.salesAreaId,
         date: parsedDate,
-        payMethod: row.payMethod,
-        productId: row.productId,
-        quantity,
-        costAmount: row.costAmount ? Number(row.costAmount) : 0,
-        saleAmount: row.saleAmount ? Number(row.saleAmount) : 0,
+        amount: new Decimal(amount),
       };
     });
 
     await prisma.$transaction(async (tx) => {
-      await Promise.all(
-        data.map(async (entry) => {
-          await tx.sale.create({ data: entry });
+      data.forEach(async (entry) => {
+        const cashSalesTotal = await tx.sale.aggregate({
+          where: {
+            salesAreaId: entry.salesAreaId,
+            date: entry.date,
+            payMethod: "EFECTIVO",
+          },
+          _sum: { saleAmount: true },
+        });
 
-          const salesAreaInventory = await tx.salesAreaInventory.findUnique({
-            where: {
-              salesAreaId_productId: {
-                salesAreaId: entry.salesAreaId,
-                productId: entry.productId,
-              },
-            },
-          });
+        const totalCashSales = cashSalesTotal._sum.saleAmount || new Decimal(0);
 
-          if (salesAreaInventory) {
-            await tx.salesAreaInventory.update({
-              where: { id: salesAreaInventory.id },
-              data: { quantity: { decrement: entry.quantity } },
-            });
-          } else {
-            throw new Error(
-              `No hay inventario del producto en el área de venta`
-            );
-          }
-        })
-      );
+        const existingWithdrawsTotal = await tx.withdraw.aggregate({
+          where: { salesAreaId: entry.salesAreaId, date: entry.date },
+          _sum: { amount: true },
+        });
+
+        const totalExistingWithdraws =
+          existingWithdrawsTotal._sum.amount || new Decimal(0);
+
+        const availableCash = totalCashSales.minus(totalExistingWithdraws);
+
+        if (entry.amount.greaterThan(availableCash)) {
+          throw new Error(
+            `El retiro de ${
+              entry.amount
+            } excede el efectivo disponible de ${availableCash.toFixed(
+              2
+            )} para el ${format(entry.date, "dd/MM/yyyy")}`
+          );
+        }
+
+        await tx.withdraw.create({ data: entry });
+      });
     });
 
-    return redirect("/main/sale-area/sale?success=1");
+    return redirect("/main/sale-area/withdraw?success=1");
   } catch (error: any) {
     console.error("❌ Error al insertar:", error);
     return new Response(
@@ -211,13 +200,13 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 // Component
-export default function Sale() {
+export default function Withdraw() {
   const { user, salesAreas } = useOutletContext<OutletContext>();
 
   const [searchParams] = useSearchParams();
-  const [rows, setRows] = useState<SaleRow[]>([]);
+  const [rows, setRows] = useState<WithdrawRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [formValues, setFormValues] = useState<SaleRow>({
+  const [formValues, setFormValues] = useState<WithdrawRow>({
     ...initialFormValues,
     userId: user.id,
     salesAreaId: salesAreas[0]?.id || "",
@@ -225,27 +214,47 @@ export default function Sale() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
-  const availableProducts =
-    salesAreas
-      .find((sa) => sa.id === formValues.salesAreaId)
-      ?.salesAreaInventories.filter((inv) => inv.quantity > 0)
-      .map((inv) => ({
-        id: inv.product.id,
-        name: inv.product.name,
-        costPrice: inv.product.costPrice,
-        salePrice: inv.product.salePrice,
-        unit: inv.product.unit,
-        availableQuantity: inv.quantity,
-      })) || [];
+  const [availableCash, setAvailableCash] = useState<number>(0);
+  const [isLoadingCash, setIsLoadingCash] = useState(false);
 
   // Show success notification
   useEffect(() => {
     if (searchParams.get("success") === "1") {
-      toast.success("Ventas contabilizadas exitosamente.");
+      toast.success("Retiros contabilizadas exitosamente.");
       setRows([]);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const fetchAvailableCash = async () => {
+      if (!formValues.salesAreaId || !formValues.date) return;
+
+      setIsLoadingCash(true);
+      try {
+        const parsedDate = parse(formValues.date, "dd/MM/yyyy", new Date());
+
+        if (!isValid(parsedDate)) return;
+
+        const response = await fetch(
+          `/api/get-available-cash?salesAreaId=${
+            formValues.salesAreaId
+          }&date=${format(parsedDate, "yyyy-MM-dd")}`
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+          setAvailableCash(data.availableCash);
+        }
+      } catch (error) {
+        toast.error(`Error al obtener efectivo disponible: ${error}`);
+      } finally {
+        setIsLoadingCash(false);
+      }
+    };
+
+    fetchAvailableCash();
+  }, [formValues.salesAreaId, formValues.date]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -259,41 +268,16 @@ export default function Sale() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editIndex]);
 
-  const handleChange = (name: keyof SaleRow, value: string) => {
+  const handleChange = (name: keyof WithdrawRow, value: string) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
-
-    if (name === "salesAreaId") {
-      setFormValues((prev) => ({
-        ...prev,
-        productId: "",
-        productName: "",
-        quantity: "",
-      }));
-    }
-  };
-
-  const calculateAmount = (
-    productId: string,
-    quantity: string
-  ): { costAmount: number | null; saleAmount: number | null } => {
-    const product = availableProducts.find((prod) => prod.id === productId);
-    const qty = parseInt(quantity, 10);
-
-    if (!product || isNaN(qty) || qty <= 0) {
-      return { costAmount: null, saleAmount: null };
-    }
-
-    const costPrice = Number(product.costPrice.d);
-    const salePrice = Number(product.salePrice.d);
-    return { costAmount: qty * costPrice, saleAmount: qty * salePrice };
   };
 
   const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const quantity = parseInt(formValues.quantity, 10);
+    const amount = parseFloat(formValues.amount);
 
-    if (quantity <= 0) {
+    if (isNaN(amount) || amount <= 0) {
       toast.error("La cantidad debe ser mayor a 0.");
       return;
     }
@@ -303,32 +287,34 @@ export default function Sale() {
       return;
     }
 
-    const product = availableProducts.find(
-      (avp) => avp.id === formValues.productId
-    );
+    const totalWithdrawsForDate = rows
+      .filter(
+        (row) =>
+          row.date === formValues.date &&
+          row.salesAreaId === formValues.salesAreaId &&
+          (editIndex === null || rows.indexOf(row) !== editIndex)
+      )
+      .reduce((sum, row) => sum + parseFloat(row.amount), 0);
 
-    if (product && quantity > product.availableQuantity) {
+    const remainingCash = availableCash - totalWithdrawsForDate;
+
+    if (amount > remainingCash) {
       toast.error(
-        `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`
+        `El retiro excede el efectivo disponible. Disponible: $${remainingCash.toFixed(
+          2
+        )}`
       );
+
       return;
     }
 
-    const amount = calculateAmount(formValues.productId, formValues.quantity);
-
-    const rowWithAmount: SaleRow = {
-      ...formValues,
-      costAmount: amount.costAmount,
-      saleAmount: amount.saleAmount,
-    };
-
     if (editIndex !== null) {
       setRows((prev) =>
-        prev.map((row, i) => (i === editIndex ? rowWithAmount : row))
+        prev.map((row, i) => (i === editIndex ? formValues : row))
       );
       toast.success("Fila actualizada correctamente.");
     } else {
-      setRows((prev) => [...prev, rowWithAmount]);
+      setRows((prev) => [...prev, formValues]);
       toast.success("Fila agregada correctamente.");
     }
 
@@ -373,7 +359,10 @@ export default function Sale() {
       ?.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
   };
 
-  const totalAmount = rows.reduce((sum, row) => sum + (row.costAmount || 0), 0);
+  const totalAmount = rows.reduce(
+    (sum, row) => sum + (parseFloat(row.amount) || 0),
+    0
+  );
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -425,60 +414,21 @@ export default function Sale() {
             </div>
           )}
           <div className="grid gap-2">
-            <Label htmlFor="payMethod" className="pl-1">
-              Método de Pago
-            </Label>
-            <SelectList
-              name="payMethod"
-              className="w-full min-w-40"
-              options={payMethods}
-              value={formValues.payMethod}
-              onChange={(value) => handleChange("payMethod", value)}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="product" className="pl-1">
-              Producto
-            </Label>
-            <ComboboxPlus
-              name="product"
-              className="w-full min-w-40"
-              placeholder={
-                availableProducts.length === 0
-                  ? "Sin productos disponibles"
-                  : "Selecciona..."
-              }
-              options={availableProducts.map((prod) => ({
-                value: prod.id,
-                label: `${prod.name} (${prod.availableQuantity} ${prod.unit})`,
-              }))}
-              value={formValues.productId}
-              onChange={(value) => {
-                const prod = availableProducts.find((p) => p.id === value);
-                if (prod) {
-                  handleChange("productId", prod.id);
-                  setFormValues((prev) => ({
-                    ...prev,
-                    productName: prod.name,
-                  }));
-                }
-              }}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="quantity" className="pl-1">
-              Cantidad
+            <Label htmlFor="amount" className="pl-1">
+              Cantidad{" "}
+              {isLoadingCash
+                ? "(Cargando...)"
+                : `(Disponible: $${availableCash.toFixed(2)})`}
             </Label>
             <Input
-              id="quantity"
-              name="quantity"
-              value={formValues.quantity}
-              onChange={(event) => handleChange("quantity", event.target.value)}
-              type="number"
-              min={1}
+              id="amount"
+              name="amount"
+              value={formValues.amount}
+              onChange={(event) => handleChange("amount", event.target.value)}
+              inputMode="decimal"
+              placeholder="0.00"
               className="w-full min-w-40"
+              disabled={isLoadingCash}
               required
             />
           </div>
@@ -524,11 +474,7 @@ export default function Sale() {
             <TableRow>
               <TableHead>Fecha</TableHead>
               <TableHead>Área de Venta</TableHead>
-              <TableHead>Método de Pago</TableHead>
-              <TableHead>Producto</TableHead>
               <TableHead>Cantidad</TableHead>
-              <TableHead>Importe de Costo</TableHead>
-              <TableHead>Importe de Venta</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -536,7 +482,7 @@ export default function Sale() {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={4}
                   className="text-center text-muted-foreground py-8"
                 >
                   <div className="flex flex-col items-center gap-4">
@@ -553,11 +499,7 @@ export default function Sale() {
                 <TableRow key={index}>
                   <TableCell>{row.date}</TableCell>
                   <TableCell>{row.salesAreaName}</TableCell>
-                  <TableCell>{row.payMethod}</TableCell>
-                  <TableCell>{row.productName}</TableCell>
-                  <TableCell>{row.quantity}</TableCell>
-                  <TableCell>${row.costAmount?.toFixed(2) ?? "0.00"}</TableCell>
-                  <TableCell>${row.saleAmount?.toFixed(2) ?? "0.00"}</TableCell>
+                  <TableCell>{row.amount}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button
@@ -608,12 +550,12 @@ export default function Sale() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Confirmar contabilización?</AlertDialogTitle>
             <AlertDialogDescription>
-              Está a punto de contabilizar <strong>{rows.length}</strong> venta
+              Está a punto de contabilizar <strong>{rows.length}</strong> retiro
               {rows.length !== 1 ? "s" : ""} por un total de{" "}
               <strong>${totalAmount.toFixed(2)}</strong>.
               <br />
               <br />
-              Esta acción registrará las ventas en el sistema de manera
+              Esta acción registrará los retiros en el sistema de manera
               permanente.
             </AlertDialogDescription>
           </AlertDialogHeader>

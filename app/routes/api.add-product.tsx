@@ -6,7 +6,7 @@ export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
 
   const id = formData.get("id") as string;
-  const codeId = formData.get("codeId") as string;
+  const categoryId = formData.get("categoryId") as string;
   const warehouseId = formData.get("warehouseId") as string;
   const name = formData.get("name") as string;
   const costPriceStr = formData.get("costPrice") as string;
@@ -15,7 +15,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (
     !id ||
-    !codeId ||
+    !categoryId ||
     !warehouseId ||
     !name ||
     !costPriceStr ||
@@ -50,7 +50,7 @@ export async function action({ request }: Route.ActionArgs) {
       const newProduct = await tx.product.create({
         data: {
           id,
-          codeId,
+          categoryId,
           name,
           costPrice,
           salePrice,

@@ -34,14 +34,14 @@ import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/outflow";
 import { prisma } from "~/lib/prisma";
 import {
-  Ban,
-  Calculator,
-  Eraser,
-  PencilLine,
-  Plus,
-  Save,
-  Trash2,
-  Warehouse,
+  BanIcon,
+  CalculatorIcon,
+  EraserIcon,
+  PencilLineIcon,
+  PlusIcon,
+  SaveIcon,
+  Trash2Icon,
+  WarehouseIcon,
 } from "lucide-react";
 
 // Types
@@ -648,22 +648,22 @@ export default function Outflow() {
           >
             {editIndex !== null ? (
               <div className="flex items-center gap-2">
-                Cancelar <Ban />
+                Cancelar <BanIcon />
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                Borrar <Eraser />
+                Borrar <EraserIcon />
               </div>
             )}
           </Button>
           <Button type="submit" className="min-w-32">
             {editIndex !== null ? (
               <div className="flex items-center gap-2">
-                Guardar <Save />
+                Guardar <SaveIcon />
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                Agregar <Plus />
+                Agregar <PlusIcon />
               </div>
             )}
           </Button>
@@ -698,11 +698,13 @@ export default function Outflow() {
                   colSpan={11}
                   className="text-center text-muted-foreground py-8"
                 >
-                  <b>
-                    No hay salidas agregadas. Complete el formulario y haga clic
-                    en "Agregar".
-                  </b>
-                  <Warehouse className="mx-auto size-32" />
+                  <div className="flex flex-col items-center gap-4">
+                    <WarehouseIcon className="size-32" />
+                    <p className="font-semibold">
+                      No hay salidas agregadas. Complete el formulario y haga
+                      clic en "Agregar".
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -729,7 +731,7 @@ export default function Outflow() {
                         onClick={() => handleEdit(index)}
                         title="Editar"
                       >
-                        <PencilLine />
+                        <PencilLineIcon />
                       </Button>
                       <Button
                         className="cursor-pointer"
@@ -738,7 +740,7 @@ export default function Outflow() {
                         onClick={() => handleRemove(index)}
                         title="Eliminar"
                       >
-                        <Trash2 />
+                        <Trash2Icon />
                       </Button>
                     </div>
                   </TableCell>
@@ -760,7 +762,7 @@ export default function Outflow() {
           disabled={rows.length === 0 || editIndex !== null || isSubmitting}
           onClick={() => setShowConfirmDialog(true)}
         >
-          {isSubmitting ? "Procesando..." : "Contabilizar"} <Calculator />
+          {isSubmitting ? "Procesando..." : "Contabilizar"} <CalculatorIcon />
         </Button>
       </div>
 
