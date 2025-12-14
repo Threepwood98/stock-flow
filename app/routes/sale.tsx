@@ -40,6 +40,7 @@ import {
   PencilLine,
   Plus,
   Save,
+  Store,
   Trash2,
 } from "lucide-react";
 
@@ -522,7 +523,7 @@ export default function Sale() {
           <TableHeader>
             <TableRow>
               <TableHead>Fecha</TableHead>
-              {salesAreas.length > 1 && <TableHead>Área de Venta</TableHead>}
+              <TableHead>Área de Venta</TableHead>
               <TableHead>Método de Pago</TableHead>
               <TableHead>Producto</TableHead>
               <TableHead>Cantidad</TableHead>
@@ -535,21 +536,22 @@ export default function Sale() {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={salesAreas.length > 1 ? 11 : 9}
+                  colSpan={8}
                   className="text-center text-muted-foreground py-8"
                 >
-                  No hay salidas agregadas. Complete el formulario y haga clic
-                  en "Agregar".
+                  <b>
+                    No hay salidas agregadas. Complete el formulario y haga clic
+                    en "Agregar".
+                  </b>
+                  <Store className="mx-auto size-32" />
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((row, index) => (
                 <TableRow key={index}>
                   <TableCell>{row.date}</TableCell>
-                  {salesAreas.length > 1 && (
-                    <TableCell>{row.salesAreaName}</TableCell>
-                  )}
-                  <TableCell>{row.payMethod || "-"}</TableCell>
+                  <TableCell>{row.salesAreaName}</TableCell>
+                  <TableCell>{row.payMethod}</TableCell>
                   <TableCell>{row.productName}</TableCell>
                   <TableCell>{row.quantity}</TableCell>
                   <TableCell>${row.costAmount?.toFixed(2) ?? "0.00"}</TableCell>

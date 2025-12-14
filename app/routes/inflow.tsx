@@ -41,6 +41,7 @@ import {
   Plus,
   Save,
   Trash2,
+  Warehouse,
 } from "lucide-react";
 import { AddProvider } from "~/components/add-provider";
 import { AddProduct } from "~/components/add-product";
@@ -644,7 +645,7 @@ export default function Inflow() {
           <TableHeader>
             <TableRow>
               <TableHead>Fecha</TableHead>
-              {warehouses.length > 1 && <TableHead>Almacén</TableHead>}
+              <TableHead>Almacén</TableHead>
               <TableHead>Tipo de Entrada</TableHead>
               <TableHead>Proveedor</TableHead>
               <TableHead>No. de Factura</TableHead>
@@ -660,11 +661,14 @@ export default function Inflow() {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={warehouses.length > 1 ? 10 : 9}
+                  colSpan={11}
                   className="text-center text-muted-foreground py-8"
                 >
-                  No hay entradas agregadas. Complete el formulario y haga clic
-                  en "Agregar".
+                  <b>
+                    No hay salidas agregadas. Complete el formulario y haga clic
+                    en "Agregar".
+                  </b>
+                  <Warehouse className="mx-auto size-32" />
                 </TableCell>
               </TableRow>
             ) : (

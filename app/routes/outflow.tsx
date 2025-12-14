@@ -41,6 +41,7 @@ import {
   Plus,
   Save,
   Trash2,
+  Warehouse,
 } from "lucide-react";
 
 // Types
@@ -678,7 +679,7 @@ export default function Outflow() {
           <TableHeader>
             <TableRow>
               <TableHead>Fecha</TableHead>
-              {warehouses.length > 1 && <TableHead>Almacén</TableHead>}
+              <TableHead>Almacén</TableHead>
               <TableHead>Tipo de Salida</TableHead>
               <TableHead>Destino</TableHead>
               <TableHead>Método de Pago</TableHead>
@@ -694,11 +695,14 @@ export default function Outflow() {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={warehouses.length > 1 ? 11 : 9}
+                  colSpan={11}
                   className="text-center text-muted-foreground py-8"
                 >
-                  No hay salidas agregadas. Complete el formulario y haga clic
-                  en "Agregar".
+                  <b>
+                    No hay salidas agregadas. Complete el formulario y haga clic
+                    en "Agregar".
+                  </b>
+                  <Warehouse className="mx-auto size-32" />
                 </TableCell>
               </TableRow>
             ) : (
