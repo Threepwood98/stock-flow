@@ -71,18 +71,20 @@ const data = {
     },
     {
       title: "Área de Venta",
-      url: "#",
       icon: Store,
+      isActive: true,
       items: [
         {
           title: "Venta",
-          url: "#",
+          url: "/main/sale-area/sale",
           icon: BanknoteArrowUp,
+          isActive: true,
         },
         {
           title: "Caja Extra",
-          url: "#",
+          url: "/main/sale-area/withdraw",
           icon: BanknoteArrowDown,
+          isActive: true,
         },
       ],
     },

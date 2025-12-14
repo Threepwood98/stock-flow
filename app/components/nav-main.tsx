@@ -1,5 +1,5 @@
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { Link, redirect, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import {
   Collapsible,
   CollapsibleContent,

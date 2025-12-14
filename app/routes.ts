@@ -17,6 +17,7 @@ export default [
     index("routes/dashboard.tsx"),
     route("warehouse/inflow", "routes/inflow.tsx"),
     route("warehouse/outflow", "routes/outflow.tsx"),
+    route("sale-area/sale", "routes/sale.tsx"),
   ]),
   // 404
   route("*", "routes/404.tsx"),
