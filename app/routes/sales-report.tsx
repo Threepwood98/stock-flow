@@ -24,10 +24,11 @@ import { Label } from "~/components/ui/label";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import { toast } from "sonner";
 import type { OutletContext } from "@/types/types";
+import { Button } from "~/components/ui/button";
 
 export default function SalesReport() {
-  const { sales, salesAreas, products } = useOutletContext<OutletContext>();
-  console.log("🚀 ~ SalesReport ~ sales:", sales);
+  const { sales, salesAreas, products, categories } =
+    useOutletContext<OutletContext>();
 
   // Estados para filtros
   const [dateFrom, setDateFrom] = useState(
@@ -36,8 +37,10 @@ export default function SalesReport() {
   const [dateTo, setDateTo] = useState(
     format(endOfMonth(new Date()), "dd/MM/yyyy")
   );
-
-  const [selectedSalesAreaId, setSelectedSalesAreaId] = useState("all");
+  const [salesAreaId, setSalesAreaId] = useState<string>("all");
+  const [productId, setProductId] = useState<string>("all");
+  const [categoryId, setCategoryId] = useState<string>("all");
+  const [payMethod, setPayMethod] = useState<string>("all");
 
   const parseDate = (dateStr: string): Date | null => {
     if (dateStr.length !== 10) return null;
@@ -45,7 +48,11 @@ export default function SalesReport() {
     return isValid(parsed) ? parsed : null;
   };
 
-  // Filtrar ventas en el cliente
+  const paymentMethods = useMemo(() => {
+    const methods = new Set(sales.map((sale) => sale.payMethod));
+    return Array.from(methods).sort();
+  }, [sales]);
+
   const filteredSales = useMemo(() => {
     const fromDate = parseDate(dateFrom);
     const toDate = parseDate(dateTo);
@@ -53,6 +60,7 @@ export default function SalesReport() {
     if (!fromDate || !toDate) return sales;
 
     let filtered = sales.filter((sale) => {
+      // Filtro por fecha
       const saleDate = parse(sale.date, "yyyy-MM-dd", new Date());
 
       if (!isValid(saleDate)) {
@@ -65,24 +73,47 @@ export default function SalesReport() {
         end: endOfDay(toDate),
       });
 
-      return inRange;
+      if (!inRange) return false;
+
+      // Filtro por área de venta
+      if (salesAreaId !== "all" && sale.salesAreaId !== salesAreaId) {
+        return false;
+      }
+
+      // Filtro por producto
+      if (productId !== "all" && sale.productId !== productId) {
+        return false;
+      }
+
+      // Filtro por categoría
+      if (categoryId !== "all" && sale.categoryId !== categoryId) {
+        return false;
+      }
+
+      // Filtro por método de pago
+      if (payMethod !== "all" && sale.payMethod !== payMethod) {
+        return false;
+      }
+
+      return true;
     });
 
-    if (selectedSalesAreaId === "all") return filtered;
-
-    if (selectedSalesAreaId) {
-      filtered = filtered.filter(
-        (sale) => sale.salesAreaId === selectedSalesAreaId
-      );
-    }
-
     return filtered;
-  }, [sales, dateFrom, dateTo, selectedSalesAreaId]);
+  }, [sales, dateFrom, dateTo, salesAreaId, productId, categoryId, payMethod]);
+
+  const clearFilters = () => {
+    setDateFrom(format(startOfMonth(new Date()), "dd/MM/yyyy"));
+    setDateTo(format(endOfMonth(new Date()), "dd/MM/yyyy"));
+    setSalesAreaId("all");
+    setProductId("all");
+    setCategoryId("all");
+    setPayMethod("all");
+  };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-gray-400">
+    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       {/* Filtros */}
-      <div className="w-full grid grid-cols-3 gap-4">
+      <div className="w-full grid grid-cols-4 gap-4">
         <div className="grid gap-2">
           <Label className="pl-1">Rango de Fecha</Label>
           <DateRangePicker
@@ -90,6 +121,60 @@ export default function SalesReport() {
             dateTo={dateTo}
             onDateFromChange={setDateFrom}
             onDateToChange={setDateTo}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="product" className="pl-1">
+            Producto
+          </Label>
+          <ComboboxPlus
+            name="product"
+            className="w-full min-w-40"
+            options={[
+              { value: "all", label: "Todos" },
+              ...products.map((prod) => ({
+                value: prod.id,
+                label: prod.name,
+              })),
+            ]}
+            value={productId}
+            onChange={(value) => setProductId(value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="category" className="pl-1">
+            Categoría
+          </Label>
+          <ComboboxPlus
+            name="category"
+            className="w-full"
+            options={[
+              { value: "all", label: "Todas" },
+              ...categories.map((cat) => ({
+                value: cat.id,
+                label: cat.name,
+              })),
+            ]}
+            value={categoryId}
+            onChange={(value) => setCategoryId(value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="payMethod" className="pl-1">
+            Método de Pago
+          </Label>
+          <ComboboxPlus
+            name="payMethod"
+            className="w-full"
+            options={[
+              { value: "all", label: "Todos" },
+              ...paymentMethods.map((method) => ({
+                value: method,
+                label: method,
+              })),
+            ]}
+            value={payMethod}
+            onChange={(value) => setPayMethod(value)}
           />
         </div>
         {salesAreas.length > 1 && (
@@ -101,54 +186,38 @@ export default function SalesReport() {
               name="salesAreaId"
               className="w-full"
               options={[
-                { value: "all", label: "Todas las áreas" },
+                { value: "all", label: "Todas" },
                 ...salesAreas.map((sa) => ({
                   value: sa.id,
                   label: sa.name,
                 })),
               ]}
-              value={selectedSalesAreaId}
-              onChange={(value) => setSelectedSalesAreaId(value)}
+              value={salesAreaId}
+              onChange={(value) => setSalesAreaId(value)}
               required
             />
           </div>
         )}
-        <div className="grid gap-2">
-          <Label htmlFor="product" className="pl-1">
-            Producto
-          </Label>
-          <ComboboxPlus
-            name="product"
-            className="w-full min-w-40"
-            options={products.map((prod) => ({
-              value: prod.id,
-              label: prod.name,
-            }))}
-          />
-        </div>
       </div>
-
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Fecha</TableHead>
             <TableHead>Producto</TableHead>
             <TableHead>Categoría</TableHead>
-            <TableHead>Cantidad</TableHead>
-            <TableHead>Precio Venta</TableHead>
-            <TableHead>Precio Costo</TableHead>
-            <TableHead>Ganancia</TableHead>
-            <TableHead>Método</TableHead>
-            <TableHead>Tienda</TableHead>
+            <TableHead className="text-right">Cantidad</TableHead>
+            <TableHead className="text-right">Precio Venta</TableHead>
+            <TableHead className="text-right">Precio Costo</TableHead>
+            <TableHead>Método de Pago</TableHead>
             {salesAreas.length > 1 && <TableHead>Aréa de Venta</TableHead>}
-            <TableHead>Usuario</TableHead>
+            {/* <TableHead>Usuario</TableHead> */}
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredSales.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={salesAreas.length > 1 ? 11 : 10}
+                colSpan={salesAreas.length > 1 ? 8 : 7}
                 className="text-center text-muted-foreground py-8"
               >
                 <div className="flex flex-col items-center gap-4">
@@ -156,6 +225,7 @@ export default function SalesReport() {
                   <p className="font-semibold">
                     No hay ventas disponibles para este rango de fecha.
                   </p>
+                  <Button onClick={clearFilters}>Limpiar Filtros</Button>
                 </div>
               </TableCell>
             </TableRow>
@@ -165,16 +235,14 @@ export default function SalesReport() {
                 <TableCell>{sale.date}</TableCell>
                 <TableCell>{sale.productName}</TableCell>
                 <TableCell>{sale.categoryName}</TableCell>
-                <TableCell>{sale.quantity}</TableCell>
-                <TableCell>{sale.saleAmount}</TableCell>
-                <TableCell>{sale.costAmount}</TableCell>
-                <TableCell>{sale.profit}</TableCell>
+                <TableCell className="text-right">{sale.quantity}</TableCell>
+                <TableCell className="text-right">{sale.saleAmount}</TableCell>
+                <TableCell className="text-right">{sale.costAmount}</TableCell>
                 <TableCell>{sale.payMethod}</TableCell>
-                <TableCell>{sale.storeName}</TableCell>
                 {salesAreas.length > 1 && (
                   <TableCell>{sale.salesAreaName}</TableCell>
                 )}
-                <TableCell>{sale.userName}</TableCell>
+                {/* <TableCell>{sale.userName}</TableCell> */}
               </TableRow>
             ))
           )}
