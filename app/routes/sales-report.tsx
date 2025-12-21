@@ -56,10 +56,16 @@ type ContextType = {
     id: string;
     name: string;
   }>;
+  products: Array<{
+    id: string;
+    name: string;
+    costPrice: { d: number };
+    salePrice: { d: number };
+  }>;
 };
 
 export default function SalesReport() {
-  const { sales, salesAreas } = useOutletContext<ContextType>();
+  const { sales, salesAreas, products } = useOutletContext<ContextType>();
   console.log("🚀 ~ SalesReport ~ sales:", sales);
 
   // Estados para filtros
@@ -115,40 +121,50 @@ export default function SalesReport() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-gray-400">
       {/* Filtros */}
-      <div className="w-full flex gap-4">
-        <div className="w-full grid grid-cols-2 gap-4">
+      <div className="w-full grid grid-cols-3 gap-4">
+        <div className="grid gap-2">
+          <Label className="pl-1">Rango de Fecha</Label>
+          <DateRangePicker
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+          />
+        </div>
+        {salesAreas.length > 1 && (
           <div className="grid gap-2">
-            <Label className="pl-1">Rango de Fecha</Label>
-            <DateRangePicker
-              dateFrom={dateFrom}
-              dateTo={dateTo}
-              onDateFromChange={setDateFrom}
-              onDateToChange={setDateTo}
+            <Label htmlFor="salesAreaId" className="pl-1">
+              Área de Venta
+            </Label>
+            <ComboboxPlus
+              name="salesAreaId"
+              className="w-full"
+              options={[
+                { value: "all", label: "Todas las áreas" },
+                ...salesAreas.map((sa) => ({
+                  value: sa.id,
+                  label: sa.name,
+                })),
+              ]}
+              value={selectedSalesAreaId}
+              onChange={(value) => setSelectedSalesAreaId(value)}
+              required
             />
           </div>
-          {salesAreas.length > 1 && (
-            <div className="grid gap-2">
-              <Label htmlFor="salesAreaId" className="pl-1">
-                Área de Venta
-              </Label>
-              <ComboboxPlus
-                name="salesAreaId"
-                className="w-full"
-                options={[
-                  { value: "all", label: "Todas las áreas" },
-                  ...salesAreas.map((sa) => ({
-                    value: sa.id,
-                    label: sa.name,
-                  })),
-                ]}
-                value={selectedSalesAreaId}
-                onChange={(value) => setSelectedSalesAreaId(value)}
-                required
-              />
-            </div>
-          )}
+        )}
+        <div className="grid gap-2">
+          <Label htmlFor="product" className="pl-1">
+            Producto
+          </Label>
+          <ComboboxPlus
+            name="product"
+            className="w-full min-w-40"
+            options={products.map((prod) => ({
+              value: prod.id,
+              label: prod.name,
+            }))}
+          />
         </div>
-        <Button className="self-baseline-last">Filtrar</Button>
       </div>
 
       <Table>
