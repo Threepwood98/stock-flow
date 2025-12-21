@@ -1,13 +1,5 @@
 import { Outlet, redirect } from "react-router";
 import { AppSidebar } from "~/components/app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "~/components/ui/breadcrumb";
 import { Separator } from "~/components/ui/separator";
 import {
   SidebarInset,
@@ -24,8 +16,8 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { prisma } from "~/lib/prisma";
-import { useEffect, useState } from "react";
-import { se } from "date-fns/locale";
+import { useState } from "react";
+import { subMonths } from "date-fns";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -33,6 +25,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (!session) {
     throw redirect("/signin");
   }
+
   const user = session.user;
 
   const userStores = await prisma.userStore.findMany({
@@ -74,11 +67,54 @@ export async function loader({ request }: Route.LoaderArgs) {
     orderBy: { name: "asc" },
   });
 
-  return { user, userStores, companies, products, categories };
+  const storeIds = userStores.map((us) => us.storeId);
+
+  const sales =
+    storeIds.length > 0
+      ? await prisma.sale.findMany({
+          where: {
+            salesArea: { storeId: { in: storeIds } },
+          },
+          include: {
+            product: { include: { category: true } },
+            salesArea: { include: { store: true } },
+            user: { select: { name: true } },
+          },
+          orderBy: { date: "desc" },
+        })
+      : [];
+
+  return {
+    user,
+    userStores,
+    companies,
+    products,
+    categories,
+    sales: sales.map((sale) => ({
+      id: sale.id,
+      date: sale.date.toISOString().split("T")[0],
+      productId: sale.productId,
+      productName: sale.product.name,
+      categoryId: sale.product.categoryId,
+      categoryName: sale.product.category.name,
+      quantity: sale.quantity,
+      saleAmount: Number(sale.saleAmount),
+      costAmount: Number(sale.costAmount),
+      profit: Number(sale.saleAmount) - Number(sale.costAmount),
+      payMethod: sale.payMethod,
+      salesAreaId: sale.salesAreaId,
+      salesAreaName: sale.salesArea.name,
+      storeId: sale.salesArea.storeId,
+      storeName: sale.salesArea.store.name,
+      userId: sale.userId,
+      userName: sale.user.name,
+    })),
+  };
 }
 
 export default function Main({ loaderData }: Route.ComponentProps) {
-  const { user, userStores, companies, products, categories } = loaderData;
+  const { user, userStores, companies, products, categories, sales } =
+    loaderData;
 
   const [selectedStoreId, setSelectedStoreId] = useState(
     userStores[0]?.storeId || ""
@@ -91,14 +127,6 @@ export default function Main({ loaderData }: Route.ComponentProps) {
   const warehouses = currrentStore?.warehouses || [];
 
   const salesAreas = currrentStore?.salesAreas || [];
-
-  const warehouseInventories = warehouses.flatMap(
-    (wh) => wh.warehouseInventories || []
-  );
-
-  const salesAreaInventories = salesAreas.flatMap(
-    (sa) => sa.salesAreaInventories || []
-  );
 
   const stores = userStores
     .map((us) => us.store)
@@ -145,15 +173,14 @@ export default function Main({ loaderData }: Route.ComponentProps) {
         <Outlet
           context={{
             user,
-            selectedStoreId,
             warehouses,
             salesAreas,
-            warehouseInventories,
-            salesAreaInventories,
             providers,
             destinations,
             products,
             categories,
+            sales,
+            userStores,
           }}
         />
       </SidebarInset>

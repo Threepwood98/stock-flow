@@ -20,6 +20,7 @@ export default [
     route("warehouse/outflow", "routes/outflow.tsx"),
     route("sale-area/sale", "routes/sale.tsx"),
     route("sale-area/withdraw", "routes/withdraw.tsx"),
+    route("report/sales-report", "routes/sales-report.tsx"),
   ]),
   // 404
   route("*", "routes/404.tsx"),

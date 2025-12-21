@@ -1,5 +1,5 @@
+import { parseISO } from "date-fns";
 import { prisma } from "~/lib/prisma";
-import { hash } from "bcryptjs";
 
 async function main() {
   console.log("🌱 Starting database seed...");
@@ -32,10 +32,12 @@ async function main() {
 
   const adminUser = await prisma.user.create({
     data: {
-      id: "user_admin_001",
-      name: "Admin User",
-      email: "admin@example.com",
+      id: "bpl74N816wHTZbKhGdWwXk25WkWGEkTZ",
+      name: "Karel David Delgado Alonso",
+      email: "kdelgadoalonso@gmail.com",
       emailVerified: true,
+      image:
+        "https://lh3.googleusercontent.com/a/ACg8ocJKlP3w_f861L9KJsyf5xVBKs4LsWGCkbWCkd95IHPAOe0y1g=s96-c",
       role: "admin",
       profileCompleted: true,
       phones: {
@@ -48,10 +50,16 @@ async function main() {
       },
       accounts: {
         create: {
-          id: "acc_admin_001",
-          accountId: "google_admin",
+          id: "2EczJM1PlAjtUcCS19Cj5BEEtest2jes",
+          accountId: "113550373324311232024",
           providerId: "google",
-          password: await hash("Admin123!", 10),
+          accessToken:
+            "ya29.A0Aa7pCA_H8Hd0IOr6I1cIIM9Sf4hTmQ1RjeFJ_3ACdvQbuRRNinHMDNQtUEdOkG-m4ZSilKdy3XWptP0EZQrBvNZtM4WiLjY8FwSaH8kUBkbE5nV-7LQUVg5JsyCKQE52Jp7wvoIogNASUl7sEnY7an6uq2XzoRN93RhePmgMTDaQ2eRGo_9541DF2V6ilJdnLVxWf89ucxpe9fIq0Hzp0XgWhSeZkLKw8F25okjvkesECGO1oqJGqGhC1_ExayinXD3iFX7tKEHwh2h35HrAgDUrEtVOaCgYKAcoSARYSFQHGX2Mi2zCIrE2KjOZR0eSC7aKzkw0291",
+          idToken:
+            "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEzMGZkY2VmY2M4ZWQ3YmU2YmVkZmE2ZmM4Nzk3MjIwNDBjOTJiMzgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI2NDY0MzAxNDUxNzItanY5YW50a2toNW81djh1ZGVtZ2pqNHRsN2FxazJqczguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI2NDY0MzAxNDUxNzItanY5YW50a2toNW81djh1ZGVtZ2pqNHRsN2FxazJqczguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTM1NTAzNzMzMjQzMTEyMzIwMjQiLCJlbWFpbCI6ImtkZWxnYWRvYWxvbnNvQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiSk9HZTJmalh0ODROMHIxZWRTQjM3QSIsIm5hbWUiOiJLYXJlbCBEYXZpZCBEZWxnYWRvIEFsb25zbyIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKS2xQM3dfZjg2MUw5S0pzeWY1eFZCS3M0THNXR0NrYldDa2Q5NUlIUEFPZTB5MWc9czk2LWMiLCJnaXZlbl9uYW1lIjoiS2FyZWwgRGF2aWQiLCJmYW1pbHlfbmFtZSI6IkRlbGdhZG8gQWxvbnNvIiwiaWF0IjoxNzY1Njc3MDU5LCJleHAiOjE3NjU2ODA2NTl9.LopQQ5fB_U6SBhx69SubKdFwaODWDEy2bC3wI2H6HyqiNOVQaGjHZyeZSEkn7V1zDnG4UMjhJlK-eN23Uqg9XSy069vDfUNHEqCKQD0R-krX62jEEuv-TrWMZ53Q1EXHgogyoKHUxjmRyrtlHRcq8iM7eh7-JSHPjcVxCdlbMAn4V6MAGmNzFiSGCZO2UYN8-NGPjKvBANETU5yyaGznu3C0Zk9fMdzcsA2wgHtaIokM--o_FfSRcJlNhn5XrR3DgfQQBstBn1bYf0WddvHdNy-mEGXotjvdnk0Zg4yr-3b3CX7mQl4_MGi22hcEFMdXZ_Nlu3mT1pT4ef5IxAkTig",
+          accessTokenExpiresAt: parseISO("2025-12-14 02:51:01.196"),
+          scope:
+            "https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile,openid",
         },
       },
     },
@@ -204,105 +212,573 @@ async function main() {
   // ============================================
   console.log("🏢 Creating companies...");
 
-  const techSuppliers = await prisma.company.create({
-    data: {
-      name: "Tech Suppliers Inc.",
-    },
+  const companiesData = [
+    "MI Canastilla",
+    "Universal",
+    "Fenix",
+    "Textilera Desembarco del Granma",
+    "Labiofam",
+    "Gases Industriales",
+    "Emp. Calzado",
+    "Geominera",
+    "MI Eden",
+    "MI Ultra",
+    "MI La Francia",
+    "MI La Perla",
+    "UEB Villa Clara Muebles",
+    "EES Emp. Indust. Equipo y Serv.",
+    "EES Emp. Prov. Serv. Tecn. Pers. y del Hogar",
+    "MI El Canes",
+    "Emp. Prov. Artes Gráficas",
+    "MI Yabu",
+    "MI El Arco",
+    "MI Viveres 8 de octubre",
+    "MI Los Bebitos",
+    "Emp. Electroquímica de Sagua",
+    "MI La Campana",
+    "Emp. Aseguramiento al Comercio",
+    "MI El Cohete",
+    "MI Comercial Condado",
+    "Emp. Const. Obras de Arquitectura",
+    "MI Gomera",
+    "MI El Constructor",
+    "Emp. Marmoles del Centro",
+    "EES EIESA UEB Villa Clara",
+    "Emp. Prov. Producciones Varias",
+    "Emp. Vidrios Lisa",
+    "El Dorado",
+    "MI Estrella Roja",
+    "UEB Gases Villa Clara",
+    "MI Escambray",
+    "MI El Triunfo",
+    "COPEXTEL",
+    "Manajanabo",
+    "Emp. Comercio",
+    "Minerva",
+    "MI Amanecer",
+    "MI Caracatey",
+    "1ro Mayo",
+    "Dorado",
+    "Geominera Holguin",
+    "MI Hatillo",
+    "Emp. Prov. Conf. CALCONF",
+    "America Latina",
+    "MI Capiro",
+    "Emp. Comercial Cemento UEB VC",
+    "Emp. Prov. de Plastico Artificios Pirotecnicos y Textiles",
+    "MI Comercial Sagua",
+    "MI Moderna",
+    "Empresa Recuperacion de Materias Primas",
+    "Encomil",
+    "Zoraida Aguilera Barreras",
+    "COMBELL",
+    "UEB Calzado Jose Luis Chaviano",
+    "Hospital Psiquiatrico",
+    "Fondo Cubano de Bienes Culturales",
+    "Emp. Carpinteria de Aluminio Villalco",
+    "Almacen de la Empresa",
+    "Apertura del Sistema",
+    "Calconf",
+    "MI Sierra Maestra",
+    "MI 12 Plantas",
+    "MI El Caney",
+    "Ernesto Martin Mondeja",
+    "La Aurora",
+    "EMCOPLAST SURL IRCC",
+    "CABELLOS SOCIEDAD UNIPERSONAL",
+    "MI Guama",
+    "Taller de REfrigeracion",
+    "Oferta y Demanda",
+    "Servicio",
+    "UEB Cocina Centralizada",
+    "UEB 3",
+    "Dir. Mcpal. Trabajo y Seguridad Social",
+    "Inder",
+    "Centro de Elaboracion Vigia",
+    "Aojamiento Las Tecas",
+    "UB 3",
+    "MI El Taladro",
+    "MI America Latina",
+    "SURL Construcciones T-R",
+    "Hospital Arnaldo Millian Castro",
+    "Casita infantil Amiguitos del Comercio",
+    "CPT Alexei Arteaga",
+    "MI de Viveres Mi Casa",
+    "Empresa Comercio y Gast. Sagua la G",
+    "UAAAI Dep. Ad. Prov. VC",
+    "Emp. Mtto. a Grupos Electrogenos",
+    "Escuela de economia",
+    "Frutas Selectas",
+    "Villaplast",
+    "Empresa de Correos",
+  ];
+
+  await prisma.company.createMany({
+    data: companiesData.map((name) => ({ name })),
   });
 
-  const fashionWholesale = await prisma.company.create({
-    data: {
-      name: "Fashion Wholesale Co.",
-    },
-  });
+  console.log(`   ✓ Created ${companiesData.length} companies`);
 
-  const foodDistributors = await prisma.company.create({
-    data: {
-      name: "Global Food Distributors",
-    },
+  // Obtener algunas empresas para usar en transacciones
+  const miCanastilla = await prisma.company.findFirst({
+    where: { name: "MI Canastilla" },
+  });
+  const textilera = await prisma.company.findFirst({
+    where: { name: "Textilera Desembarco del Granma" },
+  });
+  const empCalzado = await prisma.company.findFirst({
+    where: { name: "Emp. Calzado" },
   });
 
   // ============================================
-  // CODES & PRODUCTS
+  // CATEGORIES & PRODUCTS
   // ============================================
-  console.log("📦 Creating product codes...");
+  console.log("📦 Creating categories...");
 
-  const ctgElectronics = await prisma.category.create({
-    data: {
-      id: "ctg_elec_001",
-      name: "Electronics",
-    },
+  // Crear todas las categorías del CSV
+  const categories = [
+    { id: "189-30-301-31", name: "A" },
+    { id: "189-30-302-501", name: "B" },
+    { id: "189-30-302-503", name: "C" },
+    { id: "189-30-302-504", name: "D" },
+    { id: "189-30-302-505", name: "E" },
+    { id: "189-30-302-506", name: "F" },
+    { id: "189-30-303-601", name: "G" },
+    { id: "189-30-304-501", name: "H" },
+    { id: "189-30-304-502", name: "I" },
+    { id: "189-30-304-503", name: "J" },
+    { id: "189-30-304-504", name: "K" },
+    { id: "189-30-304-506", name: "L" },
+    { id: "189-30-305-401", name: "M" },
+    { id: "189-30-306", name: "N" },
+    { id: "189-30-309-403", name: "O" },
+  ];
+
+  await prisma.category.createMany({
+    data: categories,
   });
 
-  const ctgClothing = await prisma.category.create({
-    data: {
-      id: "ctg_cloth_001",
-      name: "Clothing",
-    },
-  });
+  console.log(`   ✓ Created ${categories.length} categories`);
 
-  const ctgFood = await prisma.category.create({
-    data: {
-      id: "ctg_food_001",
-      name: "Food",
-    },
+  // Usar algunas categorías para los productos de ejemplo
+  const categoryA = await prisma.category.findUnique({
+    where: { id: "189-30-301-31" },
+  });
+  const categoryB = await prisma.category.findUnique({
+    where: { id: "189-30-302-501" },
+  });
+  const categoryC = await prisma.category.findUnique({
+    where: { id: "189-30-302-503" },
   });
 
   console.log("🏷️ Creating products...");
 
-  const laptop = await prisma.product.create({
-    data: {
-      id: "prod_001",
-      categoryId: ctgElectronics.id,
-      name: 'Laptop HP 15"',
-      costPrice: 450.0,
-      salePrice: 699.99,
-      unit: "unit",
+  // Productos reales del CSV - selección representativa de diferentes categorías
+  const productsData = [
+    // Categoría A (189-30-301-31) - Uniformes
+    {
+      id: "15483",
+      categoryId: "189-30-301-31",
+      name: "Bermunda Primaria N",
+      costPrice: 51.7,
+      salePrice: 41.5,
+      unit: "un",
     },
+    {
+      id: "15487",
+      categoryId: "189-30-301-31",
+      name: "Saya Primaria",
+      costPrice: 43.26,
+      salePrice: 35,
+      unit: "un",
+    },
+    {
+      id: "890344",
+      categoryId: "189-30-301-31",
+      name: "Camisa primaria",
+      costPrice: 55.0177,
+      salePrice: 25,
+      unit: "un",
+    },
+    {
+      id: "15585",
+      categoryId: "189-30-301-31",
+      name: "Pantalon Primaria",
+      costPrice: 69.778,
+      salePrice: 31.5,
+      unit: "un",
+    },
+
+    // Categoría B (189-30-302-501) - Medias y accesorios
+    {
+      id: "15527",
+      categoryId: "189-30-302-501",
+      name: "Medias p/Niño",
+      costPrice: 138.45,
+      salePrice: 175,
+      unit: "un",
+    },
+    {
+      id: "15554",
+      categoryId: "189-30-302-501",
+      name: "Medias P/Niña",
+      costPrice: 74.55,
+      salePrice: 95,
+      unit: "un",
+    },
+    {
+      id: "15599",
+      categoryId: "189-30-302-501",
+      name: "Media Vestir Hombre",
+      costPrice: 117.15,
+      salePrice: 150,
+      unit: "un",
+    },
+    {
+      id: "2724636",
+      categoryId: "189-30-302-501",
+      name: "Gorra",
+      costPrice: 600,
+      salePrice: 800,
+      unit: "un",
+    },
+    {
+      id: "2724643",
+      categoryId: "189-30-302-501",
+      name: "Camisa M/L Hombre",
+      costPrice: 1620,
+      salePrice: 2150,
+      unit: "un",
+    },
+
+    // Categoría C (189-30-302-503) - Sábanas
+    {
+      id: "15563",
+      categoryId: "189-30-302-503",
+      name: "Sabana Camera",
+      costPrice: 1171.5,
+      salePrice: 1465,
+      unit: "un",
+    },
+    {
+      id: "15598",
+      categoryId: "189-30-302-503",
+      name: "Sabana personal",
+      costPrice: 1011.75,
+      salePrice: 1265,
+      unit: "un",
+    },
+
+    // Categoría D (189-30-302-504) - Accesorios personales
+    {
+      id: "15574",
+      categoryId: "189-30-302-504",
+      name: "Fosforera",
+      costPrice: 90.7379,
+      salePrice: 115,
+      unit: "un",
+    },
+    {
+      id: "2724591",
+      categoryId: "189-30-302-504",
+      name: "Peine de Señora",
+      costPrice: 56.7525,
+      salePrice: 75,
+      unit: "un",
+    },
+
+    // Categoría E (189-30-302-505) - Útiles escolares
+    {
+      id: "008A243",
+      categoryId: "189-30-302-505",
+      name: "Boligrafo",
+      costPrice: 16.5,
+      salePrice: 19,
+      unit: "un",
+    },
+    {
+      id: "15575",
+      categoryId: "189-30-302-505",
+      name: "Lapicero Personalizado",
+      costPrice: 37.2749,
+      salePrice: 50,
+      unit: "un",
+    },
+    {
+      id: "15614",
+      categoryId: "189-30-302-505",
+      name: "Files",
+      costPrice: 27.5835,
+      salePrice: 35,
+      unit: "un",
+    },
+    {
+      id: "2724583",
+      categoryId: "189-30-302-505",
+      name: "Hoja Carta",
+      costPrice: 1970.25,
+      salePrice: 2465,
+      unit: "un",
+    },
+
+    // Categoría F (189-30-302-506) - Ferretería y hogar
+    {
+      id: "15318",
+      categoryId: "189-30-302-506",
+      name: "Cortinero",
+      costPrice: 232.54,
+      salePrice: 275,
+      unit: "un",
+    },
+    {
+      id: "15516",
+      categoryId: "189-30-302-506",
+      name: "Junego de Vasos",
+      costPrice: 1118.25,
+      salePrice: 1400,
+      unit: "un",
+    },
+    {
+      id: "15613",
+      categoryId: "189-30-302-506",
+      name: "Tomacorriente",
+      costPrice: 111.825,
+      salePrice: 140,
+      unit: "un",
+    },
+    {
+      id: "15619",
+      categoryId: "189-30-302-506",
+      name: "Sunavizante",
+      costPrice: 468.6,
+      salePrice: 590,
+      unit: "un",
+    },
+    {
+      id: "15620",
+      categoryId: "189-30-302-506",
+      name: "Jabon Liqunido",
+      costPrice: 289.4457,
+      salePrice: 365,
+      unit: "un",
+    },
+
+    // Categoría G (189-30-303-601) - Ropa de adulto
+    {
+      id: "272426",
+      categoryId: "189-30-303-601",
+      name: "Pantalon de Hombre",
+      costPrice: 897.2167,
+      salePrice: 1125,
+      unit: "un",
+    },
+    {
+      id: "272428",
+      categoryId: "189-30-303-601",
+      name: "Mini Saya",
+      costPrice: 330.974,
+      salePrice: 415,
+      unit: "un",
+    },
+
+    // Categoría H (189-30-304-501) - Ropa variada
+    {
+      id: "15448",
+      categoryId: "189-30-304-501",
+      name: "Vestido de Dama Shein",
+      costPrice: 2200,
+      salePrice: 2750,
+      unit: "un",
+    },
+    {
+      id: "15449",
+      categoryId: "189-30-304-501",
+      name: "Ropa de Niño Shein",
+      costPrice: 800,
+      salePrice: 1000,
+      unit: "un",
+    },
+    {
+      id: "15450",
+      categoryId: "189-30-304-501",
+      name: "Blunsa de Dama Shein",
+      costPrice: 1200,
+      salePrice: 1500,
+      unit: "un",
+    },
+
+    // Categoría I (189-30-304-502) - Calzado
+    {
+      id: "15035",
+      categoryId: "189-30-304-502",
+      name: "Calzado Artesanal",
+      costPrice: 1200,
+      salePrice: 1335,
+      unit: "un",
+    },
+    {
+      id: "15384",
+      categoryId: "189-30-304-502",
+      name: "Calzado Femenino Abascal",
+      costPrice: 951.3,
+      salePrice: 1190,
+      unit: "un",
+    },
+    {
+      id: "4400105",
+      categoryId: "189-30-304-502",
+      name: "Chanclrtas Baño",
+      costPrice: 600,
+      salePrice: 750,
+      unit: "un",
+    },
+
+    // Categoría J (189-30-304-503) - Textiles
+    {
+      id: "15332",
+      categoryId: "189-30-304-503",
+      name: "Junego de Sabana c/fundas",
+      costPrice: 1600,
+      salePrice: 2000,
+      unit: "un",
+    },
+    {
+      id: "15525",
+      categoryId: "189-30-304-503",
+      name: "Toalla artesanal",
+      costPrice: 1280,
+      salePrice: 1500,
+      unit: "un",
+    },
+
+    // Categoría K (189-30-304-504) - Cosméticos
+    {
+      id: "131750",
+      categoryId: "189-30-304-504",
+      name: "Keratina",
+      costPrice: 341.7,
+      salePrice: 430,
+      unit: "un",
+    },
+    {
+      id: "2400449",
+      categoryId: "189-30-304-504",
+      name: "Talco Perfunmado",
+      costPrice: 60,
+      salePrice: 80,
+      unit: "un",
+    },
+
+    // Categoría L (189-30-304-506) - Artículos varios
+    {
+      id: "15081",
+      categoryId: "189-30-304-506",
+      name: "Candado",
+      costPrice: 522.5,
+      salePrice: 655,
+      unit: "un",
+    },
+    {
+      id: "15359",
+      categoryId: "189-30-304-506",
+      name: "Jaba Artesanal",
+      costPrice: 160.5,
+      salePrice: 200,
+      unit: "un",
+    },
+    {
+      id: "15582",
+      categoryId: "189-30-304-506",
+      name: "Jabon Liqunido 400g",
+      costPrice: 150,
+      salePrice: 190,
+      unit: "un",
+    },
+
+    // Categoría M (189-30-305-401) - Eléctricos
+    {
+      id: "15129",
+      categoryId: "189-30-305-401",
+      name: "Caja Electrica 4x4",
+      costPrice: 3.04,
+      salePrice: 6.5,
+      unit: "un",
+    },
+    {
+      id: "15145",
+      categoryId: "189-30-305-401",
+      name: "Tee 2ñ",
+      costPrice: 22.5,
+      salePrice: 25,
+      unit: "un",
+    },
+
+    // Categoría N (189-30-306) - Plomería
+    {
+      id: "15119",
+      categoryId: "189-30-306",
+      name: "Llave",
+      costPrice: 45,
+      salePrice: 70,
+      unit: "un",
+    },
+    {
+      id: "15158",
+      categoryId: "189-30-306",
+      name: "Llave Cañon Largo",
+      costPrice: 143.2,
+      salePrice: 180,
+      unit: "un",
+    },
+    {
+      id: "4400211",
+      categoryId: "189-30-306",
+      name: "Nundo 3/4",
+      costPrice: 10.0347,
+      salePrice: 40,
+      unit: "un",
+    },
+
+    // Categoría O (189-30-309-403) - Higiene personal
+    {
+      id: "131700",
+      categoryId: "189-30-309-403",
+      name: "Jabon c/envoltunra",
+      costPrice: 136.35,
+      salePrice: 160,
+      unit: "un",
+    },
+    {
+      id: "440111",
+      categoryId: "189-30-309-403",
+      name: "Gel",
+      costPrice: 335.7636,
+      salePrice: 300,
+      unit: "un",
+    },
+  ];
+
+  await prisma.product.createMany({
+    data: productsData,
   });
 
-  const mouse = await prisma.product.create({
-    data: {
-      id: "prod_002",
-      categoryId: ctgElectronics.id,
-      name: "Wireless Mouse",
-      costPrice: 8.5,
-      salePrice: 19.99,
-      unit: "unit",
-    },
-  });
+  console.log(`   ✓ Created ${productsData.length} products from CSV`);
 
-  const tshirt = await prisma.product.create({
-    data: {
-      id: "prod_003",
-      categoryId: ctgClothing.id,
-      name: "T-Shirt Cotton Blue",
-      costPrice: 5.0,
-      salePrice: 14.99,
-      unit: "unit",
-    },
+  // Referencias a productos para usar en transacciones
+  const bermudaPrimaria = await prisma.product.findUnique({
+    where: { id: "15483" },
   });
-
-  const coffee = await prisma.product.create({
-    data: {
-      id: "prod_004",
-      categoryId: ctgFood.id,
-      name: "Coffee Beans 1kg",
-      costPrice: 12.0,
-      salePrice: 24.99,
-      unit: "kg",
-    },
+  const mediasNino = await prisma.product.findUnique({
+    where: { id: "15527" },
   });
-
-  const keyboard = await prisma.product.create({
-    data: {
-      id: "prod_005",
-      categoryId: ctgElectronics.id,
-      name: "Mechanical Keyboard",
-      costPrice: 35.0,
-      salePrice: 79.99,
-      unit: "unit",
-    },
+  const sabanaCamera = await prisma.product.findUnique({
+    where: { id: "15563" },
+  });
+  const boligrafo = await prisma.product.findUnique({
+    where: { id: "008A243" },
+  });
+  const tomacorriente = await prisma.product.findUnique({
+    where: { id: "15613" },
   });
 
   // ============================================
@@ -310,64 +786,64 @@ async function main() {
   // ============================================
   console.log("📥 Creating inflows...");
 
-  // Caso 1: Compra desde empresa - Laptops
+  // Caso 1: Compra desde empresa - Bermudas Primaria
   await prisma.inflow.create({
     data: {
       userId: adminUser.id,
       warehouseId: mainWarehouse.id,
       date: new Date("2024-01-15"),
       inType: "purchase",
-      providerCompanyId: techSuppliers.id,
+      providerCompanyId: textilera!.id,
       providerStoreId: null,
-      payMethod: "credit",
+      payMethod: "TRANSFERMOVIL",
       invoiceNumber: "INV-2024-001",
       inNumber: "IN-001",
-      productId: laptop.id,
-      quantity: 50,
-      saleAmount: 34999.5,
-      costAmount: 22500.0,
+      productId: bermudaPrimaria!.id,
+      quantity: 100,
+      saleAmount: 4150.0,
+      costAmount: 5170.0,
     },
   });
 
-  // Caso 2: Compra desde empresa - Mouses
+  // Caso 2: Compra desde empresa - Medias para Niño
   await prisma.inflow.create({
     data: {
       userId: managerUser.id,
       warehouseId: mainWarehouse.id,
       date: new Date("2024-01-20"),
       inType: "purchase",
-      providerCompanyId: techSuppliers.id,
+      providerCompanyId: textilera!.id,
       providerStoreId: null,
-      payMethod: "cash",
+      payMethod: "EFECTIVO",
       invoiceNumber: "INV-2024-002",
       inNumber: "IN-002",
-      productId: mouse.id,
+      productId: mediasNino!.id,
       quantity: 200,
-      saleAmount: 3998.0,
-      costAmount: 1700.0,
+      saleAmount: 35000.0,
+      costAmount: 27690.0,
     },
   });
 
-  // Caso 3: Compra desde empresa - Keyboards
+  // Caso 3: Compra desde empresa - Sábanas
   await prisma.inflow.create({
     data: {
       userId: managerUser.id,
-      warehouseId: mainWarehouse.id,
+      warehouseId: secondaryWarehouse.id,
       date: new Date("2024-01-22"),
       inType: "purchase",
-      providerCompanyId: techSuppliers.id,
+      providerCompanyId: miCanastilla!.id,
       providerStoreId: null,
-      payMethod: "credit",
+      payMethod: "TRANSFERMOVIL",
       invoiceNumber: "INV-2024-003",
       inNumber: "IN-003",
-      productId: keyboard.id,
-      quantity: 80,
-      saleAmount: 6399.2,
-      costAmount: 2800.0,
+      productId: sabanaCamera!.id,
+      quantity: 50,
+      saleAmount: 73250.0,
+      costAmount: 58575.0,
     },
   });
 
-  // Caso 4: Transferencia desde otra tienda
+  // Caso 4: Transferencia desde otra tienda - Bolígrafos
   await prisma.inflow.create({
     data: {
       userId: regularUser.id,
@@ -379,48 +855,29 @@ async function main() {
       payMethod: null,
       invoiceNumber: null,
       inNumber: "IN-004",
-      productId: laptop.id,
-      quantity: 10,
-      saleAmount: 6999.9,
-      costAmount: 4500.0,
+      productId: boligrafo!.id,
+      quantity: 500,
+      saleAmount: 9500.0,
+      costAmount: 8250.0,
     },
   });
 
-  // Caso 5: Compra desde empresa - T-shirts
+  // Caso 5: Compra desde empresa - Tomacorrientes
   await prisma.inflow.create({
     data: {
       userId: adminUser.id,
-      warehouseId: secondaryWarehouse.id,
+      warehouseId: downtownWarehouse.id,
       date: new Date("2024-02-01"),
       inType: "purchase",
-      providerCompanyId: fashionWholesale.id,
+      providerCompanyId: empCalzado!.id,
       providerStoreId: null,
-      payMethod: "credit",
+      payMethod: "TRANSFERMOVIL",
       invoiceNumber: "INV-2024-004",
       inNumber: "IN-005",
-      productId: tshirt.id,
-      quantity: 300,
-      saleAmount: 4497.0,
-      costAmount: 1500.0,
-    },
-  });
-
-  // Caso 6: Compra desde empresa - Coffee
-  await prisma.inflow.create({
-    data: {
-      userId: regularUser.id,
-      warehouseId: downtownWarehouse.id,
-      date: new Date("2024-02-05"),
-      inType: "purchase",
-      providerCompanyId: foodDistributors.id,
-      providerStoreId: null,
-      payMethod: "cash",
-      invoiceNumber: "INV-2024-005",
-      inNumber: "IN-006",
-      productId: coffee.id,
-      quantity: 100,
-      saleAmount: 2499.0,
-      costAmount: 1200.0,
+      productId: tomacorriente!.id,
+      quantity: 80,
+      saleAmount: 11200.0,
+      costAmount: 8946.0,
     },
   });
 
@@ -434,51 +891,37 @@ async function main() {
       // Main Warehouse
       {
         warehouseId: mainWarehouse.id,
-        productId: laptop.id,
-        quantity: 40,
-        minStock: 10,
-      },
-      {
-        warehouseId: mainWarehouse.id,
-        productId: mouse.id,
-        quantity: 150,
-        minStock: 30,
-      },
-      {
-        warehouseId: mainWarehouse.id,
-        productId: keyboard.id,
+        productId: bermudaPrimaria!.id,
         quantity: 80,
         minStock: 20,
+      },
+      {
+        warehouseId: mainWarehouse.id,
+        productId: mediasNino!.id,
+        quantity: 180,
+        minStock: 50,
       },
 
       // Secondary Warehouse
       {
         warehouseId: secondaryWarehouse.id,
-        productId: tshirt.id,
-        quantity: 200,
-        minStock: 50,
+        productId: sabanaCamera!.id,
+        quantity: 45,
+        minStock: 10,
       },
 
       // Downtown Warehouse
       {
         warehouseId: downtownWarehouse.id,
-        productId: laptop.id,
-        quantity: 10,
-        minStock: 5,
+        productId: boligrafo!.id,
+        quantity: 480,
+        minStock: 100,
       },
       {
         warehouseId: downtownWarehouse.id,
-        productId: coffee.id,
-        quantity: 97,
-        minStock: 20,
-      },
-
-      // North Warehouse
-      {
-        warehouseId: northWarehouse.id,
-        productId: laptop.id,
-        quantity: 5,
-        minStock: 5,
+        productId: tomacorriente!.id,
+        quantity: 75,
+        minStock: 15,
       },
     ],
   });
@@ -488,7 +931,7 @@ async function main() {
   // ============================================
   console.log("📤 Creating outflows...");
 
-  // Caso 1: Transferencia a otra tienda
+  // Caso 1: Transferencia a otra tienda - Bermudas
   await prisma.outflow.create({
     data: {
       userId: adminUser.id,
@@ -499,14 +942,14 @@ async function main() {
       destinationSalesAreaId: null,
       payMethod: null,
       outNumber: "OUT-001",
-      productId: laptop.id,
-      quantity: 5,
-      saleAmount: 3499.95,
-      costAmount: 2250.0,
+      productId: bermudaPrimaria!.id,
+      quantity: 20,
+      saleAmount: 830.0,
+      costAmount: 1034.0,
     },
   });
 
-  // Caso 2: Salida a área de venta - Electronics Main
+  // Caso 2: Salida a área de venta - Medias Main
   await prisma.outflow.create({
     data: {
       userId: managerUser.id,
@@ -517,14 +960,14 @@ async function main() {
       destinationSalesAreaId: electronicsAreaMain.id,
       payMethod: null,
       outNumber: "OUT-002",
-      productId: mouse.id,
+      productId: mediasNino!.id,
       quantity: 50,
-      saleAmount: 999.5,
-      costAmount: 425.0,
+      saleAmount: 8750.0,
+      costAmount: 6922.5,
     },
   });
 
-  // Caso 3: Salida a área de venta - Clothing
+  // Caso 3: Salida a área de venta - Sábanas
   await prisma.outflow.create({
     data: {
       userId: managerUser.id,
@@ -535,100 +978,46 @@ async function main() {
       destinationSalesAreaId: clothingAreaMain.id,
       payMethod: null,
       outNumber: "OUT-003",
-      productId: tshirt.id,
-      quantity: 100,
-      saleAmount: 1499.0,
-      costAmount: 500.0,
+      productId: sabanaCamera!.id,
+      quantity: 10,
+      saleAmount: 14650.0,
+      costAmount: 11715.0,
     },
   });
 
-  // Caso 4: Salida a área de venta - Electronics Main (keyboards)
+  // Caso 4: Salida a área de venta - Bolígrafos Downtown
   await prisma.outflow.create({
     data: {
-      userId: managerUser.id,
-      warehouseId: mainWarehouse.id,
+      userId: regularUser.id,
+      warehouseId: downtownWarehouse.id,
       date: new Date("2024-02-14"),
-      outType: "internal_transfer",
-      destinationStoreId: null,
-      destinationSalesAreaId: electronicsAreaMain.id,
-      payMethod: null,
-      outNumber: "OUT-004",
-      productId: keyboard.id,
-      quantity: 30,
-      saleAmount: 2399.7,
-      costAmount: 1050.0,
-    },
-  });
-
-  // Caso 5: Devolución a proveedor (sin destino específico)
-  await prisma.outflow.create({
-    data: {
-      userId: adminUser.id,
-      warehouseId: mainWarehouse.id,
-      date: new Date("2024-02-15"),
-      outType: "return",
-      destinationStoreId: null,
-      destinationSalesAreaId: null,
-      payMethod: "credit",
-      outNumber: "OUT-005",
-      productId: laptop.id,
-      quantity: 2,
-      saleAmount: 1399.98,
-      costAmount: 900.0,
-    },
-  });
-
-  // Caso 6: Producto dañado (sin destino)
-  await prisma.outflow.create({
-    data: {
-      userId: regularUser.id,
-      warehouseId: downtownWarehouse.id,
-      date: new Date("2024-02-16"),
-      outType: "damaged",
-      destinationStoreId: null,
-      destinationSalesAreaId: null,
-      payMethod: null,
-      outNumber: "OUT-006",
-      productId: coffee.id,
-      quantity: 3,
-      saleAmount: 74.97,
-      costAmount: 36.0,
-    },
-  });
-
-  // Caso 7: Salida a área de venta - Electronics Downtown
-  await prisma.outflow.create({
-    data: {
-      userId: regularUser.id,
-      warehouseId: downtownWarehouse.id,
-      date: new Date("2024-02-17"),
       outType: "internal_transfer",
       destinationStoreId: null,
       destinationSalesAreaId: electronicsAreaDowntown.id,
       payMethod: null,
-      outNumber: "OUT-007",
-      productId: laptop.id,
-      quantity: 8,
-      saleAmount: 5599.92,
-      costAmount: 3600.0,
+      outNumber: "OUT-004",
+      productId: boligrafo!.id,
+      quantity: 100,
+      saleAmount: 1900.0,
+      costAmount: 1650.0,
     },
   });
 
-  // Caso 8: Salida a área de venta - Electronics Main (más laptops)
+  // Caso 5: Devolución a proveedor - Tomacorrientes defectuosos
   await prisma.outflow.create({
     data: {
-      userId: managerUser.id,
-      warehouseId: mainWarehouse.id,
-      date: new Date("2024-02-18"),
-      outType: "internal_transfer",
+      userId: adminUser.id,
+      warehouseId: downtownWarehouse.id,
+      date: new Date("2024-02-15"),
+      outType: "return",
       destinationStoreId: null,
-      destinationSalesAreaId: electronicsAreaMain.id,
-      payMethod: null,
-      outNumber: "OUT-008",
-      productId: laptop.id,
-      quantity: 3,
-      saleAmount: 2099.97,
-      costAmount: 1350.0,
+      destinationSalesAreaId: null,
+      payMethod: "TRANSFERMOVIL",
+      outNumber: "OUT-005",
+      productId: tomacorriente!.id,
+      quantity: 5,
+      saleAmount: 700.0,
+      costAmount: 559.13,
     },
   });
 
@@ -642,37 +1031,25 @@ async function main() {
       // Electronics Main
       {
         salesAreaId: electronicsAreaMain.id,
-        productId: mouse.id,
-        quantity: 40,
+        productId: mediasNino!.id,
+        quantity: 45,
         minStock: 10,
-      },
-      {
-        salesAreaId: electronicsAreaMain.id,
-        productId: keyboard.id,
-        quantity: 25,
-        minStock: 5,
-      },
-      {
-        salesAreaId: electronicsAreaMain.id,
-        productId: laptop.id,
-        quantity: 1,
-        minStock: 2,
       },
 
       // Clothing Main
       {
         salesAreaId: clothingAreaMain.id,
-        productId: tshirt.id,
-        quantity: 85,
-        minStock: 20,
+        productId: sabanaCamera!.id,
+        quantity: 8,
+        minStock: 3,
       },
 
       // Electronics Downtown
       {
         salesAreaId: electronicsAreaDowntown.id,
-        productId: laptop.id,
-        quantity: 7,
-        minStock: 2,
+        productId: boligrafo!.id,
+        quantity: 95,
+        minStock: 20,
       },
     ],
   });
@@ -685,64 +1062,34 @@ async function main() {
   await prisma.sale.createMany({
     data: [
       {
-        userId: managerUser.id,
+        userId: adminUser.id,
         salesAreaId: electronicsAreaMain.id,
         date: new Date("2024-02-20"),
-        payMethod: "credit_card",
-        productId: laptop.id,
-        quantity: 2,
-        saleAmount: 1399.98,
-        costAmount: 900.0,
-      },
-      {
-        userId: managerUser.id,
-        salesAreaId: electronicsAreaMain.id,
-        date: new Date("2024-02-21"),
-        payMethod: "cash",
-        productId: mouse.id,
-        quantity: 10,
-        saleAmount: 199.9,
-        costAmount: 85.0,
-      },
-      {
-        userId: managerUser.id,
-        salesAreaId: clothingAreaMain.id,
-        date: new Date("2024-02-22"),
-        payMethod: "debit_card",
-        productId: tshirt.id,
-        quantity: 15,
-        saleAmount: 224.85,
-        costAmount: 75.0,
-      },
-      {
-        userId: regularUser.id,
-        salesAreaId: electronicsAreaDowntown.id,
-        date: new Date("2024-02-23"),
-        payMethod: "cash",
-        productId: laptop.id,
-        quantity: 1,
-        saleAmount: 699.99,
-        costAmount: 450.0,
-      },
-      {
-        userId: managerUser.id,
-        salesAreaId: electronicsAreaMain.id,
-        date: new Date("2024-02-24"),
-        payMethod: "credit_card",
-        productId: keyboard.id,
+        payMethod: "TRANSFERMOVIL",
+        productId: mediasNino!.id,
         quantity: 5,
-        saleAmount: 399.95,
-        costAmount: 175.0,
+        saleAmount: 875.0,
+        costAmount: 692.25,
       },
       {
-        userId: managerUser.id,
-        salesAreaId: electronicsAreaMain.id,
-        date: new Date("2024-02-25"),
-        payMethod: "cash",
-        productId: mouse.id,
-        quantity: 8,
-        saleAmount: 159.92,
-        costAmount: 68.0,
+        userId: adminUser.id,
+        salesAreaId: clothingAreaMain.id,
+        date: new Date("2024-02-21"),
+        payMethod: "EFECTIVO",
+        productId: sabanaCamera!.id,
+        quantity: 2,
+        saleAmount: 2930.0,
+        costAmount: 2343.0,
+      },
+      {
+        userId: adminUser.id,
+        salesAreaId: electronicsAreaDowntown.id,
+        date: new Date("2024-02-22"),
+        payMethod: "ENZONA",
+        productId: boligrafo!.id,
+        quantity: 5,
+        saleAmount: 95.0,
+        costAmount: 82.5,
       },
     ],
   });
@@ -843,12 +1190,14 @@ async function main() {
   console.log(`   - Outflows external (returns/damaged): ${outflowExternal}`);
 
   // Sales by payment method
-  const cashSales = await prisma.sale.count({ where: { payMethod: "cash" } });
+  const cashSales = await prisma.sale.count({
+    where: { payMethod: "EFECTIVO" },
+  });
   const creditSales = await prisma.sale.count({
-    where: { payMethod: "credit_card" },
+    where: { payMethod: "TRANSFERMOVIL" },
   });
   const debitSales = await prisma.sale.count({
-    where: { payMethod: "debit_card" },
+    where: { payMethod: "ENZONA" },
   });
   console.log(`   - Cash sales: ${cashSales}`);
   console.log(`   - Credit card sales: ${creditSales}`);

@@ -90,7 +90,6 @@ interface Product {
 
 interface OutletContext {
   user: any;
-  selectedStoreId: string;
   warehouses: Warehouse[];
   warehouseInventories: WarehouseInventory[];
   destinations: {

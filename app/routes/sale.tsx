@@ -86,9 +86,7 @@ interface Product {
 
 interface OutletContext {
   user: any;
-  selectedStoreId: string;
   salesAreas: SaleArea[];
-  warehouseInventories: SalesAreaInventory[];
   destinations: {
     stores: Destination[];
     salesAreas: Destination[];

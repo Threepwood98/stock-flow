@@ -53,16 +53,9 @@ interface WithdrawRow {
   amount: string;
 }
 
-interface SalesAreaInventory {
-  id: string;
-  quantity: number;
-  product: Product;
-}
-
 interface SaleArea {
   id: string;
   name: string;
-  salesAreaInventories: SalesAreaInventory[];
 }
 
 interface Destination {
@@ -81,9 +74,7 @@ interface Product {
 
 interface OutletContext {
   user: any;
-  selectedStoreId: string;
   salesAreas: SaleArea[];
-  warehouseInventories: SalesAreaInventory[];
   destinations: {
     stores: Destination[];
     salesAreas: Destination[];

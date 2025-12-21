@@ -2,6 +2,7 @@ import {
   AudioWaveform,
   BanknoteArrowDown,
   BanknoteArrowUp,
+  BanknoteIcon,
   Command,
   FileChartPie,
   GalleryVerticalEnd,
@@ -9,8 +10,8 @@ import {
   PackageMinus,
   PackagePlus,
   Receipt,
-  Store,
-  Warehouse,
+  StoreIcon,
+  WarehouseIcon,
 } from "lucide-react";
 
 import { NavMain } from "~/components/nav-main";
@@ -52,7 +53,7 @@ const data = {
     },
     {
       title: "Almacen",
-      icon: Warehouse,
+      icon: WarehouseIcon,
       isActive: true,
       items: [
         {
@@ -71,7 +72,7 @@ const data = {
     },
     {
       title: "Área de Venta",
-      icon: Store,
+      icon: StoreIcon,
       isActive: true,
       items: [
         {
@@ -92,10 +93,13 @@ const data = {
       title: "Reporte",
       url: "#",
       icon: FileChartPie,
+      isActive: true,
       items: [
         {
-          title: "General",
-          url: "#",
+          title: "Venta",
+          url: "/main/report/sales-report",
+          icon: BanknoteIcon,
+          isActive: true,
         },
         {
           title: "Team",

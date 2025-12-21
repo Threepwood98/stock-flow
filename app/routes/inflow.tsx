@@ -88,7 +88,6 @@ export interface Category {
 
 interface OutletContext {
   user: any;
-  selectedStoreId: string;
   warehouses: Warehouse[];
   providers: {
     companies: Provider[];
