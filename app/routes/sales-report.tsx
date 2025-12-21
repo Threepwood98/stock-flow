@@ -22,50 +22,11 @@ import {
 import { BanknoteIcon } from "lucide-react";
 import { Label } from "~/components/ui/label";
 import { ComboboxPlus } from "~/components/combobox-plus";
-import { Button } from "~/components/ui/button";
 import { toast } from "sonner";
-
-type ContextType = {
-  sales: Array<{
-    id: string;
-    date: string;
-    productId: string;
-    productName: string;
-    categoryId: string;
-    categoryName: string;
-    quantity: number;
-    saleAmount: number;
-    costAmount: number;
-    profit: number;
-    payMethod: string;
-    salesAreaId: string;
-    salesAreaName: string;
-    storeId: string;
-    storeName: string;
-    userId: string;
-    userName: string;
-  }>;
-  userStores: Array<{
-    storeId: string;
-    store: {
-      id: string;
-      name: string;
-    };
-  }>;
-  salesAreas: Array<{
-    id: string;
-    name: string;
-  }>;
-  products: Array<{
-    id: string;
-    name: string;
-    costPrice: { d: number };
-    salePrice: { d: number };
-  }>;
-};
+import type { OutletContext } from "@/types/types";
 
 export default function SalesReport() {
-  const { sales, salesAreas, products } = useOutletContext<ContextType>();
+  const { sales, salesAreas, products } = useOutletContext<OutletContext>();
   console.log("🚀 ~ SalesReport ~ sales:", sales);
 
   // Estados para filtros

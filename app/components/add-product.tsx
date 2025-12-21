@@ -12,9 +12,9 @@ import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { SelectList } from "./select-list";
-import type { Category } from "~/routes/inflow";
 import { AddCategory } from "./add-category";
 import { toast } from "sonner";
+import type { Category } from "@/types/types";
 
 interface AddPrductProps {
   onClose: (shouldClose: boolean) => void;

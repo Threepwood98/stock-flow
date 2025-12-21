@@ -45,8 +45,8 @@ import {
 } from "lucide-react";
 import { AddProvider } from "~/components/add-provider";
 import { AddProduct } from "~/components/add-product";
+import type { OutletContext, Product, Provider } from "@/types/types";
 
-// Types
 interface InflowRow {
   userId: string;
   warehouseId: string;
@@ -64,40 +64,6 @@ interface InflowRow {
   costAmount: number | null;
 }
 
-interface Warehouse {
-  id: string;
-  name: string;
-}
-
-interface Provider {
-  id: string;
-  name: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  costPrice: { d: number };
-  salePrice: { d: number };
-}
-
-export interface Category {
-  id: string;
-  name: string;
-}
-
-interface OutletContext {
-  user: any;
-  warehouses: Warehouse[];
-  providers: {
-    companies: Provider[];
-    stores: Provider[];
-  };
-  products: Product[];
-  categories: Category[];
-}
-
-// Constants
 const inTypeOptions = [
   { value: "FACTURA", label: "Por Factura" },
   { value: "TRASLADO", label: "Por Traslado" },
@@ -419,8 +385,10 @@ export default function Inflow() {
     const productToAdd: Product = {
       id: newProduct.value,
       name: newProduct.label,
+      warehouseId: newProduct.warehouseId || formValues.warehouseId,
       costPrice: newProduct.costPrice || { d: 0 },
       salePrice: newProduct.salePrice || { d: 0 },
+      unit: newProduct.unit || "un",
     };
 
     setProducts((prev) => [...prev, productToAdd]);

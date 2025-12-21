@@ -43,8 +43,8 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { Decimal } from "@prisma/client/runtime/client";
+import type { OutletContext } from "@/types/types";
 
-// Types
 interface WithdrawRow {
   userId: string;
   salesAreaId: string;
@@ -52,37 +52,6 @@ interface WithdrawRow {
   date: string;
   amount: string;
 }
-
-interface SaleArea {
-  id: string;
-  name: string;
-}
-
-interface Destination {
-  id: string;
-  name: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  warehouseId: string;
-  costPrice: { d: Number };
-  salePrice: { d: Number };
-  unit: string;
-}
-
-interface OutletContext {
-  user: any;
-  salesAreas: SaleArea[];
-  destinations: {
-    stores: Destination[];
-    salesAreas: Destination[];
-  };
-  products: Product[];
-}
-
-// Constants
 const initialFormValues: WithdrawRow = {
   userId: "",
   salesAreaId: "",

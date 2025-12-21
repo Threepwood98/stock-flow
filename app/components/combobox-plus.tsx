@@ -21,8 +21,10 @@ import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 export interface ComboboxOption {
   value: string;
   label: string;
+  warehouseId?: string;
   costPrice?: { d: number };
   salePrice?: { d: number };
+  unit?: string;
 }
 
 interface DialogContentProps {

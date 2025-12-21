@@ -43,8 +43,8 @@ import {
   StoreIcon,
   Trash2Icon,
 } from "lucide-react";
+import type { OutletContext } from "@/types/types";
 
-// Types
 interface SaleRow {
   userId: string;
   salesAreaId: string;
@@ -58,43 +58,6 @@ interface SaleRow {
   costAmount: number | null;
 }
 
-interface SalesAreaInventory {
-  id: string;
-  quantity: number;
-  product: Product;
-}
-
-interface SaleArea {
-  id: string;
-  name: string;
-  salesAreaInventories: SalesAreaInventory[];
-}
-
-interface Destination {
-  id: string;
-  name: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  warehouseId: string;
-  costPrice: { d: Number };
-  salePrice: { d: Number };
-  unit: string;
-}
-
-interface OutletContext {
-  user: any;
-  salesAreas: SaleArea[];
-  destinations: {
-    stores: Destination[];
-    salesAreas: Destination[];
-  };
-  products: Product[];
-}
-
-// Constants
 const payMethods = [
   { value: "EFECTIVO", label: "EFECTIVO" },
   { value: "TRANSFERMOVIL", label: "TRANSFERMOVIL" },

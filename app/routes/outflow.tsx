@@ -43,8 +43,8 @@ import {
   Trash2Icon,
   WarehouseIcon,
 } from "lucide-react";
+import type { Destination, OutletContext } from "@/types/types";
 
-// Types
 interface OutflowRow {
   userId: string;
   warehouseId: string;
@@ -62,44 +62,6 @@ interface OutflowRow {
   costAmount: number | null;
 }
 
-interface WarehouseInventory {
-  id: string;
-  quantity: number;
-  product: Product;
-}
-
-interface Warehouse {
-  id: string;
-  name: string;
-  warehouseInventories: WarehouseInventory[];
-}
-
-interface Destination {
-  id: string;
-  name: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  warehouseId: string;
-  costPrice: { d: Number };
-  salePrice: { d: Number };
-  unit: string;
-}
-
-interface OutletContext {
-  user: any;
-  warehouses: Warehouse[];
-  warehouseInventories: WarehouseInventory[];
-  destinations: {
-    stores: Destination[];
-    salesAreas: Destination[];
-  };
-  products: Product[];
-}
-
-// Constants
 const outTypeOptions = [
   { value: "TRASLADO", label: "Por Traslado" },
   { value: "VALE", label: "Por Vale" },
