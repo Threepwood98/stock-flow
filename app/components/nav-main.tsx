@@ -1,3 +1,4 @@
+import type { TablerIcon } from "@tabler/icons-react";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 import {
@@ -16,7 +17,7 @@ import {
 type NavItem = {
   title: string;
   url?: string;
-  icon?: LucideIcon;
+  icon?: LucideIcon | TablerIcon;
   isActive?: boolean;
   items?: NavItem[];
 };
@@ -49,7 +50,7 @@ function NavItemComponent({ item }: { item: NavItem }) {
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton tooltip={item.title}>
-            {item.icon && <item.icon />}
+            {item.icon && <item.icon className="text-2xl" />}
             <span>{item.title}</span>
             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>

@@ -66,6 +66,19 @@ export interface Sale {
   userName: string;
 }
 
+export interface Withdraw {
+  id: string;
+  date: string;
+  amount: number;
+  salesAreaId: string;
+  salesAreaName: string;
+  storeId: string;
+  storeName: string;
+  userId: string;
+  userName: string;
+  createdAt: string;
+}
+
 export interface UserStores {
   storeId: string;
   store: {
@@ -89,5 +102,6 @@ export interface OutletContext {
   products: Product[];
   categories: Category[];
   sales: Sale[];
+  withdraws: Withdraw[];
   userStores: UserStores[];
 }

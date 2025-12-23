@@ -9,7 +9,9 @@ import {
   LayoutDashboard,
   PackageMinus,
   PackagePlus,
+  PackageSearchIcon,
   Receipt,
+  ReceiptIcon,
   StoreIcon,
   WarehouseIcon,
 } from "lucide-react";
@@ -68,6 +70,11 @@ const data = {
           icon: PackageMinus,
           isActive: true,
         },
+        {
+          title: "Inventario",
+          icon: PackageSearchIcon,
+          isActive: true,
+        },
       ],
     },
     {
@@ -87,6 +94,11 @@ const data = {
           icon: BanknoteArrowDown,
           isActive: true,
         },
+        {
+          title: "Inventario",
+          icon: PackageSearchIcon,
+          isActive: true,
+        },
       ],
     },
     {
@@ -96,14 +108,16 @@ const data = {
       isActive: true,
       items: [
         {
+          title: "Desglose del Importe",
+          url: "/main/report/sales-amount-report",
+          icon: ReceiptIcon,
+          isActive: true,
+        },
+        {
           title: "Venta",
           url: "/main/report/sales-report",
           icon: BanknoteIcon,
           isActive: true,
-        },
-        {
-          title: "Team",
-          url: "#",
         },
         {
           title: "Billing",

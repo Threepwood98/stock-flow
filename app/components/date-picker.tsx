@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type ChangeEvent } from "react";
 import { format, isValid, parse } from "date-fns";
 import { es } from "date-fns/locale";

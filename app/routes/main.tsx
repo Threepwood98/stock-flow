@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { prisma } from "~/lib/prisma";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { subMonths } from "date-fns";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -84,6 +84,18 @@ export async function loader({ request }: Route.LoaderArgs) {
         })
       : [];
 
+  const withdraws =
+    storeIds.length > 0
+      ? await prisma.withdraw.findMany({
+          where: { salesArea: { storeId: { in: storeIds } } },
+          include: {
+            salesArea: { include: { store: true } },
+            user: { select: { name: true } },
+          },
+          orderBy: { date: "desc" },
+        })
+      : [];
+
   return {
     user,
     userStores,
@@ -93,14 +105,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     sales: sales.map((sale) => ({
       id: sale.id,
       date: sale.date.toISOString().split("T")[0],
+      // date: sale.date,
       productId: sale.productId,
       productName: sale.product.name,
       categoryId: sale.product.categoryId,
       categoryName: sale.product.category.name,
-      quantity: sale.quantity,
-      saleAmount: Number(sale.saleAmount),
-      costAmount: Number(sale.costAmount),
-      profit: Number(sale.saleAmount) - Number(sale.costAmount),
+      quantity: Number(sale.quantity),
+      saleAmount: Number(sale.saleAmount).toFixed(2),
+      costAmount: Number(sale.costAmount).toFixed(2),
+      // profit: Number(sale.saleAmount) - Number(sale.costAmount),
       payMethod: sale.payMethod,
       salesAreaId: sale.salesAreaId,
       salesAreaName: sale.salesArea.name,
@@ -109,12 +122,31 @@ export async function loader({ request }: Route.LoaderArgs) {
       userId: sale.userId,
       userName: sale.user.name,
     })),
+    withdraws: withdraws.map((withdraw) => ({
+      id: withdraw.id,
+      date: withdraw.date.toISOString().split("T")[0],
+      amount: Number(withdraw.amount),
+      salesAreaId: withdraw.salesAreaId,
+      salesAreaName: withdraw.salesArea.name,
+      storeId: withdraw.salesArea.storeId,
+      storeName: withdraw.salesArea.store.name,
+      userId: withdraw.userId,
+      userName: withdraw.user.name,
+      createdAt: withdraw.createdAt.toISOString(),
+    })),
   };
 }
 
 export default function Main({ loaderData }: Route.ComponentProps) {
-  const { user, userStores, companies, products, categories, sales } =
-    loaderData;
+  const {
+    user,
+    userStores,
+    companies,
+    products,
+    categories,
+    sales,
+    withdraws,
+  } = loaderData;
 
   const [selectedStoreId, setSelectedStoreId] = useState(
     userStores[0]?.storeId || ""
@@ -135,6 +167,14 @@ export default function Main({ loaderData }: Route.ComponentProps) {
   const providers = { companies, stores };
 
   const destinations = { stores, salesAreas };
+
+  const filteredSales = useMemo(() => {
+    return sales.filter((sale) => sale.storeId === selectedStoreId);
+  }, [sales, selectedStoreId]);
+
+  const filteredWithdraws = useMemo(() => {
+    return withdraws.filter((withdraw) => withdraw.storeId === selectedStoreId);
+  }, [withdraws, selectedStoreId]);
 
   return (
     <SidebarProvider>
@@ -179,7 +219,8 @@ export default function Main({ loaderData }: Route.ComponentProps) {
             destinations,
             products,
             categories,
-            sales,
+            sales: filteredSales,
+            withdraws: filteredWithdraws,
             userStores,
           }}
         />

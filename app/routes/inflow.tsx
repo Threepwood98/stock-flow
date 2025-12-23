@@ -418,7 +418,10 @@ export default function Inflow() {
               name="date"
               className="w-full min-w-40"
               value={formValues.date}
-              onChange={(value) => handleChange("date", value)}
+              onChange={(value) => {
+                handleChange("date", value);
+                console.log(value);
+              }}
               required
             />
           </div>

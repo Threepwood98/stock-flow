@@ -1,7 +1,7 @@
 id,categoryId,name,costPrice,salePrice,unit
-15483,189-30-301-31,Bermunda Primaria N,51.7,41.5,un
+15483,189-30-301-31,Bermunda Primaria,51.7,41.5,un
 15487,189-30-301-31,Saya Primaria,43.26,35,un
-15506,189-30-301-31,Camisa Ens.Media,68.1068,31.5,un
+15506,189-30-301-31,Camisa Ens Media,68.1068,31.5,un
 15523,189-30-301-31,Camisa Ens Media,68.1069,31.5,un
 15584,189-30-301-31,Blunsa Ens Media,65.7533,31,un
 15585,189-30-301-31,Pantalon Primaria,69.778,31.5,un
@@ -9,12 +9,12 @@ id,categoryId,name,costPrice,salePrice,unit
 15587,189-30-301-31,Bermunda Primaria,87.4475,41.5,un
 15591,189-30-301-31,Blunsa Primaria,48.2018,23,un
 751008,189-30-301-31,Saya Secundaria,90.0243,44.5,un
-890344,189-30-301-31,Camisa primaria,55.0177,25,un
-15004,189-30-302-501,Trunsa Triqunini de Jovencita,10.28,150,un
+890344,189-30-301-31,Camisa Primaria,55.0177,25,un
+15004,189-30-302-501,Trusa Triqunini de Jovencita,10.28,150,un
 15527,189-30-302-501,Medias p/Niño,138.45,175,un
 15528,189-30-302-501,Medias Bermundas,175.7248,220,un
 15530,189-30-302-501,Medias c/Punteras,127.8,160,un
-15531,189-30-302-501,Medias S/Punteras,127.8,160,un
+15531,189-30-302-501,Medias s/Punteras,127.8,160,un
 15554,189-30-302-501,Medias P/Niña,74.55,95,un
 15599,189-30-302-501,Media Vestir Hombre,117.15,150,un
 15600,189-30-302-501,Media Escolar Niño,42.6,55,un
@@ -27,13 +27,13 @@ id,categoryId,name,costPrice,salePrice,unit
 272395,189-30-302-501,Medias de Vestir de hombre,175.7233,235,un
 2724598,189-30-302-501,Plantilla P/niña,106.5,135,un
 2724600,189-30-302-501,Plantillas,101.175,130,un
-2724601,189-30-302-501,Protector Muneca Larga,79.875,100,un
-2724602,189-30-302-501,Protector Muneca corta,74.55,95,un
+2724601,189-30-302-501,Protector Muñeca Larga,79.875,100,un
+2724602,189-30-302-501,Protector Muñeca corta,74.55,95,un
 2724635,189-30-302-501,Zapatera,2000,2500,un
 2724636,189-30-302-501,Gorra,600,800,un
-2724639,189-30-302-501,Punllovert de Niño,1200,1500,un
-2724641,189-30-302-501,Junego de Paño de Cocina,750,900,un
-2724642,189-30-302-501,Junego toalla de 2 Pzas,1620,2100,un
+2724639,189-30-302-501,Pullovert de Niño,1200,1500,un
+2724641,189-30-302-501,Juego de Paño de Cocina,750,900,un
+2724642,189-30-302-501,Juego toalla de 2 Pzas,1620,2100,un
 2724643,189-30-302-501,Camisa M/L Hombre,1620,2150,un
 2724644,189-30-302-501,Alfombras,1620,2120,un
 2724645,189-30-302-501,Manteles,1620,2120,un
@@ -52,17 +52,17 @@ id,categoryId,name,costPrice,salePrice,unit
 15614,189-30-302-505,Files,27.5835,35,un
 2724583,189-30-302-505,Hoja Carta,1970.25,2465,un
 2724595,189-30-302-505,Lapices personalizados,37.275,50,un
-132060,189-30-302-506,Pintunra Vinil,866.3233,1200,un
-15031,189-30-302-506,Repunesto,8.4709,11,un
+132060,189-30-302-506,Pintura Vinil,866.3233,1200,un
+15031,189-30-302-506,Repuesto,8.4709,11,un
 15318,189-30-302-506,Cortinero,232.54,275,un
 15516,189-30-302-506,Junego de Vasos,1118.25,1400,un
-15529,189-30-302-506,Antena Yaguni,511.2,640,un
+15529,189-30-302-506,Antena Yagui,511.2,640,un
 15536,189-30-302-506,Brocha c/Mango Plastico 5,1065,1340,un
 15537,189-30-302-506,Brocha c/mango Plastico 6,1171.5,1465,un
 15538,189-30-302-506,Caldero,17040,21300,un
 15546,189-30-302-506,Cunbitos,4.26,20,un
 15549,189-30-302-506,Soga de Nylon 50 mts,3461.25,4350,un
-15551,189-30-302-506,Matajuntas,18.5371,25,un
+15551,189-30-302-506,Matajutas,18.5371,25,un
 15558,189-30-302-506,Pintunra acrilica Marron,1288.65,1625,un
 15592,189-30-302-506,LLavin Doble Tiro,4047,5060,un
 15593,189-30-302-506,Disco de Corte,141.6448,180,un
