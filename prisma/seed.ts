@@ -18,6 +18,7 @@ async function main() {
   await prisma.salesArea.deleteMany();
   await prisma.warehouse.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.generalCategory.deleteMany();
   await prisma.company.deleteMany();
   await prisma.store.deleteMany();
   await prisma.verification.deleteMany();
@@ -59,7 +60,7 @@ async function main() {
             "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEzMGZkY2VmY2M4ZWQ3YmU2YmVkZmE2ZmM4Nzk3MjIwNDBjOTJiMzgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI2NDY0MzAxNDUxNzItanY5YW50a2toNW81djh1ZGVtZ2pqNHRsN2FxazJqczguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI2NDY0MzAxNDUxNzItanY5YW50a2toNW81djh1ZGVtZ2pqNHRsN2FxazJqczguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTM1NTAzNzMzMjQzMTEyMzIwMjQiLCJlbWFpbCI6ImtkZWxnYWRvYWxvbnNvQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiSk9HZTJmalh0ODROMHIxZWRTQjM3QSIsIm5hbWUiOiJLYXJlbCBEYXZpZCBEZWxnYWRvIEFsb25zbyIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKS2xQM3dfZjg2MUw5S0pzeWY1eFZCS3M0THNXR0NrYldDa2Q5NUlIUEFPZTB5MWc9czk2LWMiLCJnaXZlbl9uYW1lIjoiS2FyZWwgRGF2aWQiLCJmYW1pbHlfbmFtZSI6IkRlbGdhZG8gQWxvbnNvIiwiaWF0IjoxNzY1Njc3MDU5LCJleHAiOjE3NjU2ODA2NTl9.LopQQ5fB_U6SBhx69SubKdFwaODWDEy2bC3wI2H6HyqiNOVQaGjHZyeZSEkn7V1zDnG4UMjhJlK-eN23Uqg9XSy069vDfUNHEqCKQD0R-krX62jEEuv-TrWMZ53Q1EXHgogyoKHUxjmRyrtlHRcq8iM7eh7-JSHPjcVxCdlbMAn4V6MAGmNzFiSGCZO2UYN8-NGPjKvBANETU5yyaGznu3C0Zk9fMdzcsA2wgHtaIokM--o_FfSRcJlNhn5XrR3DgfQQBstBn1bYf0WddvHdNy-mEGXotjvdnk0Zg4yr-3b3CX7mQl4_MGi22hcEFMdXZ_Nlu3mT1pT4ef5IxAkTig",
           accessTokenExpiresAt: parseISO("2025-12-14 02:51:01.196"),
           scope:
-            "https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile,openid",
+            "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid",
         },
       },
     },
@@ -101,21 +102,15 @@ async function main() {
   console.log("🏪 Creating stores...");
 
   const mainStore = await prisma.store.create({
-    data: {
-      name: "Main Store",
-    },
+    data: { name: "Main Store" },
   });
 
   const downtownStore = await prisma.store.create({
-    data: {
-      name: "Downtown Branch",
-    },
+    data: { name: "Downtown Branch" },
   });
 
   const northStore = await prisma.store.create({
-    data: {
-      name: "North Branch",
-    },
+    data: { name: "North Branch" },
   });
 
   // ============================================
@@ -140,31 +135,19 @@ async function main() {
   console.log("🏭 Creating warehouses...");
 
   const mainWarehouse = await prisma.warehouse.create({
-    data: {
-      name: "Main Warehouse",
-      storeId: mainStore.id,
-    },
+    data: { name: "Main Warehouse", storeId: mainStore.id },
   });
 
   const secondaryWarehouse = await prisma.warehouse.create({
-    data: {
-      name: "Secondary Warehouse",
-      storeId: mainStore.id,
-    },
+    data: { name: "Secondary Warehouse", storeId: mainStore.id },
   });
 
   const downtownWarehouse = await prisma.warehouse.create({
-    data: {
-      name: "Downtown Warehouse",
-      storeId: downtownStore.id,
-    },
+    data: { name: "Downtown Warehouse", storeId: downtownStore.id },
   });
 
   const northWarehouse = await prisma.warehouse.create({
-    data: {
-      name: "North Warehouse",
-      storeId: northStore.id,
-    },
+    data: { name: "North Warehouse", storeId: northStore.id },
   });
 
   // ============================================
@@ -173,38 +156,23 @@ async function main() {
   console.log("🛒 Creating sales areas...");
 
   const electronicsAreaMain = await prisma.salesArea.create({
-    data: {
-      name: "Electronics",
-      storeId: mainStore.id,
-    },
+    data: { name: "Electronics", storeId: mainStore.id },
   });
 
   const clothingAreaMain = await prisma.salesArea.create({
-    data: {
-      name: "Clothing",
-      storeId: mainStore.id,
-    },
+    data: { name: "Clothing", storeId: mainStore.id },
   });
 
   const foodAreaMain = await prisma.salesArea.create({
-    data: {
-      name: "Food & Beverage",
-      storeId: mainStore.id,
-    },
+    data: { name: "Food & Beverage", storeId: mainStore.id },
   });
 
   const electronicsAreaDowntown = await prisma.salesArea.create({
-    data: {
-      name: "Electronics",
-      storeId: downtownStore.id,
-    },
+    data: { name: "Electronics", storeId: downtownStore.id },
   });
 
   const homeAreaDowntown = await prisma.salesArea.create({
-    data: {
-      name: "Home & Garden",
-      storeId: downtownStore.id,
-    },
+    data: { name: "Home & Garden", storeId: downtownStore.id },
   });
 
   // ============================================
@@ -319,7 +287,7 @@ async function main() {
 
   console.log(`   ✓ Created ${companiesData.length} companies`);
 
-  // Obtener algunas empresas para usar en transacciones
+  // Obtener empresas
   const miCanastilla = await prisma.company.findFirst({
     where: { name: "MI Canastilla" },
   });
@@ -331,55 +299,170 @@ async function main() {
   });
 
   // ============================================
-  // CATEGORIES & PRODUCTS
+  // GENERAL CATEGORIES (Nivel 1)
+  // ============================================
+  console.log("📂 Creating general categories...");
+
+  const generalCategoriesData = [
+    {
+      id: "189-30-301",
+      name: "Industriales normados y Plan Especial",
+      description: "Productos industriales normados y del plan especial",
+    },
+    {
+      id: "189-30-302",
+      name: "Produccion Nacional",
+      description: "Productos de producción nacional",
+    },
+    {
+      id: "189-30-303",
+      name: "Importadas",
+      description: "Productos importados",
+    },
+    {
+      id: "189-30-304",
+      name: "Produccion Local",
+      description: "Productos de producción local",
+    },
+    {
+      id: "189-30-305",
+      name: "Materiales de la Construccion Nacional",
+      description: "Materiales de construcción nacionales",
+    },
+    {
+      id: "189-30-306",
+      name: "Materiales de la Construccion Local",
+      description: "Materiales de construcción locales",
+    },
+    {
+      id: "189-30-309",
+      name: "Aseo Nacional/Local",
+      description: "Productos de aseo nacional y local",
+    },
+  ];
+
+  await prisma.generalCategory.createMany({
+    data: generalCategoriesData,
+  });
+
+  console.log(
+    `   ✓ Created ${generalCategoriesData.length} general categories`
+  );
+
+  // ============================================
+  // CATEGORIES (Nivel 2 - Específicas)
   // ============================================
   console.log("📦 Creating categories...");
 
-  // Crear todas las categorías del CSV
-  const categories = [
-    { id: "189-30-301-31", name: "A" },
-    { id: "189-30-302-501", name: "B" },
-    { id: "189-30-302-503", name: "C" },
-    { id: "189-30-302-504", name: "D" },
-    { id: "189-30-302-505", name: "E" },
-    { id: "189-30-302-506", name: "F" },
-    { id: "189-30-303-601", name: "G" },
-    { id: "189-30-304-501", name: "H" },
-    { id: "189-30-304-502", name: "I" },
-    { id: "189-30-304-503", name: "J" },
-    { id: "189-30-304-504", name: "K" },
-    { id: "189-30-304-506", name: "L" },
-    { id: "189-30-305-401", name: "M" },
-    { id: "189-30-306", name: "N" },
-    { id: "189-30-309-403", name: "O" },
+  const categoriesData = [
+    {
+      id: "189-30-301-31",
+      generalCategoryId: "189-30-301",
+      name: "Industriales normados",
+      description: "Uniformes y productos industriales normados",
+    },
+    {
+      id: "189-30-302-501",
+      generalCategoryId: "189-30-302",
+      name: "Confecciones",
+      description: "Confecciones textiles nacionales",
+    },
+    {
+      id: "189-30-302-503",
+      generalCategoryId: "189-30-302",
+      name: "Ajuar",
+      description: "Productos de ajuar nacional",
+    },
+    {
+      id: "189-30-302-504",
+      generalCategoryId: "189-30-302",
+      name: "Quincalla",
+      description: "Quincalla nacional",
+    },
+    {
+      id: "189-30-302-505",
+      generalCategoryId: "189-30-302",
+      name: "Utiles Escolares",
+      description: "Útiles escolares nacionales",
+    },
+    {
+      id: "189-30-302-506",
+      generalCategoryId: "189-30-302",
+      name: "Utiles de Hogar",
+      description: "Útiles del hogar nacionales",
+    },
+    {
+      id: "189-30-303-601",
+      generalCategoryId: "189-30-303",
+      name: "Ropa Reciclada",
+      description: "Ropa reciclada importada",
+    },
+    {
+      id: "189-30-304-501",
+      generalCategoryId: "189-30-304",
+      name: "Confecciones",
+      description: "Confecciones locales",
+    },
+    {
+      id: "189-30-304-502",
+      generalCategoryId: "189-30-304",
+      name: "Calzado",
+      description: "Calzado local",
+    },
+    {
+      id: "189-30-304-503",
+      generalCategoryId: "189-30-304",
+      name: "Ajuar",
+      description: "Ajuar local",
+    },
+    {
+      id: "189-30-304-504",
+      generalCategoryId: "189-30-304",
+      name: "Quincalla",
+      description: "Quincalla local",
+    },
+    {
+      id: "189-30-304-506",
+      generalCategoryId: "189-30-304",
+      name: "Utiles del Hogar",
+      description: "Útiles del hogar locales",
+    },
+    {
+      id: "189-30-305-401",
+      generalCategoryId: "189-30-305",
+      name: "Materiales de la Construccion",
+      description: "Materiales de construcción nacionales",
+    },
+    {
+      id: "189-30-306-401",
+      generalCategoryId: "189-30-306",
+      name: "Materiales de la Construccion",
+      description: "Materiales de construcción locales",
+    },
+    {
+      id: "189-30-309-403",
+      generalCategoryId: "189-30-309",
+      name: "Aseo",
+      description: "Productos de aseo",
+    },
   ];
 
   await prisma.category.createMany({
-    data: categories,
+    data: categoriesData,
   });
 
-  console.log(`   ✓ Created ${categories.length} categories`);
+  console.log(`   ✓ Created ${categoriesData.length} specific categories`);
 
-  // Usar algunas categorías para los productos de ejemplo
-  const categoryA = await prisma.category.findUnique({
-    where: { id: "189-30-301-31" },
-  });
-  const categoryB = await prisma.category.findUnique({
-    where: { id: "189-30-302-501" },
-  });
-  const categoryC = await prisma.category.findUnique({
-    where: { id: "189-30-302-503" },
-  });
-
+  // ============================================
+  // PRODUCTS
+  // ============================================
   console.log("🏷️ Creating products...");
 
-  // Productos reales del CSV - selección representativa de diferentes categorías
   const productsData = [
-    // Categoría A (189-30-301-31) - Uniformes
     {
       id: "15483",
       categoryId: "189-30-301-31",
-      name: "Bermunda Primaria N",
+      name: "Bermunda Primaria",
       costPrice: 51.7,
       salePrice: 41.5,
       unit: "un",
@@ -395,7 +478,7 @@ async function main() {
     {
       id: "890344",
       categoryId: "189-30-301-31",
-      name: "Camisa primaria",
+      name: "Camisa Primaria",
       costPrice: 55.0177,
       salePrice: 25,
       unit: "un",
@@ -403,17 +486,15 @@ async function main() {
     {
       id: "15585",
       categoryId: "189-30-301-31",
-      name: "Pantalon Primaria",
+      name: "Pantalón Primaria",
       costPrice: 69.778,
       salePrice: 31.5,
       unit: "un",
     },
-
-    // Categoría B (189-30-302-501) - Medias y accesorios
     {
       id: "15527",
       categoryId: "189-30-302-501",
-      name: "Medias p/Niño",
+      name: "Medias de Niño",
       costPrice: 138.45,
       salePrice: 175,
       unit: "un",
@@ -421,7 +502,7 @@ async function main() {
     {
       id: "15554",
       categoryId: "189-30-302-501",
-      name: "Medias P/Niña",
+      name: "Medias de Niña",
       costPrice: 74.55,
       salePrice: 95,
       unit: "un",
@@ -429,7 +510,7 @@ async function main() {
     {
       id: "15599",
       categoryId: "189-30-302-501",
-      name: "Media Vestir Hombre",
+      name: "Medias de Hombre",
       costPrice: 117.15,
       salePrice: 150,
       unit: "un",
@@ -445,17 +526,15 @@ async function main() {
     {
       id: "2724643",
       categoryId: "189-30-302-501",
-      name: "Camisa M/L Hombre",
+      name: "Camisa M.L de Hombre",
       costPrice: 1620,
       salePrice: 2150,
       unit: "un",
     },
-
-    // Categoría C (189-30-302-503) - Sábanas
     {
       id: "15563",
       categoryId: "189-30-302-503",
-      name: "Sabana Camera",
+      name: "Sábana Camera",
       costPrice: 1171.5,
       salePrice: 1465,
       unit: "un",
@@ -463,13 +542,11 @@ async function main() {
     {
       id: "15598",
       categoryId: "189-30-302-503",
-      name: "Sabana personal",
+      name: "Sábana Personal",
       costPrice: 1011.75,
       salePrice: 1265,
       unit: "un",
     },
-
-    // Categoría D (189-30-302-504) - Accesorios personales
     {
       id: "15574",
       categoryId: "189-30-302-504",
@@ -486,12 +563,10 @@ async function main() {
       salePrice: 75,
       unit: "un",
     },
-
-    // Categoría E (189-30-302-505) - Útiles escolares
     {
       id: "008A243",
       categoryId: "189-30-302-505",
-      name: "Boligrafo",
+      name: "Bolígrafo",
       costPrice: 16.5,
       salePrice: 19,
       unit: "un",
@@ -520,8 +595,6 @@ async function main() {
       salePrice: 2465,
       unit: "un",
     },
-
-    // Categoría F (189-30-302-506) - Ferretería y hogar
     {
       id: "15318",
       categoryId: "189-30-302-506",
@@ -533,7 +606,7 @@ async function main() {
     {
       id: "15516",
       categoryId: "189-30-302-506",
-      name: "Junego de Vasos",
+      name: "Juego de Vasos",
       costPrice: 1118.25,
       salePrice: 1400,
       unit: "un",
@@ -549,7 +622,7 @@ async function main() {
     {
       id: "15619",
       categoryId: "189-30-302-506",
-      name: "Sunavizante",
+      name: "Suavizante",
       costPrice: 468.6,
       salePrice: 590,
       unit: "un",
@@ -557,17 +630,15 @@ async function main() {
     {
       id: "15620",
       categoryId: "189-30-302-506",
-      name: "Jabon Liqunido",
+      name: "Jabón Líquido",
       costPrice: 289.4457,
       salePrice: 365,
       unit: "un",
     },
-
-    // Categoría G (189-30-303-601) - Ropa de adulto
     {
       id: "272426",
       categoryId: "189-30-303-601",
-      name: "Pantalon de Hombre",
+      name: "Pantalón de Hombre",
       costPrice: 897.2167,
       salePrice: 1125,
       unit: "un",
@@ -580,8 +651,6 @@ async function main() {
       salePrice: 415,
       unit: "un",
     },
-
-    // Categoría H (189-30-304-501) - Ropa variada
     {
       id: "15448",
       categoryId: "189-30-304-501",
@@ -606,8 +675,6 @@ async function main() {
       salePrice: 1500,
       unit: "un",
     },
-
-    // Categoría I (189-30-304-502) - Calzado
     {
       id: "15035",
       categoryId: "189-30-304-502",
@@ -627,17 +694,15 @@ async function main() {
     {
       id: "4400105",
       categoryId: "189-30-304-502",
-      name: "Chanclrtas Baño",
+      name: "Chancletas de Baño",
       costPrice: 600,
       salePrice: 750,
       unit: "un",
     },
-
-    // Categoría J (189-30-304-503) - Textiles
     {
       id: "15332",
       categoryId: "189-30-304-503",
-      name: "Junego de Sabana c/fundas",
+      name: "Junego de Sabana c/ fundas",
       costPrice: 1600,
       salePrice: 2000,
       unit: "un",
@@ -650,8 +715,6 @@ async function main() {
       salePrice: 1500,
       unit: "un",
     },
-
-    // Categoría K (189-30-304-504) - Cosméticos
     {
       id: "131750",
       categoryId: "189-30-304-504",
@@ -663,13 +726,11 @@ async function main() {
     {
       id: "2400449",
       categoryId: "189-30-304-504",
-      name: "Talco Perfunmado",
+      name: "Talco Perfumado",
       costPrice: 60,
       salePrice: 80,
       unit: "un",
     },
-
-    // Categoría L (189-30-304-506) - Artículos varios
     {
       id: "15081",
       categoryId: "189-30-304-506",
@@ -689,17 +750,15 @@ async function main() {
     {
       id: "15582",
       categoryId: "189-30-304-506",
-      name: "Jabon Liqunido 400g",
+      name: "Jabón Líquido 400g",
       costPrice: 150,
       salePrice: 190,
       unit: "un",
     },
-
-    // Categoría M (189-30-305-401) - Eléctricos
     {
       id: "15129",
       categoryId: "189-30-305-401",
-      name: "Caja Electrica 4x4",
+      name: "Caja Eléctrica 4x4",
       costPrice: 3.04,
       salePrice: 6.5,
       unit: "un",
@@ -712,11 +771,9 @@ async function main() {
       salePrice: 25,
       unit: "un",
     },
-
-    // Categoría N (189-30-306) - Plomería
     {
       id: "15119",
-      categoryId: "189-30-306",
+      categoryId: "189-30-306-401",
       name: "Llave",
       costPrice: 45,
       salePrice: 70,
@@ -724,26 +781,24 @@ async function main() {
     },
     {
       id: "15158",
-      categoryId: "189-30-306",
-      name: "Llave Cañon Largo",
+      categoryId: "189-30-306-401",
+      name: "Llave Cañón Largo",
       costPrice: 143.2,
       salePrice: 180,
       unit: "un",
     },
     {
       id: "4400211",
-      categoryId: "189-30-306",
-      name: "Nundo 3/4",
+      categoryId: "189-30-306-401",
+      name: "Nudo 3/4",
       costPrice: 10.0347,
       salePrice: 40,
       unit: "un",
     },
-
-    // Categoría O (189-30-309-403) - Higiene personal
     {
       id: "131700",
       categoryId: "189-30-309-403",
-      name: "Jabon c/envoltunra",
+      name: "Jabón c/ envoltura",
       costPrice: 136.35,
       salePrice: 160,
       unit: "un",
@@ -762,164 +817,120 @@ async function main() {
     data: productsData,
   });
 
-  console.log(`   ✓ Created ${productsData.length} products from CSV`);
-
-  // Referencias a productos para usar en transacciones
-  const bermudaPrimaria = await prisma.product.findUnique({
-    where: { id: "15483" },
-  });
-  const mediasNino = await prisma.product.findUnique({
-    where: { id: "15527" },
-  });
-  const sabanaCamera = await prisma.product.findUnique({
-    where: { id: "15563" },
-  });
-  const boligrafo = await prisma.product.findUnique({
-    where: { id: "008A243" },
-  });
-  const tomacorriente = await prisma.product.findUnique({
-    where: { id: "15613" },
-  });
+  console.log(`   ✓ Created ${productsData.length} products`);
 
   // ============================================
   // INFLOWS
   // ============================================
   console.log("📥 Creating inflows...");
 
-  // Caso 1: Compra desde empresa - Bermudas Primaria
-  await prisma.inflow.create({
-    data: {
-      userId: adminUser.id,
-      warehouseId: mainWarehouse.id,
-      date: new Date("2024-01-15"),
-      inType: "purchase",
-      providerCompanyId: textilera!.id,
-      providerStoreId: null,
-      payMethod: "TRANSFERMOVIL",
-      invoiceNumber: "INV-2024-001",
-      inNumber: "IN-001",
-      productId: bermudaPrimaria!.id,
-      quantity: 100,
-      saleAmount: 4150.0,
-      costAmount: 5170.0,
-    },
-  });
-
-  // Caso 2: Compra desde empresa - Medias para Niño
-  await prisma.inflow.create({
-    data: {
-      userId: managerUser.id,
-      warehouseId: mainWarehouse.id,
-      date: new Date("2024-01-20"),
-      inType: "purchase",
-      providerCompanyId: textilera!.id,
-      providerStoreId: null,
-      payMethod: "EFECTIVO",
-      invoiceNumber: "INV-2024-002",
-      inNumber: "IN-002",
-      productId: mediasNino!.id,
-      quantity: 200,
-      saleAmount: 35000.0,
-      costAmount: 27690.0,
-    },
-  });
-
-  // Caso 3: Compra desde empresa - Sábanas
-  await prisma.inflow.create({
-    data: {
-      userId: managerUser.id,
-      warehouseId: secondaryWarehouse.id,
-      date: new Date("2024-01-22"),
-      inType: "purchase",
-      providerCompanyId: miCanastilla!.id,
-      providerStoreId: null,
-      payMethod: "TRANSFERMOVIL",
-      invoiceNumber: "INV-2024-003",
-      inNumber: "IN-003",
-      productId: sabanaCamera!.id,
-      quantity: 50,
-      saleAmount: 73250.0,
-      costAmount: 58575.0,
-    },
-  });
-
-  // Caso 4: Transferencia desde otra tienda - Bolígrafos
-  await prisma.inflow.create({
-    data: {
-      userId: regularUser.id,
-      warehouseId: downtownWarehouse.id,
-      date: new Date("2024-01-25"),
-      inType: "transfer",
-      providerCompanyId: null,
-      providerStoreId: mainStore.id,
-      payMethod: null,
-      invoiceNumber: null,
-      inNumber: "IN-004",
-      productId: boligrafo!.id,
-      quantity: 500,
-      saleAmount: 9500.0,
-      costAmount: 8250.0,
-    },
-  });
-
-  // Caso 5: Compra desde empresa - Tomacorrientes
-  await prisma.inflow.create({
-    data: {
-      userId: adminUser.id,
-      warehouseId: downtownWarehouse.id,
-      date: new Date("2024-02-01"),
-      inType: "purchase",
-      providerCompanyId: empCalzado!.id,
-      providerStoreId: null,
-      payMethod: "TRANSFERMOVIL",
-      invoiceNumber: "INV-2024-004",
-      inNumber: "IN-005",
-      productId: tomacorriente!.id,
-      quantity: 80,
-      saleAmount: 11200.0,
-      costAmount: 8946.0,
-    },
+  await prisma.inflow.createMany({
+    data: [
+      {
+        userId: adminUser.id,
+        warehouseId: mainWarehouse.id,
+        date: new Date("2024-01-15"),
+        inType: "purchase",
+        providerCompanyId: textilera!.id,
+        payMethod: "TRANSFERMOVIL",
+        invoiceNumber: "INV-2024-001",
+        inNumber: "IN-001",
+        productId: "15483",
+        quantity: 100,
+        saleAmount: 4150.0,
+        costAmount: 5170.0,
+      },
+      {
+        userId: managerUser.id,
+        warehouseId: mainWarehouse.id,
+        date: new Date("2024-01-20"),
+        inType: "purchase",
+        providerCompanyId: textilera!.id,
+        payMethod: "EFECTIVO",
+        invoiceNumber: "INV-2024-002",
+        inNumber: "IN-002",
+        productId: "15527",
+        quantity: 200,
+        saleAmount: 35000.0,
+        costAmount: 27690.0,
+      },
+      {
+        userId: managerUser.id,
+        warehouseId: secondaryWarehouse.id,
+        date: new Date("2024-01-22"),
+        inType: "purchase",
+        providerCompanyId: miCanastilla!.id,
+        payMethod: "TRANSFERMOVIL",
+        invoiceNumber: "INV-2024-003",
+        inNumber: "IN-003",
+        productId: "15563",
+        quantity: 50,
+        saleAmount: 73250.0,
+        costAmount: 58575.0,
+      },
+      {
+        userId: regularUser.id,
+        warehouseId: downtownWarehouse.id,
+        date: new Date("2024-01-25"),
+        inType: "transfer",
+        providerStoreId: mainStore.id,
+        inNumber: "IN-004",
+        productId: "008A243",
+        quantity: 500,
+        saleAmount: 9500.0,
+        costAmount: 8250.0,
+      },
+      {
+        userId: adminUser.id,
+        warehouseId: downtownWarehouse.id,
+        date: new Date("2024-02-01"),
+        inType: "purchase",
+        providerCompanyId: empCalzado!.id,
+        payMethod: "TRANSFERMOVIL",
+        invoiceNumber: "INV-2024-004",
+        inNumber: "IN-005",
+        productId: "15613",
+        quantity: 80,
+        saleAmount: 11200.0,
+        costAmount: 8946.0,
+      },
+    ],
   });
 
   // ============================================
-  // WAREHOUSE INVENTORY (Stock inicial)
+  // WAREHOUSE INVENTORY
   // ============================================
   console.log("📦 Creating warehouse inventory...");
 
   await prisma.warehouseInventory.createMany({
     data: [
-      // Main Warehouse
       {
         warehouseId: mainWarehouse.id,
-        productId: bermudaPrimaria!.id,
+        productId: "15483",
         quantity: 80,
         minStock: 20,
       },
       {
         warehouseId: mainWarehouse.id,
-        productId: mediasNino!.id,
+        productId: "15527",
         quantity: 180,
         minStock: 50,
       },
-
-      // Secondary Warehouse
       {
         warehouseId: secondaryWarehouse.id,
-        productId: sabanaCamera!.id,
+        productId: "15563",
         quantity: 45,
         minStock: 10,
       },
-
-      // Downtown Warehouse
       {
         warehouseId: downtownWarehouse.id,
-        productId: boligrafo!.id,
+        productId: "008A243",
         quantity: 480,
         minStock: 100,
       },
       {
         warehouseId: downtownWarehouse.id,
-        productId: tomacorriente!.id,
+        productId: "15613",
         quantity: 75,
         minStock: 15,
       },
@@ -931,123 +942,93 @@ async function main() {
   // ============================================
   console.log("📤 Creating outflows...");
 
-  // Caso 1: Transferencia a otra tienda - Bermudas
-  await prisma.outflow.create({
-    data: {
-      userId: adminUser.id,
-      warehouseId: mainWarehouse.id,
-      date: new Date("2024-02-10"),
-      outType: "transfer",
-      destinationStoreId: northStore.id,
-      destinationSalesAreaId: null,
-      payMethod: null,
-      outNumber: "OUT-001",
-      productId: bermudaPrimaria!.id,
-      quantity: 20,
-      saleAmount: 830.0,
-      costAmount: 1034.0,
-    },
-  });
-
-  // Caso 2: Salida a área de venta - Medias Main
-  await prisma.outflow.create({
-    data: {
-      userId: managerUser.id,
-      warehouseId: mainWarehouse.id,
-      date: new Date("2024-02-12"),
-      outType: "internal_transfer",
-      destinationStoreId: null,
-      destinationSalesAreaId: electronicsAreaMain.id,
-      payMethod: null,
-      outNumber: "OUT-002",
-      productId: mediasNino!.id,
-      quantity: 50,
-      saleAmount: 8750.0,
-      costAmount: 6922.5,
-    },
-  });
-
-  // Caso 3: Salida a área de venta - Sábanas
-  await prisma.outflow.create({
-    data: {
-      userId: managerUser.id,
-      warehouseId: secondaryWarehouse.id,
-      date: new Date("2024-02-13"),
-      outType: "internal_transfer",
-      destinationStoreId: null,
-      destinationSalesAreaId: clothingAreaMain.id,
-      payMethod: null,
-      outNumber: "OUT-003",
-      productId: sabanaCamera!.id,
-      quantity: 10,
-      saleAmount: 14650.0,
-      costAmount: 11715.0,
-    },
-  });
-
-  // Caso 4: Salida a área de venta - Bolígrafos Downtown
-  await prisma.outflow.create({
-    data: {
-      userId: regularUser.id,
-      warehouseId: downtownWarehouse.id,
-      date: new Date("2024-02-14"),
-      outType: "internal_transfer",
-      destinationStoreId: null,
-      destinationSalesAreaId: electronicsAreaDowntown.id,
-      payMethod: null,
-      outNumber: "OUT-004",
-      productId: boligrafo!.id,
-      quantity: 100,
-      saleAmount: 1900.0,
-      costAmount: 1650.0,
-    },
-  });
-
-  // Caso 5: Devolución a proveedor - Tomacorrientes defectuosos
-  await prisma.outflow.create({
-    data: {
-      userId: adminUser.id,
-      warehouseId: downtownWarehouse.id,
-      date: new Date("2024-02-15"),
-      outType: "return",
-      destinationStoreId: null,
-      destinationSalesAreaId: null,
-      payMethod: "TRANSFERMOVIL",
-      outNumber: "OUT-005",
-      productId: tomacorriente!.id,
-      quantity: 5,
-      saleAmount: 700.0,
-      costAmount: 559.13,
-    },
+  await prisma.outflow.createMany({
+    data: [
+      {
+        userId: adminUser.id,
+        warehouseId: mainWarehouse.id,
+        date: new Date("2024-02-10"),
+        outType: "transfer",
+        destinationStoreId: northStore.id,
+        outNumber: "OUT-001",
+        productId: "15483",
+        quantity: 20,
+        saleAmount: 830.0,
+        costAmount: 1034.0,
+      },
+      {
+        userId: managerUser.id,
+        warehouseId: mainWarehouse.id,
+        date: new Date("2024-02-12"),
+        outType: "internal_transfer",
+        destinationSalesAreaId: electronicsAreaMain.id,
+        outNumber: "OUT-002",
+        productId: "15527",
+        quantity: 50,
+        saleAmount: 8750.0,
+        costAmount: 6922.5,
+      },
+      {
+        userId: managerUser.id,
+        warehouseId: secondaryWarehouse.id,
+        date: new Date("2024-02-13"),
+        outType: "internal_transfer",
+        destinationSalesAreaId: clothingAreaMain.id,
+        outNumber: "OUT-003",
+        productId: "15563",
+        quantity: 10,
+        saleAmount: 14650.0,
+        costAmount: 11715.0,
+      },
+      {
+        userId: regularUser.id,
+        warehouseId: downtownWarehouse.id,
+        date: new Date("2024-02-14"),
+        outType: "internal_transfer",
+        destinationSalesAreaId: electronicsAreaDowntown.id,
+        outNumber: "OUT-004",
+        productId: "008A243",
+        quantity: 100,
+        saleAmount: 1900.0,
+        costAmount: 1650.0,
+      },
+      {
+        userId: adminUser.id,
+        warehouseId: downtownWarehouse.id,
+        date: new Date("2024-02-15"),
+        outType: "return",
+        payMethod: "TRANSFERMOVIL",
+        outNumber: "OUT-005",
+        productId: "15613",
+        quantity: 5,
+        saleAmount: 700.0,
+        costAmount: 559.13,
+      },
+    ],
   });
 
   // ============================================
-  // SALES AREA INVENTORY (después de outflows)
+  // SALES AREA INVENTORY
   // ============================================
   console.log("🛍️ Creating sales area inventory...");
 
   await prisma.salesAreaInventory.createMany({
     data: [
-      // Electronics Main
       {
         salesAreaId: electronicsAreaMain.id,
-        productId: mediasNino!.id,
+        productId: "15527",
         quantity: 45,
         minStock: 10,
       },
-
-      // Clothing Main
       {
         salesAreaId: clothingAreaMain.id,
-        productId: sabanaCamera!.id,
+        productId: "15563",
         quantity: 8,
         minStock: 3,
       },
-
-      // Electronics Downtown
       {
         salesAreaId: electronicsAreaDowntown.id,
-        productId: boligrafo!.id,
+        productId: "008A243",
         quantity: 95,
         minStock: 20,
       },
@@ -1066,7 +1047,7 @@ async function main() {
         salesAreaId: electronicsAreaMain.id,
         date: new Date("2024-02-20"),
         payMethod: "TRANSFERMOVIL",
-        productId: mediasNino!.id,
+        productId: "15527",
         quantity: 5,
         saleAmount: 875.0,
         costAmount: 692.25,
@@ -1076,7 +1057,7 @@ async function main() {
         salesAreaId: clothingAreaMain.id,
         date: new Date("2024-02-21"),
         payMethod: "EFECTIVO",
-        productId: sabanaCamera!.id,
+        productId: "15563",
         quantity: 2,
         saleAmount: 2930.0,
         costAmount: 2343.0,
@@ -1086,7 +1067,7 @@ async function main() {
         salesAreaId: electronicsAreaDowntown.id,
         date: new Date("2024-02-22"),
         payMethod: "ENZONA",
-        productId: boligrafo!.id,
+        productId: "008A243",
         quantity: 5,
         saleAmount: 95.0,
         costAmount: 82.5,
@@ -1132,6 +1113,10 @@ async function main() {
   console.log(`   - Warehouses: ${await prisma.warehouse.count()}`);
   console.log(`   - Sales Areas: ${await prisma.salesArea.count()}`);
   console.log(`   - Companies: ${await prisma.company.count()}`);
+  console.log(
+    `   - General Categories: ${await prisma.generalCategory.count()}`
+  );
+  console.log(`   - Categories: ${await prisma.category.count()}`);
   console.log(`   - Products: ${await prisma.product.count()}`);
   console.log(`   - Inflows: ${await prisma.inflow.count()}`);
   console.log(`   - Outflows: ${await prisma.outflow.count()}`);
@@ -1146,7 +1131,6 @@ async function main() {
     `   - Sales Area Inventory Records: ${await prisma.salesAreaInventory.count()}`
   );
 
-  // Calculate total stock
   const warehouseStock = await prisma.warehouseInventory.aggregate({
     _sum: { quantity: true },
   });
@@ -1163,7 +1147,6 @@ async function main() {
 
   console.log("\n📋 Detailed breakdown:");
 
-  // Inflow types
   const inflowFromCompany = await prisma.inflow.count({
     where: { providerCompanyId: { not: null } },
   });
@@ -1173,7 +1156,6 @@ async function main() {
   console.log(`   - Inflows from companies: ${inflowFromCompany}`);
   console.log(`   - Inflows from stores (transfers): ${inflowFromStore}`);
 
-  // Outflow types
   const outflowToStore = await prisma.outflow.count({
     where: { destinationStoreId: { not: null } },
   });
@@ -1189,7 +1171,6 @@ async function main() {
   console.log(`   - Outflows to sales areas: ${outflowToSalesArea}`);
   console.log(`   - Outflows external (returns/damaged): ${outflowExternal}`);
 
-  // Sales by payment method
   const cashSales = await prisma.sale.count({
     where: { payMethod: "EFECTIVO" },
   });
@@ -1199,11 +1180,10 @@ async function main() {
   const debitSales = await prisma.sale.count({
     where: { payMethod: "ENZONA" },
   });
-  console.log(`   - Cash sales: ${cashSales}`);
-  console.log(`   - Credit card sales: ${creditSales}`);
-  console.log(`   - Debit card sales: ${debitSales}`);
+  console.log(`   - EFECTIVO sales: ${cashSales}`);
+  console.log(`   - TRANSFERMOVIL sales: ${creditSales}`);
+  console.log(`   - ENZONA sales: ${debitSales}`);
 
-  // Revenue calculation
   const totalSales = await prisma.sale.aggregate({
     _sum: { saleAmount: true, costAmount: true },
   });
@@ -1212,35 +1192,29 @@ async function main() {
   const profit = revenue - cost;
 
   console.log(`\n💰 Financial Summary:`);
-  console.log(`   - Total Sales Revenue: $${revenue.toFixed(2)}`);
-  console.log(`   - Total Cost: $${cost.toFixed(2)}`);
-  console.log(`   - Gross Profit: $${profit.toFixed(2)}`);
+  console.log(`   - Total Sales Revenue: ${revenue.toFixed(2)}`);
+  console.log(`   - Total Cost: ${cost.toFixed(2)}`);
+  console.log(`   - Gross Profit: ${profit.toFixed(2)}`);
   console.log(`   - Profit Margin: ${((profit / revenue) * 100).toFixed(2)}%`);
 
-  // Withdraws summary
   const totalWithdraws = await prisma.withdraw.aggregate({
     _sum: { amount: true },
   });
   console.log(
-    `   - Total Withdraws: $${Number(totalWithdraws._sum.amount || 0).toFixed(
+    `   - Total Withdraws: ${Number(totalWithdraws._sum.amount || 0).toFixed(
       2
     )}`
   );
 
-  // Low stock alerts
   const warehouseInventories = await prisma.warehouseInventory.findMany({
-    where: {
-      minStock: { not: null },
-    },
+    where: { minStock: { not: null } },
   });
   const lowStockWarehouse = warehouseInventories.filter(
     (inv) => inv.minStock !== null && inv.quantity <= inv.minStock
   ).length;
 
   const salesAreaInventories = await prisma.salesAreaInventory.findMany({
-    where: {
-      minStock: { not: null },
-    },
+    where: { minStock: { not: null } },
   });
   const lowStockSalesArea = salesAreaInventories.filter(
     (inv) => inv.minStock !== null && inv.quantity <= inv.minStock

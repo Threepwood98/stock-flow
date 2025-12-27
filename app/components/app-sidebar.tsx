@@ -1,17 +1,14 @@
 import {
   AudioWaveform,
-  BanknoteArrowDown,
-  BanknoteArrowUp,
-  BanknoteIcon,
+  BoxesIcon,
+  ClipboardListIcon,
   Command,
-  FileChartPie,
   GalleryVerticalEnd,
   LayoutDashboard,
   PackageMinus,
   PackagePlus,
-  PackageSearchIcon,
-  Receipt,
-  ReceiptIcon,
+  QrCodeIcon,
+  ShoppingBagIcon,
   StoreIcon,
   WarehouseIcon,
 } from "lucide-react";
@@ -72,7 +69,7 @@ const data = {
         },
         {
           title: "Inventario",
-          icon: PackageSearchIcon,
+          icon: BoxesIcon,
           isActive: true,
         },
       ],
@@ -85,18 +82,18 @@ const data = {
         {
           title: "Venta",
           url: "/main/sale-area/sale",
-          icon: BanknoteArrowUp,
+          icon: ShoppingBagIcon,
           isActive: true,
         },
         {
           title: "Caja Extra",
           url: "/main/sale-area/withdraw",
-          icon: BanknoteArrowDown,
+          icon: QrCodeIcon,
           isActive: true,
         },
         {
           title: "Inventario",
-          icon: PackageSearchIcon,
+          icon: BoxesIcon,
           isActive: true,
         },
       ],
@@ -104,19 +101,17 @@ const data = {
     {
       title: "Reporte",
       url: "#",
-      icon: FileChartPie,
+      icon: ClipboardListIcon,
       isActive: true,
       items: [
         {
           title: "Desglose del Importe",
           url: "/main/report/sales-amount-report",
-          icon: ReceiptIcon,
           isActive: true,
         },
         {
-          title: "Venta",
-          url: "/main/report/sales-report",
-          icon: BanknoteIcon,
+          title: "Ventas por Categoría",
+          url: "/main/report/sales-category-report",
           isActive: true,
         },
         {

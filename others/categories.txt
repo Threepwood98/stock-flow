@@ -1,4 +1,33 @@
-189-30-301: Industriales normados y plan especial
+El id de las categorias tienen la siguiente forma:
+189-30-301-31: Industriales normados
+189-30-302-501: Confecciones
+189-30-302-503: Ajuar
+189-30-302-504: Quincalla
+189-30-302-505: Utiles Escolares
+189-30-302-506: Utiles de Hogar
+189-30-303-601: Ropa Reciclada
+189-30-304-501: Confecciones
+189-30-304-502: Calzado
+189-30-304-503: Ajuar
+189-30-304-504: Quincalla
+189-30-304-506: Utiles del Hogar
+189-30-305-401: Materiales de la Construccion
+189-30-306-401: Materiales de la Construccion
+189-30-309-403: Aseo
+
+donde la primera parte del id seria la categoria general:
+189-30-301: Industriales normados y Plan Especial
+189-30-302: Produccion Nacional
+189-30-303: Importadas
+189-30-304: Produccion Local
+189-30-305: Materiales de la Construccion Nacional
+189-30-306: Materiales de la Construccion Local
+189-30-309: Aseo Nacional/Local
+
+como puedo reflejar esto en la BD para mejor control
+
+
+189-30-301: Industriales normados y Plan Especial
 189-30-301-31: Industriales normados
 
 189-30-302: Produccion Nacional

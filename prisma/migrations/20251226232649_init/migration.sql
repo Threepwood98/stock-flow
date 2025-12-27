@@ -113,9 +113,22 @@ CREATE TABLE "SalesArea" (
 );
 
 -- CreateTable
-CREATE TABLE "Category" (
+CREATE TABLE "GeneralCategory" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "GeneralCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Category" (
+    "id" TEXT NOT NULL,
+    "generalCategoryId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -127,7 +140,7 @@ CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
     "categoryId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "costPrice" DECIMAL(10,2) NOT NULL,
+    "costPrice" DECIMAL(10,6) NOT NULL,
     "salePrice" DECIMAL(10,2) NOT NULL,
     "unit" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -303,13 +316,16 @@ CREATE INDEX "SalesArea_storeId_idx" ON "SalesArea"("storeId");
 CREATE UNIQUE INDEX "SalesArea_name_storeId_key" ON "SalesArea"("name", "storeId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
+CREATE UNIQUE INDEX "GeneralCategory_name_key" ON "GeneralCategory"("name");
+
+-- CreateIndex
+CREATE INDEX "GeneralCategory_name_idx" ON "GeneralCategory"("name");
+
+-- CreateIndex
+CREATE INDEX "Category_generalCategoryId_idx" ON "Category"("generalCategoryId");
 
 -- CreateIndex
 CREATE INDEX "Category_name_idx" ON "Category"("name");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Product_name_key" ON "Product"("name");
 
 -- CreateIndex
 CREATE INDEX "Product_categoryId_idx" ON "Product"("categoryId");
@@ -433,6 +449,9 @@ ALTER TABLE "Warehouse" ADD CONSTRAINT "Warehouse_storeId_fkey" FOREIGN KEY ("st
 
 -- AddForeignKey
 ALTER TABLE "SalesArea" ADD CONSTRAINT "SalesArea_storeId_fkey" FOREIGN KEY ("storeId") REFERENCES "Store"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Category" ADD CONSTRAINT "Category_generalCategoryId_fkey" FOREIGN KEY ("generalCategoryId") REFERENCES "GeneralCategory"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

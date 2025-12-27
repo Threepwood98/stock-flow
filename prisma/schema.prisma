@@ -161,20 +161,36 @@ model SalesArea {
   @@index([storeId])
 }
 
-model Category {
-  id        String    @id
-  name      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+model GeneralCategory {
+  id          String     @id
+  name        String     @unique
+  description String?
+  categories  Category[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
+  @@index([name])
+}
+
+model Category {
+  id                String    @id
+  generalCategoryId String
+  name              String
+  description       String?
+  products          Product[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  generalCategory GeneralCategory @relation(fields: [generalCategoryId], references: [id], onDelete: Restrict)
+
+  @@index([generalCategoryId])
   @@index([name])
 }
 
 model Product {
   id         String  @id
   categoryId String
-  name       String  @unique
+  name       String
   costPrice  Decimal @db.Decimal(10, 6)
   salePrice  Decimal @db.Decimal(10, 2)
   unit       String

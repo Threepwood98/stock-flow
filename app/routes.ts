@@ -22,6 +22,7 @@ export default [
     route("sale-area/withdraw", "routes/withdraw.tsx"),
     route("report/sales-report", "routes/sales-report.tsx"),
     route("report/sales-amount-report", "routes/sales-amount-report.tsx"),
+    route("report/sales-category-report", "routes/sales-category-report.tsx"),
   ]),
   // 404
   route("*", "routes/404.tsx"),

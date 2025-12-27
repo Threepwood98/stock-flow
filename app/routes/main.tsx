@@ -17,7 +17,6 @@ import {
 } from "~/components/ui/select";
 import { prisma } from "~/lib/prisma";
 import { useMemo, useState } from "react";
-import { subMonths } from "date-fns";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -63,6 +62,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
 
+  const productsDTO = products.map((p) => ({
+    ...p,
+    costPrice: p.costPrice.toNumber(),
+    salePrice: p.salePrice.toNumber(),
+  }));
+
   const categories = await prisma.category.findMany({
     orderBy: { name: "asc" },
   });
@@ -100,7 +105,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     user,
     userStores,
     companies,
-    products,
+    products: productsDTO,
     categories,
     sales: sales.map((sale) => ({
       id: sale.id,
@@ -112,7 +117,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       categoryName: sale.product.category.name,
       quantity: Number(sale.quantity),
       saleAmount: Number(sale.saleAmount).toFixed(2),
-      costAmount: Number(sale.costAmount).toFixed(2),
+      costAmount: Number(sale.costAmount).toFixed(6),
       // profit: Number(sale.saleAmount) - Number(sale.costAmount),
       payMethod: sale.payMethod,
       salesAreaId: sale.salesAreaId,

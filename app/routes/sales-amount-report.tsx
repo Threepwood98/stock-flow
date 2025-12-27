@@ -24,7 +24,7 @@ import {
 import { Label } from "~/components/ui/label";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import type { OutletContext } from "@/types/types";
-import { BanknoteIcon } from "lucide-react";
+import { ClipboardListIcon } from "lucide-react";
 import { writeFile, utils } from "xlsx";
 import {
   Card,
@@ -229,21 +229,21 @@ export default function SalesAmountReport() {
   const exportToExcel = () => {
     const data = dailyData.map((day) => ({
       Fecha: formatDate(day.date),
-      Efectivo: day.payMethodsAmount["EFECTIVO"] || 0,
-      Transfermóvil: day.payMethodsAmount["TRANSFERMOVIL"] || 0,
-      Enzona: day.payMethodsAmount["ENZONA"] || 0,
-      "Caja Extra": day.withdrawals || 0,
-      "Total Ventas": day.totalSales || 0,
+      Efectivo: Number(day.payMethodsAmount["EFECTIVO"]) || 0,
+      Transfermóvil: Number(day.payMethodsAmount["TRANSFERMOVIL"]) || 0,
+      Enzona: Number(day.payMethodsAmount["ENZONA"]) || 0,
+      "Caja Extra": Number(day.withdrawals) || 0,
+      "Total Ventas": Number(day.totalSales) || 0,
     }));
 
     // Agregar fila de totales
     data.push({
       Fecha: "TOTALES",
-      Efectivo: totals["EFECTIVO"],
-      Transfermóvil: totals["TRANSFERMOVIL"],
-      Enzona: totals["ENZONA"],
-      "Caja Extra": totals.withdrawals,
-      "Total Ventas": totals.totalSales,
+      Efectivo: Number(totals["EFECTIVO"]),
+      Transfermóvil: Number(totals["TRANSFERMOVIL"]),
+      Enzona: Number(totals["ENZONA"]),
+      "Caja Extra": Number(totals.withdrawals),
+      "Total Ventas": Number(totals.totalSales),
     });
 
     const ws = utils.json_to_sheet(data);
@@ -403,7 +403,8 @@ export default function SalesAmountReport() {
             </Button>
             <Button
               onClick={exportToPDF}
-              disabled={dailyData.length === 0}
+              disabled={true}
+              // disabled={dailyData.length === 0}
               variant="outline"
             >
               <IconFileTypePdf />
@@ -441,7 +442,7 @@ export default function SalesAmountReport() {
                     className="text-center text-muted-foreground py-8"
                   >
                     <div className="flex flex-col items-center gap-4">
-                      <BanknoteIcon className="size-32 text-gray-300" />
+                      <ClipboardListIcon className="size-32" />
                       <p className="font-semibold">
                         No hay datos disponibles para el rango seleccionado.
                       </p>

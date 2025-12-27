@@ -13,8 +13,8 @@ export interface Product {
   id: string;
   name: string;
   warehouseId: string;
-  costPrice: { d: number };
-  salePrice: { d: number };
+  costPrice: number;
+  salePrice: number;
   unit: string;
 }
 
