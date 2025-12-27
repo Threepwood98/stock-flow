@@ -1,22 +1,36 @@
-FROM node:20-alpine AS development-dependencies-env
-COPY . /app
+# ---------- Base ----------
+FROM node:20-alpine AS base
 WORKDIR /app
-RUN npm ci
+RUN npm install -g pnpm
 
-FROM node:20-alpine AS production-dependencies-env
-COPY ./package.json package-lock.json /app/
-WORKDIR /app
-RUN npm ci --omit=dev
+# ---------- Dev dependencies ----------
+FROM base AS dev-deps
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY . .
 
-FROM node:20-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
-WORKDIR /app
-RUN npm run build
+# ---------- Build ----------
+FROM base AS build
+COPY . .
+COPY --from=dev-deps /app/node_modules ./node_modules
+RUN pnpm run build
 
-FROM node:20-alpine
-COPY ./package.json package-lock.json /app/
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
+# ---------- Prod dependencies ----------
+FROM base AS prod-deps
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod
+
+# ---------- Runtime ----------
+FROM node:20-alpine AS runtime
 WORKDIR /app
-CMD ["npm", "run", "start"]
+
+RUN npm install -g pnpm
+
+COPY package.json pnpm-lock.yaml ./
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+
+# React Router 7 usa Vite preview / server
+EXPOSE 5173
+
+CMD ["pnpm", "run", "start"]
