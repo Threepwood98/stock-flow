@@ -47,7 +47,7 @@ type SalesByProduct = {
   salePrice: number;
   costAmount: number;
   saleAmount: number;
-  stock: number; // Existencia total en la tienda
+  stock: number;
 };
 
 type GroupedByCategory = {
@@ -59,7 +59,7 @@ type GroupedByCategory = {
   totalSaleAmount: number;
 };
 
-export default function SalesByCategoryReport() {
+export default function SalesCategoryReport() {
   const { sales, salesAreas, products } = useOutletContext<OutletContext>();
 
   const [dateFrom, setDateFrom] = useState(

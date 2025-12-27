@@ -23,6 +23,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -46,6 +47,14 @@ import {
 import { AddProvider } from "~/components/add-provider";
 import { AddProduct } from "~/components/add-product";
 import type { OutletContext, Product, Provider } from "@/types/types";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 
 interface InflowRow {
   userId: string;
@@ -271,8 +280,8 @@ export default function Inflow() {
       return { costAmount: null, saleAmount: null };
     }
 
-    const costPrice = Number(product.costPrice.d);
-    const salePrice = Number(product.salePrice.d);
+    const costPrice = product.costPrice;
+    const salePrice = product.salePrice;
     return { costAmount: qty * costPrice, saleAmount: qty * salePrice };
   };
 
@@ -386,8 +395,8 @@ export default function Inflow() {
       id: newProduct.value,
       name: newProduct.label,
       warehouseId: newProduct.warehouseId || formValues.warehouseId,
-      costPrice: newProduct.costPrice || { d: 0 },
-      salePrice: newProduct.salePrice || { d: 0 },
+      costPrice: newProduct.costPrice || 0,
+      salePrice: newProduct.salePrice || 0,
       unit: newProduct.unit || "un",
     };
 
@@ -407,285 +416,339 @@ export default function Inflow() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       {/* Form */}
-      <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <input type="hidden" name="userId" defaultValue={user.id} required />
-          <div className="grid gap-2">
-            <Label htmlFor="date" className="pl-1">
-              Fecha
-            </Label>
-            <DatePicker
-              name="date"
-              className="w-full min-w-40"
-              value={formValues.date}
-              onChange={(value) => {
-                handleChange("date", value);
-                console.log(value);
-              }}
-              required
-            />
-          </div>
-          {warehouses.length > 1 && (
-            <div className="grid gap-2">
-              <Label htmlFor="warehouseId" className="pl-1">
-                Almacén
-              </Label>
-              <ComboboxPlus
-                name="warehouseId"
-                className="w-full min-w-40"
-                options={warehouses.map((wh) => ({
-                  value: wh.id,
-                  label: wh.name,
-                }))}
-                value={formValues.warehouseId}
-                onChange={(value) => {
-                  const wh = warehouses.find((w) => w.id === value);
-                  if (wh) {
-                    handleChange("warehouseId", value);
-                    setFormValues((prev) => ({
-                      ...prev,
-                      warehouseName: wh.name,
-                    }));
-                  }
-                }}
+      <Card>
+        <CardHeader>
+          <CardTitle>Entrada</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              <input
+                type="hidden"
+                name="userId"
+                defaultValue={user.id}
                 required
               />
-            </div>
-          )}
-          <div className="grid gap-2">
-            <Label htmlFor="type" className="pl-1">
-              Tipo de Entrada
-            </Label>
-            <SelectList
-              name="type"
-              className="w-full min-w-40"
-              options={inTypeOptions}
-              value={formValues.inType}
-              onChange={(value) => handleChange("inType", value)}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="provider" className="pl-1">
-              Proveedor
-            </Label>
-            <ComboboxPlus
-              name="provider"
-              className="w-full min-w-40"
-              options={currentProviders.map((prov) => ({
-                value: prov.id,
-                label: prov.name,
-              }))}
-              value={formValues.providerId}
-              onChange={(value) => {
-                const prov = currentProviders.find((p) => p.id === value);
-                if (prov) {
-                  handleChange("providerId", prov.id);
-                  setFormValues((prev) => ({
-                    ...prev,
-                    providerName: prov.name,
-                  }));
-                }
-              }}
-              showAddButton={currentProviders.length > 0}
-              dialogContent={(props) => (
-                <AddProvider {...props} providerType={providerType} />
-              )}
-              onDialogSuccess={handleNewProvider}
-              required
-            />
-          </div>
-          {formValues.inType === "FACTURA" && (
-            <div className="grid gap-2">
-              <Label htmlFor="invoiceNumber" className="pl-1">
-                No. de Factura
-              </Label>
-              <Input
-                id="invoiceNumber"
-                name="invoiceNumber"
-                value={formValues.invoiceNumber}
-                onChange={(event) =>
-                  handleChange("invoiceNumber", event.target.value)
-                }
-                className="w-full min-w-40"
-                required
-              />
-            </div>
-          )}
-          <div className="grid gap-2">
-            <Label htmlFor="inNumber" className="pl-1">
-              No. de Entrada
-            </Label>
-            <Input
-              id="inNumber"
-              name="inNumber"
-              value={formValues.inNumber}
-              onChange={(event) => handleChange("inNumber", event.target.value)}
-              className="w-full min-w-40"
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="product" className="pl-1">
-              Producto
-            </Label>
-            <ComboboxPlus
-              name="product"
-              className="w-full min-w-40"
-              options={products.map((prod) => ({
-                value: prod.id,
-                label: prod.name,
-              }))}
-              value={formValues.productId}
-              onChange={(value) => {
-                const prod = products.find((p) => p.id === value);
-                if (prod) {
-                  handleChange("productId", prod.id);
-                  setFormValues((prev) => ({
-                    ...prev,
-                    productName: prod.name,
-                  }));
-                }
-              }}
-              showAddButton
-              dialogContent={(props) => (
-                <AddProduct
-                  {...props}
-                  categories={categories}
-                  warehouseId={formValues.warehouseId}
+              <div className="grid gap-2">
+                <Label htmlFor="date" className="pl-1">
+                  Fecha
+                </Label>
+                <DatePicker
+                  name="date"
+                  className="w-full min-w-40"
+                  value={formValues.date}
+                  onChange={(value) => {
+                    handleChange("date", value);
+                    console.log(value);
+                  }}
+                  required
                 />
+              </div>
+              {warehouses.length > 1 && (
+                <div className="grid gap-2">
+                  <Label htmlFor="warehouseId" className="pl-1">
+                    Almacén
+                  </Label>
+                  <ComboboxPlus
+                    name="warehouseId"
+                    className="w-full min-w-40"
+                    options={warehouses.map((wh) => ({
+                      value: wh.id,
+                      label: wh.name,
+                    }))}
+                    value={formValues.warehouseId}
+                    onChange={(value) => {
+                      const wh = warehouses.find((w) => w.id === value);
+                      if (wh) {
+                        handleChange("warehouseId", value);
+                        setFormValues((prev) => ({
+                          ...prev,
+                          warehouseName: wh.name,
+                        }));
+                      }
+                    }}
+                    required
+                  />
+                </div>
               )}
-              onDialogSuccess={handleNewProduct}
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="quantity" className="pl-1">
-              Cantidad
-            </Label>
-            <Input
-              id="quantity"
-              name="quantity"
-              value={formValues.quantity}
-              onChange={(event) => handleChange("quantity", event.target.value)}
-              type="number"
-              min={1}
-              className="w-full min-w-40"
-              required
-            />
-          </div>
-        </div>
-        <div className="flex gap-4 justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-w-32 cursor-pointer"
-            onClick={editIndex !== null ? handleCancel : handleClean}
-          >
-            {editIndex !== null ? (
-              <div className="flex items-center gap-2">
-                Cancelar <BanIcon />
+              <div className="grid gap-2">
+                <Label htmlFor="type" className="pl-1">
+                  Tipo de Entrada
+                </Label>
+                <SelectList
+                  name="type"
+                  className="w-full min-w-40"
+                  options={inTypeOptions}
+                  value={formValues.inType}
+                  onChange={(value) => handleChange("inType", value)}
+                  required
+                />
               </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                Borrar <EraserIcon />
-              </div>
-            )}
-          </Button>
-          <Button type="submit" className="min-w-32">
-            {editIndex !== null ? (
-              <div className="flex items-center gap-2">
-                Guardar <SaveIcon />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                Agregar <PlusIcon />
-              </div>
-            )}
-          </Button>
-        </div>
-      </form>
-
-      {/* Table */}
-      <div className="h-full border rounded-lg relative">
-        {(rows.length === 0 || editIndex !== null) && (
-          <div className="absolute inset-0 bg-white/50 cursor-not-allowed z-10 rounded-lg" />
-        )}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Almacén</TableHead>
-              <TableHead>Tipo de Entrada</TableHead>
-              <TableHead>Proveedor</TableHead>
-              <TableHead>No. de Factura</TableHead>
-              <TableHead>No. de Entrada</TableHead>
-              <TableHead>Producto</TableHead>
-              <TableHead>Cantidad</TableHead>
-              <TableHead>Importe de Costo</TableHead>
-              <TableHead>Importe de Venta</TableHead>
-              <TableHead>Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={11}
-                  className="text-center text-muted-foreground py-8"
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <WarehouseIcon className="size-32" />
-                    <p className="font-semibold">
-                      No hay salidas agregadas. Complete el formulario y haga
-                      clic en "Agregar".
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell>{row.date}</TableCell>
-                  {warehouses.length > 1 && (
-                    <TableCell>{row.warehouseName}</TableCell>
+              <div className="grid gap-2">
+                <Label htmlFor="provider" className="pl-1">
+                  Proveedor
+                </Label>
+                <ComboboxPlus
+                  name="provider"
+                  className="w-full min-w-40"
+                  options={currentProviders.map((prov) => ({
+                    value: prov.id,
+                    label: prov.name,
+                  }))}
+                  value={formValues.providerId}
+                  onChange={(value) => {
+                    const prov = currentProviders.find((p) => p.id === value);
+                    if (prov) {
+                      handleChange("providerId", prov.id);
+                      setFormValues((prev) => ({
+                        ...prev,
+                        providerName: prov.name,
+                      }));
+                    }
+                  }}
+                  showAddButton={currentProviders.length > 0}
+                  dialogContent={(props) => (
+                    <AddProvider {...props} providerType={providerType} />
                   )}
-                  <TableCell>{row.inType}</TableCell>
-                  <TableCell>{row.providerName}</TableCell>
-                  <TableCell>{row.invoiceNumber || "-"}</TableCell>
-                  <TableCell>{row.inNumber}</TableCell>
-                  <TableCell>{row.productName}</TableCell>
-                  <TableCell>{row.quantity}</TableCell>
-                  <TableCell>${row.costAmount?.toFixed(2) ?? "0.00"}</TableCell>
-                  <TableCell>${row.saleAmount?.toFixed(2) ?? "0.00"}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        className="cursor-pointer"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(index)}
-                        title="Editar"
-                      >
-                        <PencilLineIcon />
-                      </Button>
-                      <Button
-                        className="cursor-pointer"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemove(index)}
-                        title="Eliminar"
-                      >
-                        <Trash2Icon />
-                      </Button>
+                  onDialogSuccess={handleNewProvider}
+                  required
+                />
+              </div>
+              {formValues.inType === "FACTURA" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="invoiceNumber" className="pl-1">
+                    No. de Factura
+                  </Label>
+                  <Input
+                    id="invoiceNumber"
+                    name="invoiceNumber"
+                    value={formValues.invoiceNumber}
+                    onChange={(event) =>
+                      handleChange("invoiceNumber", event.target.value)
+                    }
+                    className="w-full min-w-40"
+                    required
+                  />
+                </div>
+              )}
+              <div className="grid gap-2">
+                <Label htmlFor="inNumber" className="pl-1">
+                  No. de Entrada
+                </Label>
+                <Input
+                  id="inNumber"
+                  name="inNumber"
+                  value={formValues.inNumber}
+                  onChange={(event) =>
+                    handleChange("inNumber", event.target.value)
+                  }
+                  className="w-full min-w-40"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="product" className="pl-1">
+                  Producto
+                </Label>
+                <ComboboxPlus
+                  name="product"
+                  className="w-full min-w-40"
+                  options={products.map((prod) => ({
+                    value: prod.id,
+                    label: prod.name,
+                  }))}
+                  value={formValues.productId}
+                  onChange={(value) => {
+                    const prod = products.find((p) => p.id === value);
+                    if (prod) {
+                      handleChange("productId", prod.id);
+                      setFormValues((prev) => ({
+                        ...prev,
+                        productName: prod.name,
+                      }));
+                    }
+                  }}
+                  showAddButton
+                  dialogContent={(props) => (
+                    <AddProduct
+                      {...props}
+                      categories={categories}
+                      warehouseId={formValues.warehouseId}
+                    />
+                  )}
+                  onDialogSuccess={handleNewProduct}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="quantity" className="pl-1">
+                  Cantidad
+                </Label>
+                <Input
+                  id="quantity"
+                  name="quantity"
+                  value={formValues.quantity}
+                  onChange={(event) =>
+                    handleChange("quantity", event.target.value)
+                  }
+                  type="number"
+                  min={1}
+                  className="w-full min-w-40"
+                  required
+                />
+              </div>
+            </div>
+          </form>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <CardAction className="grid grid-cols-2 gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-w-32 cursor-pointer"
+              onClick={editIndex !== null ? handleCancel : handleClean}
+            >
+              {editIndex !== null ? (
+                <div className="flex items-center gap-2">
+                  Cancelar <BanIcon />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  Borrar <EraserIcon />
+                </div>
+              )}
+            </Button>
+            <Button type="submit" className="min-w-32">
+              {editIndex !== null ? (
+                <div className="flex items-center gap-2">
+                  Guardar <SaveIcon />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  Agregar <PlusIcon />
+                </div>
+              )}
+            </Button>
+          </CardAction>
+        </CardFooter>
+      </Card>
+      {/* Table */}
+      <Card>
+        <CardContent className="relative">
+          {editIndex !== null && (
+            <div className="absolute inset-0 bg-white/50 cursor-not-allowed z-10 rounded-lg" />
+          )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-semibold">Fecha</TableHead>
+                <TableHead className="font-semibold">Almacén</TableHead>
+                <TableHead className="font-semibold">Tipo de Entrada</TableHead>
+                <TableHead className="font-semibold">Proveedor</TableHead>
+                <TableHead className="text-right font-semibold">
+                  No. de Factura
+                </TableHead>
+                <TableHead className="text-right font-semibold">
+                  No. de Entrada
+                </TableHead>
+                <TableHead className="font-semibold">Producto</TableHead>
+                <TableHead className="text-right font-semibold">
+                  Cantidad
+                </TableHead>
+                <TableHead className="text-right font-semibold">
+                  Importe de Costo
+                </TableHead>
+                <TableHead className="text-right font-semibold">
+                  Importe de Venta
+                </TableHead>
+                <TableHead className="text-right font-semibold">
+                  Acciones
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={11}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <WarehouseIcon className="size-32" />
+                      <p className="font-semibold">
+                        No hay salidas agregadas. Complete el formulario y haga
+                        clic en "Agregar".
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                rows.map((row, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{row.date}</TableCell>
+                    {warehouses.length > 1 && (
+                      <TableCell>{row.warehouseName}</TableCell>
+                    )}
+                    <TableCell>{row.inType}</TableCell>
+                    <TableCell>{row.providerName}</TableCell>
+                    <TableCell>{row.invoiceNumber || "-"}</TableCell>
+                    <TableCell>{row.inNumber}</TableCell>
+                    <TableCell>{row.productName}</TableCell>
+                    <TableCell>{row.quantity}</TableCell>
+                    <TableCell>
+                      ${row.costAmount?.toFixed(2) ?? "0.00"}
+                    </TableCell>
+                    <TableCell>
+                      ${row.saleAmount?.toFixed(2) ?? "0.00"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          className="cursor-pointer"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(index)}
+                          title="Editar"
+                        >
+                          <PencilLineIcon />
+                        </Button>
+                        <Button
+                          className="cursor-pointer"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemove(index)}
+                          title="Eliminar"
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={11} className="font-semibold">
+                  IMPORTE TOTAL AL COSTO
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <CardAction>
+            <Button
+              className="min-w-32"
+              disabled={rows.length === 0 || editIndex !== null || isSubmitting}
+              onClick={() => setShowConfirmDialog(true)}
+            >
+              {isSubmitting ? "Procesando..." : "Contabilizar"}{" "}
+              <CalculatorIcon />
+            </Button>
+          </CardAction>
+        </CardFooter>
+      </Card>
 
       {/* Summary and Submit */}
       <div className="flex justify-between items-center">
@@ -693,13 +756,6 @@ export default function Inflow() {
           Total: ${totalAmount.toFixed(2)} ({rows.length} entrada
           {rows.length !== 1 ? "s" : ""})
         </div>
-        <Button
-          className="min-w-32 cursor-pointer"
-          disabled={rows.length === 0 || editIndex !== null || isSubmitting}
-          onClick={() => setShowConfirmDialog(true)}
-        >
-          {isSubmitting ? "Procesando..." : "Contabilizar"} <CalculatorIcon />
-        </Button>
       </div>
 
       {/* Confirmation Dialog */}

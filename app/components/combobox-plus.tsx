@@ -22,8 +22,8 @@ export interface ComboboxOption {
   value: string;
   label: string;
   warehouseId?: string;
-  costPrice?: { d: number };
-  salePrice?: { d: number };
+  costPrice?: number;
+  salePrice?: number;
   unit?: string;
 }
 
