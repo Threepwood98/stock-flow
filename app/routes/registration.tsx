@@ -1,21 +1,16 @@
-import { useState, useEffect } from "react";
-import { authClient } from "~/lib/auth-client";
+import { useState } from "react";
 import { Form, redirect, useNavigate } from "react-router";
 import {
-  AlertCircleIcon,
   BadgeCheck,
-  BanknoteArrowUp,
   CircleCheck,
   Info,
-  Minus,
   OctagonAlert,
   Phone,
   Plus,
+  ShoppingCartIcon,
   Store,
-  Trash,
-  TriangleAlert,
+  Trash2,
   Warehouse,
-  X,
 } from "lucide-react";
 import {
   Card,
@@ -32,8 +27,7 @@ import { Input } from "~/components/ui/input";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
 import { Button } from "~/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Separator } from "~/components/ui/separator";
+import { Alert, AlertDescription } from "~/components/ui/alert";
 import type { Route } from "./+types/registration";
 import { auth } from "~/lib/auth";
 import { prisma } from "~/lib/prisma";
@@ -78,7 +72,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { user };
 }
 
-export default function Registration({ loaderData }: Route.ComponentProps) {
+export default function CompleteProfile({ loaderData }: Route.ComponentProps) {
   const { user } = loaderData;
 
   const navigate = useNavigate();
@@ -288,16 +282,20 @@ export default function Registration({ loaderData }: Route.ComponentProps) {
             </Alert>
           )}
           {/* Form */}
-          <Form method="post" className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <Form
+            method="post"
+            className="flex flex-col gap-4"
+            onSubmit={handleSubmit}
+          >
             {/* Step 1: Teléfonos */}
             {currentStep === 1 && (
               <div className="grid gap-4">
-                <span className="font-semibold text-xl">
-                  Teléfonos de Contacto
-                </span>
+                <p className="font-semibold text-xl">Teléfonos de Contacto</p>
                 <div className="grid gap-2">
                   <div className="flex justify-between">
-                    <Label className="pl-1">Teléfonos</Label>
+                    <Label className="pl-1">{`Teléfono${
+                      phones.length > 1 ? "s" : ""
+                    }`}</Label>
                     <Button
                       onClick={addPhone}
                       variant="ghost"
@@ -340,7 +338,7 @@ export default function Registration({ loaderData }: Route.ComponentProps) {
                             onClick={() => removePhone(index)}
                             title="Eliminar"
                           >
-                            <Trash />
+                            <Trash2 />
                           </Button>
                         )}
                       </div>
@@ -352,9 +350,9 @@ export default function Registration({ loaderData }: Route.ComponentProps) {
             {/* Step 2: Tienda */}
             {currentStep === 2 && (
               <div className="grid gap-4">
-                <span className="font-semibold text-xl">
+                <p className="font-semibold text-xl">
                   Información de la Tienda
-                </span>
+                </p>
                 {/* Nombre de la tienda */}
                 <div className="grid gap-2">
                   <Label htmlFor="storeName" className="pl-1">
@@ -375,7 +373,9 @@ export default function Registration({ loaderData }: Route.ComponentProps) {
                 {/* Almacenes */}
                 <div className="grid gap-2">
                   <div className="flex justify-between">
-                    <Label className="pl-1">Almacenes</Label>
+                    <Label className="pl-1">{`${
+                      store.warehouses.length > 1 ? "Almacenes" : "Almacén"
+                    }`}</Label>
                     <Button
                       onClick={addWarehouse}
                       variant="ghost"
@@ -405,7 +405,7 @@ export default function Registration({ loaderData }: Route.ComponentProps) {
                             onClick={() => removeWarehouse(whIndex)}
                             title="Eliminar"
                           >
-                            <Trash />
+                            <Trash2 />
                           </Button>
                         )}
                       </div>
@@ -415,7 +415,9 @@ export default function Registration({ loaderData }: Route.ComponentProps) {
                 {/* Áreas de Venta */}
                 <div className="grid gap-2">
                   <div className="flex justify-between">
-                    <Label className="pl-1">Áreas de Venta</Label>
+                    <Label className="pl-1">{`Área${
+                      store.salesAreas.length > 1 ? "s" : ""
+                    } de Venta`}</Label>
                     <Button
                       onClick={addSalesArea}
                       variant="ghost"
@@ -445,7 +447,7 @@ export default function Registration({ loaderData }: Route.ComponentProps) {
                             onClick={() => removeSalesArea(areaIndex)}
                             title="Eliminar"
                           >
-                            <Trash />
+                            <Trash2 />
                           </Button>
                         )}
                       </div>
@@ -498,7 +500,7 @@ export default function Registration({ loaderData }: Route.ComponentProps) {
                       </p>
                     ))}
                     <div className="flex items-center gap-2">
-                      <BanknoteArrowUp className="size-4" />{" "}
+                      <ShoppingCartIcon className="size-4" />{" "}
                       <p>Áreas de Venta:</p>
                     </div>
                     {store.salesAreas.map((sa, index) => (
