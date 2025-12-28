@@ -8,13 +8,6 @@ import {
 } from "~/components/ui/sidebar";
 import type { Route } from "./+types/main";
 import { auth } from "~/lib/auth";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { prisma } from "~/lib/prisma";
 import { useMemo, useState } from "react";
 

@@ -1,21 +1,17 @@
 import {
-  AudioWaveform,
   BoxesIcon,
   ClipboardListIcon,
-  Command,
-  GalleryVerticalEnd,
   LayoutDashboard,
   PackageMinus,
   PackagePlus,
   QrCodeIcon,
   ShoppingBagIcon,
-  StoreIcon,
+  ShoppingCartIcon,
   WarehouseIcon,
 } from "lucide-react";
 
 import { NavMain } from "~/components/nav-main";
 import { NavUser } from "~/components/nav-user";
-import { TeamSwitcher } from "~/components/team-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -27,23 +23,6 @@ import { StoreSwitcher } from "./store-switcher";
 
 // This is sample data.
 const data = {
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
       title: "Panel",
@@ -70,6 +49,7 @@ const data = {
         },
         {
           title: "Inventario",
+          url: "/main/warehouse/inventory",
           icon: BoxesIcon,
           isActive: true,
         },
@@ -77,7 +57,7 @@ const data = {
     },
     {
       title: "Área de Venta",
-      icon: StoreIcon,
+      icon: ShoppingCartIcon,
       isActive: true,
       items: [
         {
@@ -94,6 +74,7 @@ const data = {
         },
         {
           title: "Inventario",
+          url: "/main/sale-area/inventory",
           icon: BoxesIcon,
           isActive: true,
         },
