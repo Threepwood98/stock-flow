@@ -23,6 +23,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "~/components/ui/sidebar";
+import { StoreSwitcher } from "./store-switcher";
 
 // This is sample data.
 const data = {
@@ -114,14 +115,6 @@ const data = {
           url: "/main/report/sales-category-report",
           isActive: true,
         },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
       ],
     },
   ],
@@ -129,12 +122,25 @@ const data = {
 
 export function AppSidebar({
   user,
+  userStores,
+  selectedStoreId,
+  onStoreChange,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user: any }) {
+}: React.ComponentProps<typeof Sidebar> & {
+  user: any;
+  userStores: any[];
+  selectedStoreId: string;
+  onStoreChange: (storeId: string) => void;
+}) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        {/* <TeamSwitcher teams={data.teams} /> */}
+        <StoreSwitcher
+          userStores={userStores}
+          selectedStoreId={selectedStoreId}
+          onStoreChange={onStoreChange}
+        />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

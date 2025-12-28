@@ -183,7 +183,12 @@ export default function Main({ loaderData }: Route.ComponentProps) {
 
   return (
     <SidebarProvider>
-      <AppSidebar user={user} />
+      <AppSidebar
+        user={user}
+        userStores={userStores}
+        selectedStoreId={selectedStoreId}
+        onStoreChange={setSelectedStoreId}
+      />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
@@ -192,7 +197,7 @@ export default function Main({ loaderData }: Route.ComponentProps) {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            {userStores.length === 1 && <p>{userStores[0].store.name}</p>}
+            {/* {userStores.length === 1 && <p>{userStores[0].store.name}</p>}
             {userStores.length > 1 && (
               <Select
                 defaultValue={selectedStoreId}
@@ -212,7 +217,7 @@ export default function Main({ loaderData }: Route.ComponentProps) {
                   ))}
                 </SelectContent>
               </Select>
-            )}
+            )} */}
           </div>
         </header>
         <Outlet
