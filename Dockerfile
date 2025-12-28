@@ -1,35 +1,36 @@
-# ---------- Base ----------
+# =====================
+# Base
+# =====================
 FROM node:20-alpine AS base
 WORKDIR /app
-RUN npm install -g pnpm prisma
+RUN npm install -g pnpm
 
-# ---------- Dev dependencies ----------
-FROM base AS dev-deps
-ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
-
+# =====================
+# Dependencies
+# =====================
+FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-COPY . .
-RUN pnpm prisma generate
-
-# ---------- Build ----------
+# =====================
+# Build
+# =====================
 FROM base AS build
+WORKDIR /app
 COPY . .
-COPY --from=dev-deps /app/node_modules ./node_modules
-COPY --from=dev-deps /app/generated ./generated
+COPY --from=deps /app/node_modules ./node_modules
 RUN pnpm run build
 
-# ---------- Runtime ----------
+# =====================
+# Runtime
+# =====================
 FROM node:20-alpine AS runtime
 WORKDIR /app
-
 RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml ./
-COPY --from=dev-deps /app/node_modules ./node_modules
-COPY --from=dev-deps /app/generated ./generated
-COPY --from=build /app/dist ./dist
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/build ./build
 
-EXPOSE 5173
+EXPOSE 3000
 CMD ["pnpm", "run", "start"]
