@@ -32,7 +32,7 @@ RUN pnpm install --frozen-lockfile
 # Copiar el código fuente
 COPY . .
 
-# Generar Prisma Client (respeta la configuración de output en schema.prisma)
+# Generar Prisma Client (usa prisma.config.ts para la URL)
 RUN pnpm prisma generate
 
 # Build de la aplicación
