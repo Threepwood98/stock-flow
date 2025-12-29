@@ -32,6 +32,9 @@ RUN pnpm install --frozen-lockfile
 # Copiar el código fuente
 COPY . .
 
+# Establecer DATABASE_URL dummy para el build (Prisma 7 lo necesita)
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+
 # Generar Prisma Client (usa prisma.config.ts para la URL)
 RUN pnpm prisma generate
 
