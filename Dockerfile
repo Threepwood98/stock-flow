@@ -32,8 +32,8 @@ RUN pnpm install --frozen-lockfile
 # Copiar el código fuente
 COPY . .
 
-# NO generar Prisma Client aquí (se hará en runtime)
-# RUN pnpm prisma generate
+# Generar Prisma Client (respeta la configuración de output en schema.prisma)
+RUN pnpm prisma generate
 
 # Build de la aplicación
 RUN pnpm run build
@@ -53,12 +53,15 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/build ./build
 COPY --from=build /app/package.json ./package.json
 
-# Copiar Prisma Client generado
+# Copiar el cliente de Prisma generado en la ubicación personalizada
+COPY --from=build /app/generated ./generated
+
+# Copiar también el cliente generado en node_modules (por si acaso)
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 
 # Exponer puerto (Railway lo asigna dinámicamente)
-# EXPOSE 3000
+EXPOSE 3000
 
-# Script de inicio: generar cliente, ejecutar migraciones y luego iniciar la app
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && pnpm run start"]
+# Script de inicio: ejecutar migraciones y luego iniciar la app
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm start"]
