@@ -411,7 +411,24 @@ export default function Inflow() {
     toast.success("Producto agregado y seleccionado exitosamente");
   };
 
-  const totalAmount = rows.reduce((sum, row) => sum + (row.costAmount || 0), 0);
+  const totalCostAmount = rows.reduce(
+    (sum, row) => sum + (row.costAmount || 0),
+    0
+  );
+
+  const totalSaleAmount = rows.reduce(
+    (sum, row) => sum + (row.saleAmount || 0),
+    0
+  );
+
+  const formatCurrency = (value: number, type?: string) => {
+    return new Intl.NumberFormat("es-CU", {
+      style: "currency",
+      currency: "CUP",
+      minimumFractionDigits: type === "cost" ? 6 : 2,
+      maximumFractionDigits: 6,
+    }).format(value);
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -420,8 +437,8 @@ export default function Inflow() {
         <CardHeader>
           <CardTitle>Entrada</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
+        <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
+          <CardContent>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
               <input
                 type="hidden"
@@ -598,39 +615,39 @@ export default function Inflow() {
                 />
               </div>
             </div>
-          </form>
-        </CardContent>
-        <CardFooter className="flex justify-end">
-          <CardAction className="grid grid-cols-2 gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="min-w-32 cursor-pointer"
-              onClick={editIndex !== null ? handleCancel : handleClean}
-            >
-              {editIndex !== null ? (
-                <div className="flex items-center gap-2">
-                  Cancelar <BanIcon />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  Borrar <EraserIcon />
-                </div>
-              )}
-            </Button>
-            <Button type="submit" className="min-w-32">
-              {editIndex !== null ? (
-                <div className="flex items-center gap-2">
-                  Guardar <SaveIcon />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  Agregar <PlusIcon />
-                </div>
-              )}
-            </Button>
-          </CardAction>
-        </CardFooter>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <CardAction className="grid grid-cols-2 gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-w-32 cursor-pointer"
+                onClick={editIndex !== null ? handleCancel : handleClean}
+              >
+                {editIndex !== null ? (
+                  <div className="flex items-center gap-2">
+                    Cancelar <BanIcon />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    Borrar <EraserIcon />
+                  </div>
+                )}
+              </Button>
+              <Button type="submit" className="min-w-32">
+                {editIndex !== null ? (
+                  <div className="flex items-center gap-2">
+                    Guardar <SaveIcon />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    Agregar <PlusIcon />
+                  </div>
+                )}
+              </Button>
+            </CardAction>
+          </CardFooter>
+        </form>
       </Card>
       {/* Table */}
       <Card>
@@ -656,10 +673,10 @@ export default function Inflow() {
                   Cantidad
                 </TableHead>
                 <TableHead className="text-right font-semibold">
-                  Importe de Costo
+                  Importe al Costo
                 </TableHead>
                 <TableHead className="text-right font-semibold">
-                  Importe de Venta
+                  Importe a la Venta
                 </TableHead>
                 <TableHead className="text-right font-semibold">
                   Acciones
@@ -686,9 +703,7 @@ export default function Inflow() {
                 rows.map((row, index) => (
                   <TableRow key={index}>
                     <TableCell>{row.date}</TableCell>
-                    {warehouses.length > 1 && (
-                      <TableCell>{row.warehouseName}</TableCell>
-                    )}
+                    <TableCell>{row.warehouseName}</TableCell>
                     <TableCell>{row.inType}</TableCell>
                     <TableCell>{row.providerName}</TableCell>
                     <TableCell>{row.invoiceNumber || "-"}</TableCell>
@@ -696,10 +711,14 @@ export default function Inflow() {
                     <TableCell>{row.productName}</TableCell>
                     <TableCell>{row.quantity}</TableCell>
                     <TableCell>
-                      ${row.costAmount?.toFixed(2) ?? "0.00"}
+                      {row.costAmount
+                        ? formatCurrency(row.costAmount, "cost")
+                        : formatCurrency(0, "cost")}
                     </TableCell>
                     <TableCell>
-                      ${row.saleAmount?.toFixed(2) ?? "0.00"}
+                      {row.saleAmount
+                        ? formatCurrency(row.saleAmount)
+                        : formatCurrency(0, "cost")}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -728,10 +747,10 @@ export default function Inflow() {
               )}
             </TableBody>
             <TableFooter>
-              <TableRow>
-                <TableCell colSpan={11} className="font-semibold">
-                  IMPORTE TOTAL AL COSTO
-                </TableCell>
+              <TableRow className="font-semibold">
+                <TableCell colSpan={8}>TOTAL</TableCell>
+                <TableCell>{formatCurrency(totalCostAmount, "cost")}</TableCell>
+                <TableCell colSpan={2}>{formatCurrency(totalSaleAmount)}</TableCell>
               </TableRow>
             </TableFooter>
           </Table>
@@ -750,14 +769,6 @@ export default function Inflow() {
         </CardFooter>
       </Card>
 
-      {/* Summary and Submit */}
-      <div className="flex justify-between items-center">
-        <div className="text-lg font-semibold">
-          Total: ${totalAmount.toFixed(2)} ({rows.length} entrada
-          {rows.length !== 1 ? "s" : ""})
-        </div>
-      </div>
-
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
@@ -766,7 +777,7 @@ export default function Inflow() {
             <AlertDialogDescription>
               Está a punto de contabilizar <strong>{rows.length}</strong>{" "}
               entrada{rows.length !== 1 ? "s" : ""} por un total de{" "}
-              <strong>${totalAmount.toFixed(2)}</strong>.
+              <strong>${totalCostAmount.toFixed(2)}</strong>.
               <br />
               <br />
               Esta acción registrará las entradas en el sistema de manera
