@@ -678,9 +678,7 @@ export default function Inflow() {
                 <TableHead className="text-right font-semibold">
                   Importe a la Venta
                 </TableHead>
-                <TableHead className="text-right font-semibold">
-                  Acciones
-                </TableHead>
+                <TableHead className="font-semibold">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -706,22 +704,24 @@ export default function Inflow() {
                     <TableCell>{row.warehouseName}</TableCell>
                     <TableCell>{row.inType}</TableCell>
                     <TableCell>{row.providerName}</TableCell>
-                    <TableCell>{row.invoiceNumber || "-"}</TableCell>
-                    <TableCell>{row.inNumber}</TableCell>
+                    <TableCell className="text-right">
+                      {row.invoiceNumber || "-"}
+                    </TableCell>
+                    <TableCell className="text-right">{row.inNumber}</TableCell>
                     <TableCell>{row.productName}</TableCell>
-                    <TableCell>{row.quantity}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">{row.quantity}</TableCell>
+                    <TableCell className="text-right">
                       {row.costAmount
                         ? formatCurrency(row.costAmount, "cost")
                         : formatCurrency(0, "cost")}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       {row.saleAmount
                         ? formatCurrency(row.saleAmount)
                         : formatCurrency(0, "cost")}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                      <div className="flex">
                         <Button
                           className="cursor-pointer"
                           variant="ghost"
@@ -747,10 +747,11 @@ export default function Inflow() {
               )}
             </TableBody>
             <TableFooter>
-              <TableRow className="font-semibold">
+              <TableRow className="text-right font-semibold">
                 <TableCell colSpan={8}>TOTAL</TableCell>
                 <TableCell>{formatCurrency(totalCostAmount, "cost")}</TableCell>
-                <TableCell colSpan={2}>{formatCurrency(totalSaleAmount)}</TableCell>
+                <TableCell>{formatCurrency(totalSaleAmount)}</TableCell>
+                <TableCell />
               </TableRow>
             </TableFooter>
           </Table>
