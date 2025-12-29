@@ -15,8 +15,8 @@ WORKDIR /app
 # Copiar archivos de configuración de pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Instalar dependencias de producción
-RUN pnpm install --frozen-lockfile --prod
+# Instalar TODAS las dependencias (necesitamos prisma para migraciones)
+RUN pnpm install --frozen-lockfile
 
 # Etapa 3: Build
 FROM base AS build
@@ -46,7 +46,7 @@ FROM base AS production
 
 WORKDIR /app
 
-# Copiar node_modules de producción
+# Copiar node_modules (incluye Prisma CLI para migraciones)
 COPY --from=dependencies /app/node_modules ./node_modules
 
 # Copiar Prisma schema y migraciones
