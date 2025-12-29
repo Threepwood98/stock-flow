@@ -59,10 +59,6 @@ COPY --from=build /app/package.json ./package.json
 # Copiar el cliente de Prisma generado en la ubicación personalizada
 COPY --from=build /app/generated ./generated
 
-# Copiar también el cliente generado en node_modules (por si acaso)
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
-
 # Exponer puerto (Railway lo asigna dinámicamente)
 EXPOSE 3000
 
