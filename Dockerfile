@@ -1,5 +1,5 @@
 # Etapa 1: Base con pnpm
-FROM node:25-slim AS base
+FROM node:22-slim AS base
 
 # Instalar pnpm globalmente
 RUN npm install -g pnpm
@@ -32,8 +32,8 @@ RUN pnpm install --frozen-lockfile
 # Copiar el código fuente
 COPY . .
 
-# Generar Prisma Client
-RUN pnpm prisma generate
+# NO generar Prisma Client aquí (se hará en runtime)
+# RUN pnpm prisma generate
 
 # Build de la aplicación
 RUN pnpm run build
@@ -60,5 +60,5 @@ COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 # Exponer puerto (Railway lo asigna dinámicamente)
 EXPOSE 3000
 
-# Script de inicio: ejecutar migraciones y luego iniciar la app
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm start"]
+# Script de inicio: generar cliente, ejecutar migraciones y luego iniciar la app
+CMD ["sh", "-c", "pnpm prisma generate && pnpm prisma migrate deploy && pnpm start"]
