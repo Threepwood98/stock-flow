@@ -4,7 +4,7 @@ import type {
   SalesAreaInput,
   StoreInput,
   WarehouseInput,
-} from "../types/registration";
+} from "../types/complete-profile";
 
 export class RegistrationService {
   /**
@@ -144,9 +144,7 @@ export class RegistrationService {
               storeId: store.id,
             },
           },
-          update: {
-            isActive: true, // Reactivar si estaba inactiva
-          },
+          update: {},
           create: {
             userId,
             storeId: store.id,
@@ -163,9 +161,7 @@ export class RegistrationService {
                 storeId: store.id,
               },
             },
-            update: {
-              isActive: true,
-            },
+            update: {},
             create: {
               name: whData.name,
               storeId: store.id,
@@ -184,9 +180,7 @@ export class RegistrationService {
                 storeId: store.id,
               },
             },
-            update: {
-              isActive: true,
-            },
+            update: {},
             create: {
               name: saData.name,
               storeId: store.id,
@@ -331,9 +325,7 @@ export class RegistrationService {
           storeId,
         },
       },
-      data: {
-        isActive: false,
-      },
+      data: {},
     });
 
     return userStore;
@@ -350,9 +342,7 @@ export class RegistrationService {
           storeId,
         },
       },
-      data: {
-        isActive: true,
-      },
+      data: {},
     });
 
     return userStore;

@@ -29,7 +29,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription } from "~/components/ui/alert";
-import type { Route } from "./+types/registration";
+import type { Route } from "./+types/complete-profile";
 import { auth } from "~/lib/auth";
 import { prisma } from "~/lib/prisma";
 import {
@@ -399,6 +399,13 @@ export default function CompleteProfile({
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    if (currentStep !== 3) {
+      e.preventDefault();
+      return;
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-xl">
@@ -414,9 +421,11 @@ export default function CompleteProfile({
             Completa tu información para empezar
           </CardDescription>
         </CardHeader>
-
-        {/* Form con action */}
-        <Form method="post" className="flex flex-col gap-4">
+        <Form
+          method="post"
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-4"
+        >
           <CardContent className="flex flex-col gap-4">
             <div className="grid gap-2">
               <div className="flex justify-between">
@@ -433,8 +442,6 @@ export default function CompleteProfile({
               </div>
               <Progress value={(currentStep / 3) * 100} />
             </div>
-
-            {/* Step 1: Teléfonos */}
             {currentStep === 1 && (
               <div className="grid gap-4">
                 <p className="font-semibold text-xl">Teléfonos de Contacto</p>
@@ -513,14 +520,11 @@ export default function CompleteProfile({
                 </div>
               </div>
             )}
-
-            {/* Step 2: Tienda */}
             {currentStep === 2 && (
               <div className="grid gap-4">
                 <p className="font-semibold text-xl">
                   Información de la Tienda
                 </p>
-
                 <div className="grid gap-2">
                   <Label htmlFor="storeName" className="pl-1">
                     Nombre
@@ -534,7 +538,6 @@ export default function CompleteProfile({
                     }
                   />
                 </div>
-
                 <div className="grid gap-2">
                   <div className="flex justify-between">
                     <Label className="pl-1">
@@ -576,7 +579,6 @@ export default function CompleteProfile({
                     ))}
                   </div>
                 </div>
-
                 <div className="grid gap-2">
                   <div className="flex justify-between">
                     <Label className="pl-1">
@@ -618,7 +620,6 @@ export default function CompleteProfile({
                     ))}
                   </div>
                 </div>
-
                 <Alert className="border-blue-600 text-blue-600 bg-blue-50">
                   <Info />
                   <AlertDescription className="text-blue-600">
@@ -627,12 +628,9 @@ export default function CompleteProfile({
                 </Alert>
               </div>
             )}
-
-            {/* Step 3: Revisión */}
             {currentStep === 3 && (
               <div className="grid gap-4">
                 <p className="font-semibold text-xl">Revisa tu Información</p>
-
                 <div>
                   <div className="flex items-center gap-2">
                     <Phone className="size-5" />
@@ -650,7 +648,6 @@ export default function CompleteProfile({
                     </div>
                   ))}
                 </div>
-
                 <div>
                   <div className="flex items-center gap-2">
                     <Store className="size-5" />
@@ -666,7 +663,6 @@ export default function CompleteProfile({
                         {wh.name}
                       </p>
                     ))}
-
                     <div className="flex items-center gap-2 mt-2">
                       <ShoppingCartIcon className="size-4" />
                       <p>Áreas de Venta ({store.salesAreas.length}):</p>
@@ -678,7 +674,6 @@ export default function CompleteProfile({
                     ))}
                   </div>
                 </div>
-
                 <Alert className="border-green-600 text-green-600 bg-green-50">
                   <CircleCheck />
                   <AlertDescription className="text-green-600">
@@ -689,14 +684,11 @@ export default function CompleteProfile({
               </div>
             )}
           </CardContent>
-
-          {/* Hidden input con los datos */}
           <input
             type="hidden"
             name="data"
             value={JSON.stringify({ phones, store })}
           />
-
           <CardFooter>
             <CardAction className="w-full flex justify-between">
               {currentStep > 1 && (
@@ -709,7 +701,6 @@ export default function CompleteProfile({
                   Atrás
                 </Button>
               )}
-
               {currentStep < 3 ? (
                 <Button
                   type="button"
