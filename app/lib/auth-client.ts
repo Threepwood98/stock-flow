@@ -1,10 +1,16 @@
 import { createAuthClient } from "better-auth/react";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const getBaseURL = () => {
+  if (typeof window === "undefined") {
+    // Server-side: usar variable de entorno
+    return process.env.BASE_URL || "http://localhost:5173";
+  }
 
-// Sin baseURL - Better Auth usa la URL actual automáticamente
+  return window.location.origin;
+};
+
 export const authClient = createAuthClient({
-  baseURL: BASE_URL || "http://localhost:5173",
+  baseURL: getBaseURL(),
 });
 
 export const { signIn, signUp, signOut, useSession } = authClient;
