@@ -11,6 +11,7 @@ export interface Provider {
 
 export interface Product {
   id: string;
+  categoryId: string;
   name: string;
   warehouseId: string;
   costPrice: number;
@@ -20,13 +21,15 @@ export interface Product {
 
 export interface Category {
   id: string;
+  generalCategoryId: string;
   name: string;
 }
 
 export interface WarehouseInventory {
   id: string;
+  productId: string;
   quantity: number;
-  product: Product;
+  minStock: number;
 }
 
 export interface Destination {
