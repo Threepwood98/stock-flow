@@ -1,3 +1,13 @@
+export interface User {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+  name: string;
+  image?: string | null;
+  role?: string | null;
+  profileCompleted?: boolean | null;
+}
+
 export interface Warehouse {
   id: string;
   name: string;

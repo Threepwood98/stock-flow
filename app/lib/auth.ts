@@ -19,10 +19,17 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      stores: {
-        type: "string[]",
-        required: true,
-        input: true,
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "user",
+        input: false,
+      },
+      profileCompleted: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false,
       },
     },
   },

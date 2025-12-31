@@ -5,6 +5,7 @@ import {
   PackageMinus,
   PackagePlus,
   QrCodeIcon,
+  Settings2Icon,
   ShoppingBagIcon,
   ShoppingCartIcon,
   WarehouseIcon,
@@ -20,6 +21,7 @@ import {
   SidebarRail,
 } from "~/components/ui/sidebar";
 import { StoreSwitcher } from "./store-switcher";
+import type { User } from "@/types/types";
 
 // This is sample data.
 const data = {
@@ -98,6 +100,12 @@ const data = {
         },
       ],
     },
+    {
+      title: "Administrar",
+      url: "#",
+      icon: Settings2Icon,
+      isActive: true,
+    },
   ],
 };
 
@@ -108,11 +116,18 @@ export function AppSidebar({
   onStoreChange,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user: any;
+  user: User;
   userStores: any[];
   selectedStoreId: string;
   onStoreChange: (storeId: string) => void;
 }) {
+  const navMain = data.navMain.filter((item) => {
+    if (item.title === "Administrar") {
+      return user.role === "admin";
+    }
+    return true;
+  });
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -124,7 +139,7 @@ export function AppSidebar({
         />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

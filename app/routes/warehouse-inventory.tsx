@@ -314,21 +314,6 @@ export default function WarehouseInventory() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      {/* Alerta de stock bajo */}
-      {lowStockItems.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-600" />
-              <p className="text-sm font-semibold text-orange-900">
-                {lowStockItems.length} producto(s) con stock bajo o agotado
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Filtros */}
       <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
@@ -389,8 +374,6 @@ export default function WarehouseInventory() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Tabla de inventario */}
       <Card>
         <CardHeader>
           <CardTitle>Inventario</CardTitle>
