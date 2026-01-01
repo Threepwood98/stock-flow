@@ -67,6 +67,34 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const storeIds = userStores.map((us) => us.storeId);
 
+  const inflows =
+    storeIds.length > 0
+      ? await prisma.inflow.findMany({
+          where: { userId: user.id, warehouse: { storeId: { in: storeIds } } },
+          include: {
+            warehouse: true,
+            product: true,
+            providerCompany: true,
+            providerStore: true,
+          },
+          orderBy: { date: "desc" },
+        })
+      : [];
+
+  const outflows =
+    storeIds.length > 0
+      ? await prisma.outflow.findMany({
+          where: { userId: user.id, warehouse: { storeId: { in: storeIds } } },
+          include: {
+            warehouse: true,
+            product: true,
+            destinationStore: true,
+            destinationSalesArea: true,
+          },
+          orderBy: { date: "desc" },
+        })
+      : [];
+
   const sales =
     storeIds.length > 0
       ? await prisma.sale.findMany({
@@ -100,11 +128,30 @@ export async function loader({ request }: Route.LoaderArgs) {
     companies,
     products: productsDTO,
     categories,
+    inflows: inflows.map((inflow) => ({
+      ...inflow,
+      warehouseName: inflow.warehouse.name,
+      date: inflow.date.toISOString().split("T")[0],
+      providerName: inflow.providerCompany?.name ?? inflow.providerStore?.name,
+      productName: inflow.product.name,
+      quantity: Number(inflow.quantity),
+      costAmount: Number(inflow.costAmount).toFixed(6),
+      saleAmount: Number(inflow.saleAmount).toFixed(2),
+    })),
+    outflows: outflows.map((outflow) => ({
+      ...outflow,
+      warehouseName: outflow.warehouse.name,
+      date: outflow.date.toISOString().split("T")[0],
+      destinationName:
+        outflow.destinationStore?.name ?? outflow.destinationSalesArea?.name,
+      productName: outflow.product.name,
+      quantity: Number(outflow.quantity),
+      costAmount: Number(outflow.costAmount).toFixed(6),
+      saleAmount: Number(outflow.saleAmount).toFixed(2),
+    })),
     sales: sales.map((sale) => ({
-      id: sale.id,
+      ...sale,
       date: sale.date.toISOString().split("T")[0],
-      // date: sale.date,
-      productId: sale.productId,
       productName: sale.product.name,
       categoryId: sale.product.categoryId,
       categoryName: sale.product.category.name,
@@ -112,23 +159,18 @@ export async function loader({ request }: Route.LoaderArgs) {
       saleAmount: Number(sale.saleAmount).toFixed(2),
       costAmount: Number(sale.costAmount).toFixed(6),
       // profit: Number(sale.saleAmount) - Number(sale.costAmount),
-      payMethod: sale.payMethod,
-      salesAreaId: sale.salesAreaId,
       salesAreaName: sale.salesArea.name,
       storeId: sale.salesArea.storeId,
       storeName: sale.salesArea.store.name,
-      userId: sale.userId,
       userName: sale.user.name,
     })),
     withdraws: withdraws.map((withdraw) => ({
-      id: withdraw.id,
+      ...withdraw,
       date: withdraw.date.toISOString().split("T")[0],
       amount: Number(withdraw.amount),
-      salesAreaId: withdraw.salesAreaId,
       salesAreaName: withdraw.salesArea.name,
       storeId: withdraw.salesArea.storeId,
       storeName: withdraw.salesArea.store.name,
-      userId: withdraw.userId,
       userName: withdraw.user.name,
       createdAt: withdraw.createdAt.toISOString(),
     })),
@@ -142,6 +184,8 @@ export default function Main({ loaderData }: Route.ComponentProps) {
     companies,
     products,
     categories,
+    inflows,
+    outflows,
     sales,
     withdraws,
   } = loaderData;
@@ -165,6 +209,18 @@ export default function Main({ loaderData }: Route.ComponentProps) {
   const providers = { companies, stores };
 
   const destinations = { stores, salesAreas };
+
+  const filteredInflows = useMemo(() => {
+    return inflows.filter(
+      (inflow) => inflow.warehouse.storeId === selectedStoreId
+    );
+  }, [inflows, selectedStoreId]);
+
+  const filteredOutflows = useMemo(() => {
+    return outflows.filter(
+      (outflow) => outflow.warehouse.storeId === selectedStoreId
+    );
+  }, [outflows, selectedStoreId]);
 
   const filteredSales = useMemo(() => {
     return sales.filter((sale) => sale.storeId === selectedStoreId);
@@ -222,6 +278,8 @@ export default function Main({ loaderData }: Route.ComponentProps) {
             destinations,
             products,
             categories,
+            inflows: filteredInflows,
+            outflows: filteredOutflows,
             sales: filteredSales,
             withdraws: filteredWithdraws,
             userStores,

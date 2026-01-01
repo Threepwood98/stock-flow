@@ -24,6 +24,8 @@ export default [
     route("sale-area/withdraw", "routes/withdraw.tsx"),
     route("sale-area/inventory", "routes/sales-area-inventory.tsx"),
 
+    route("report/inflows-report", "routes/inflows-report.tsx"),
+    route("report/outflows-report", "routes/outflows-report.tsx"),
     route("report/sales-report", "routes/sales-report.tsx"),
     route("report/sales-amount-report", "routes/sales-amount-report.tsx"),
     route("report/sales-category-report", "routes/sales-category-report.tsx"),

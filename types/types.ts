@@ -59,6 +59,45 @@ export interface SaleArea {
   salesAreaInventories: SalesAreaInventory[];
 }
 
+export interface Inflow {
+  id: string;
+  userId: string;
+  warehouseId: string;
+  warehouseName: string;
+  date: string;
+  inType: string;
+  providerCompanyId: string;
+  providerStoreId: string;
+  providerName: string;
+  payMethod: string;
+  invoiceNumber: string;
+  inNumber: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  costAmount: number;
+  saleAmount: number;
+}
+
+export interface Outflow {
+  id: string;
+  userId: string;
+  warehouseId: string;
+  warehouseName: string;
+  date: string;
+  outType: string;
+  destinationStoreId: string;
+  destinationSalesAreaId: string;
+  destinationName: string;
+  payMethod: string;
+  outNumber: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  costAmount: number;
+  saleAmount: number;
+}
+
 export interface Sale {
   id: string;
   date: string;
@@ -114,6 +153,8 @@ export interface OutletContext {
   };
   products: Product[];
   categories: Category[];
+  inflows: Inflow[];
+  outflows: Outflow[];
   sales: Sale[];
   withdraws: Withdraw[];
   userStores: UserStores[];

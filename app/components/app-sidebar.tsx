@@ -89,6 +89,16 @@ const data = {
       isActive: true,
       items: [
         {
+          title: "Entradas al Almacén",
+          url: "/main/report/inflows-report",
+          isActive: true,
+        },
+        {
+          title: "Salidas del Almacén",
+          url: "/main/report/outflows-report",
+          isActive: true,
+        },
+        {
           title: "Desglose del Importe",
           url: "/main/report/sales-amount-report",
           isActive: true,
