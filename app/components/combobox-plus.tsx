@@ -21,18 +21,7 @@ import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 export interface ComboboxOption {
   value: string;
   label: string;
-  warehouseId?: string;
-  costPrice?: number;
-  salePrice?: number;
-  unit?: string;
 }
-
-interface DialogContentProps {
-  onClose: (shouldClose: boolean) => void;
-  onSuccess: (newOption: ComboboxOption) => void;
-}
-
-type DialogContentType = ReactNode | ((props: DialogContentProps) => ReactNode);
 
 interface ComboboxProps {
   name?: string;
@@ -42,9 +31,9 @@ interface ComboboxProps {
   value?: string;
   onChange?: (value: string) => void;
   showAddButton?: boolean;
-  dialogContent?: DialogContentType;
-  onDialogSuccess?: (newOption: ComboboxOption) => void;
+  onAddClick?: () => void;
   required?: boolean;
+  disable?: boolean;
 }
 
 export function ComboboxPlus({
@@ -55,30 +44,26 @@ export function ComboboxPlus({
   value,
   onChange,
   showAddButton = false,
-  dialogContent,
-  onDialogSuccess,
+  onAddClick,
   required = false,
+  disable = false,
 }: ComboboxProps) {
   const [open, setOpen] = useState<boolean>(false);
-  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
-  const label = value
-    ? options.find((opt) => opt.value === value)?.label
-    : placeholder;
-
-  const handleDialogClose = (shouldClose: boolean) => {
-    setDialogOpen(!shouldClose);
-  };
+  const selectedLabel =
+    options.find((opt) => opt.value === value)?.label ?? placeholder;
 
   return (
     <div className={`${className}`}>
-      <input
-        id={name}
-        type="hidden"
-        name={name}
-        value={value}
-        required={required}
-      />
+      {name && (
+        <input
+          id={name}
+          type="hidden"
+          name={name}
+          value={value ?? ""}
+          required={required}
+        />
+      )}
       <Popover open={open} onOpenChange={setOpen}>
         <ButtonGroup className="w-full">
           <PopoverTrigger asChild>
@@ -87,37 +72,33 @@ export function ComboboxPlus({
               variant="outline"
               role="combobox"
               aria-expanded={open}
+              disabled={disable}
               className="font-normal justify-between flex-1"
             >
-              <div
-                className={`${
-                  label === placeholder ? "text-muted-foreground" : ""
-                }`}
+              <span
+                className={cn(
+                  "truncate",
+                  selectedLabel === placeholder && "text-muted-foreground"
+                )}
               >
-                {label}
-              </div>
+                {selectedLabel}
+              </span>
               <ChevronsUpDown />
             </Button>
           </PopoverTrigger>
           {showAddButton && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button type="button" variant="outline">
-                  <Plus />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                {dialogContent && typeof dialogContent === "function"
-                  ? dialogContent({
-                      onClose: handleDialogClose,
-                      onSuccess: (newOption: ComboboxOption) => {
-                        onDialogSuccess?.(newOption);
-                        setDialogOpen(false);
-                      },
-                    })
-                  : dialogContent}
-              </DialogContent>
-            </Dialog>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddClick?.();
+              }}
+              disabled={disable}
+              aria-label="Agregar nuevo"
+            >
+              <Plus />
+            </Button>
           )}
         </ButtonGroup>
         <PopoverContent
@@ -134,8 +115,7 @@ export function ComboboxPlus({
                     key={option.value}
                     value={option.value}
                     onSelect={(currentValue) => {
-                      if (onChange)
-                        onChange(currentValue === value ? "" : currentValue);
+                      onChange?.(currentValue === value ? "" : currentValue);
                       setOpen(false);
                     }}
                   >

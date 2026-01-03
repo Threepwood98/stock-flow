@@ -40,7 +40,7 @@ export async function action({ request }: Route.ActionArgs) {
   ) {
     return {
       success: false,
-      error: "Los precios deben ser números válidos y positivos",
+      error: "Precios inválidos",
       status: 400,
     };
   }
@@ -77,17 +77,15 @@ export async function action({ request }: Route.ActionArgs) {
       product: {
         value: result.id,
         label: result.name,
-        costPrice: { d: Number(result.costPrice) },
-        salePrice: { d: Number(result.salePrice) },
+        costPrice: Number(result.costPrice),
+        salePrice: Number(result.salePrice),
       },
     };
   } catch (error: any) {
-    console.error("Error al crear producto:", error);
-
     if (error.code === "P2002") {
       return {
         success: false,
-        error: "Ya existe un producto con ese ID o nombre",
+        error: "Producto duplicado",
         status: 400,
       };
     }
@@ -95,7 +93,7 @@ export async function action({ request }: Route.ActionArgs) {
     if (error.code === "P2003") {
       return {
         success: false,
-        error: "El código de categoría no existe",
+        error: "Categoría inexistente",
         status: 400,
       };
     }

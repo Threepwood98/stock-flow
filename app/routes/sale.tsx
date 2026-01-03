@@ -244,8 +244,8 @@ export default function Sale() {
       return { costAmount: null, saleAmount: null };
     }
 
-    const costPrice = Number(product.costPrice.d);
-    const salePrice = Number(product.salePrice.d);
+    const costPrice = Number(product.costPrice);
+    const salePrice = Number(product.salePrice);
     return { costAmount: qty * costPrice, saleAmount: qty * salePrice };
   };
 

@@ -55,6 +55,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { Dialog } from "@radix-ui/react-dialog";
 
 interface InflowRow {
   userId: string;
@@ -227,6 +228,7 @@ export default function Inflow() {
     "company"
   );
   const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [addProductOpen, setAddProductOpen] = useState<boolean>(false);
 
   // Show success notification
   useEffect(() => {
@@ -391,22 +393,22 @@ export default function Inflow() {
   };
 
   const handleNewProduct = (newProduct: ComboboxOption) => {
-    const productToAdd: Product = {
-      id: newProduct.value,
-      name: newProduct.label,
-      warehouseId: newProduct.warehouseId || formValues.warehouseId,
-      costPrice: newProduct.costPrice || 0,
-      salePrice: newProduct.salePrice || 0,
-      unit: newProduct.unit || "un",
-    };
+    // const productToAdd: Product = {
+    //   id: newProduct.value,
+    //   name: newProduct.label,
+    //   warehouseId: newProduct.warehouseId || formValues.warehouseId,
+    //   costPrice: newProduct.costPrice || 0,
+    //   salePrice: newProduct.salePrice || 0,
+    //   unit: newProduct.unit || "un",
+    // };
 
-    setProducts((prev) => [...prev, productToAdd]);
+    // setProducts((prev) => [...prev, productToAdd]);
 
-    setFormValues((prev) => ({
-      ...prev,
-      productId: newProduct.value,
-      productName: newProduct.label,
-    }));
+    // setFormValues((prev) => ({
+    //   ...prev,
+    //   productId: newProduct.value,
+    //   productName: newProduct.label,
+    // }));
 
     toast.success("Producto agregado y seleccionado exitosamente");
   };
@@ -524,11 +526,11 @@ export default function Inflow() {
                     }
                   }}
                   showAddButton={currentProviders.length > 0}
-                  dialogContent={(props) => (
-                    <AddProvider {...props} providerType={providerType} />
-                  )}
-                  onDialogSuccess={handleNewProvider}
-                  required
+                  // dialogContent={(props) => (
+                  //   <AddProvider {...props} providerType={providerType} />
+                  // )}
+                  // onDialogSuccess={handleNewProvider}
+                  // required
                 />
               </div>
               {formValues.inType === "FACTURA" && (
@@ -586,14 +588,7 @@ export default function Inflow() {
                     }
                   }}
                   showAddButton
-                  dialogContent={(props) => (
-                    <AddProduct
-                      {...props}
-                      categories={categories}
-                      warehouseId={formValues.warehouseId}
-                    />
-                  )}
-                  onDialogSuccess={handleNewProduct}
+                  onAddClick={() => setAddProductOpen(true)}
                   required
                 />
               </div>
@@ -803,6 +798,13 @@ export default function Inflow() {
       <Form method="post" id="submit-form" className="hidden">
         <input type="hidden" name="rows" value={JSON.stringify(rows)} />
       </Form>
+      <AddProduct
+        open={addProductOpen}
+        onOpenChange={setAddProductOpen}
+        onSuccess={handleNewProduct}
+        categories={categories}
+        warehouseId={formValues.warehouseId}
+      />
     </div>
   );
 }
