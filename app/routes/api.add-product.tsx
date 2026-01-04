@@ -1,4 +1,4 @@
-import { prisma } from "~/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import type { Route } from "./+types/api.add-product";
 import { Decimal } from "@prisma/client/runtime/client";
 

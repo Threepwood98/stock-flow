@@ -34,7 +34,7 @@ import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/outflow";
-import { prisma } from "~/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import {
   BanIcon,
   CalculatorIcon,
@@ -45,7 +45,7 @@ import {
   Trash2Icon,
   WarehouseIcon,
 } from "lucide-react";
-import type { Destination, OutletContext } from "~/lib/types/types";
+import type { Destination, OutletContext } from "@/lib/types/types";
 import { AddDestination } from "~/components/add-destination";
 import {
   Card,

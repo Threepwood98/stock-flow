@@ -12,7 +12,7 @@ import { Label } from "~/components/ui/label";
 import { useFetcher } from "react-router";
 import { useEffect, useRef } from "react";
 import { Button } from "~/components/ui/button";
-import type { Destination } from "~/lib/types/types";
+import type { Destination } from "@/lib/types/types";
 import { toast } from "sonner";
 
 interface AddDestinationProps {

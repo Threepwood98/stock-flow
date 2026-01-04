@@ -16,7 +16,7 @@ import { Button } from "~/components/ui/button";
 import { SelectList } from "./select-list";
 import { AddCategory } from "./add-category";
 import { toast } from "sonner";
-import type { Category, Product } from "~/lib/types/types";
+import type { Category, Product } from "@/lib/types/types";
 
 interface AddPrductProps {
   open: boolean;

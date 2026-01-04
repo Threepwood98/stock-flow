@@ -21,7 +21,7 @@ import {
   SidebarRail,
 } from "~/components/ui/sidebar";
 import { StoreSwitcher } from "./store-switcher";
-import type { User } from "~/lib/types/types";
+import type { User } from "@/lib/types/types";
 
 // This is sample data.
 const data = {

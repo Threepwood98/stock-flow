@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, redirect } from "react-router";
 import type { Route } from "./+types/signin";
-import { authClient } from "~/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -14,7 +14,7 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { auth } from "~/lib/auth";
+import { auth } from "@/lib/auth";
 import { IconBrandGoogleFilled } from "@tabler/icons-react";
 import { Separator } from "~/components/ui/separator";
 

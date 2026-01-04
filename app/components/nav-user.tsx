@@ -1,4 +1,4 @@
-import type { User } from "~/lib/types/types";
+import type { User } from "@/lib/types/types";
 import {
   Bell,
   ChevronsUpDown,
@@ -24,7 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "~/components/ui/sidebar";
-import { authClient } from "~/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 
 export function NavUser({ user }: { user: User }) {
   const { isMobile } = useSidebar();

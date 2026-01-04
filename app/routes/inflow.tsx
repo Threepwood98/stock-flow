@@ -33,7 +33,7 @@ import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/inflow";
-import { prisma } from "~/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import {
   BanIcon,
   CalculatorIcon,
@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 import { AddProvider } from "~/components/add-provider";
 import { AddProduct } from "~/components/add-product";
-import type { OutletContext, Product, Provider } from "~/lib/types/types";
+import type { OutletContext, Product, Provider } from "@/lib/types/types";
 import {
   Card,
   CardAction,

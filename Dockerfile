@@ -45,12 +45,11 @@ WORKDIR /app
 COPY package.json ./
 COPY --from=dependencies /app/node_modules ./node_modules
 
+COPY --from=build /app/lib ./lib
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/generated ./generated
-COPY --from=build /app/app ./app
 COPY --from=build /app/build ./build
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
-COPY --from=build /app/tsconfig.json ./tsconfig.json
 
 
 # Exponer puerto

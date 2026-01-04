@@ -30,8 +30,8 @@ import { Label } from "~/components/ui/label";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import type { Route } from "./+types/complete-profile";
-import { auth } from "~/lib/auth";
-import { prisma } from "~/lib/prisma";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import {
   InputGroup,
   InputGroupAddon,
