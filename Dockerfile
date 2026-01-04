@@ -26,6 +26,7 @@ WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 
 # Copiar código fuente
+COPY --from=build /app/lib ./app/lib
 COPY . .
 
 # Establecer DATABASE_URL dummy para generar Prisma Client
