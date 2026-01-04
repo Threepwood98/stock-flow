@@ -1,4 +1,4 @@
-import { prisma } from "~/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import type { Route } from "./+types/api.add-general-category";
 
 export async function action({ request }: Route.ActionArgs) {

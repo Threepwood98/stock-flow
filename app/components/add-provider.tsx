@@ -13,7 +13,7 @@ import type { ComboboxOption } from "./combobox-plus";
 import { useFetcher } from "react-router";
 import { useEffect, useRef } from "react";
 import { Button } from "~/components/ui/button";
-import type { Provider } from "~/lib/types/types";
+import type { Provider } from "@/lib/types/types";
 import { toast } from "sonner";
 
 interface AddProviderProps {

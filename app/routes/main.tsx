@@ -7,8 +7,8 @@ import {
   SidebarTrigger,
 } from "~/components/ui/sidebar";
 import type { Route } from "./+types/main";
-import { auth } from "~/lib/auth";
-import { prisma } from "~/lib/prisma";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { useMemo, useState } from "react";
 
 export async function loader({ request }: Route.LoaderArgs) {

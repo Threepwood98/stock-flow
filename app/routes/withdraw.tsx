@@ -33,7 +33,7 @@ import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/withdraw";
-import { prisma } from "~/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import {
   BanIcon,
   CalculatorIcon,
@@ -45,7 +45,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { Decimal } from "@prisma/client/runtime/client";
-import type { OutletContext } from "~/lib/types/types";
+import type { OutletContext } from "@/lib/types/types";
 import {
   Card,
   CardAction,

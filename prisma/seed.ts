@@ -1,5 +1,5 @@
 import { parseISO } from "date-fns";
-import { prisma } from "~/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 async function main() {
   console.log("🌱 Starting database seed...");

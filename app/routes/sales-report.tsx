@@ -23,7 +23,7 @@ import { BanknoteIcon } from "lucide-react";
 import { Label } from "~/components/ui/label";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import { toast } from "sonner";
-import type { OutletContext } from "~/lib/types/types";
+import type { OutletContext } from "@/lib/types/types";
 import { Button } from "~/components/ui/button";
 
 export default function SalesReport() {
