@@ -1,8 +1,8 @@
 import { useState, type FormEvent, useEffect } from "react";
 import { toast } from "sonner";
 import {
-  Form,
   redirect,
+  useFetcher,
   useOutletContext,
   useSearchParams,
 } from "react-router";
@@ -31,7 +31,7 @@ import {
 import { format, parse, isValid } from "date-fns";
 import { DatePicker } from "~/components/date-picker";
 import { SelectList } from "~/components/select-list";
-import { ComboboxPlus, type ComboboxOption } from "~/components/combobox-plus";
+import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/inflow";
 import { prisma } from "~/lib/prisma";
 import {
@@ -55,7 +55,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Dialog } from "@radix-ui/react-dialog";
+import { Decimal } from "@prisma/client/runtime/client";
 
 interface InflowRow {
   userId: string;
@@ -70,8 +70,8 @@ interface InflowRow {
   productId: string;
   productName: string;
   quantity: string;
-  saleAmount: number | null;
-  costAmount: number | null;
+  saleAmount: number;
+  costAmount: number;
 }
 
 const inTypeOptions = [
@@ -92,8 +92,8 @@ const initialFormValues: InflowRow = {
   productId: "",
   productName: "",
   quantity: "",
-  saleAmount: null,
-  costAmount: null,
+  saleAmount: 0,
+  costAmount: 0,
 };
 
 // Server Action
@@ -152,8 +152,8 @@ export async function action({ request }: Route.ActionArgs) {
         inNumber: row.inNumber,
         productId: row.productId,
         quantity,
-        costAmount: row.costAmount ? Number(row.costAmount) : 0,
-        saleAmount: row.saleAmount ? Number(row.saleAmount) : 0,
+        costAmount: new Decimal(row.costAmount ?? 0),
+        saleAmount: new Decimal(row.saleAmount ?? 0),
       };
     });
 
@@ -229,6 +229,9 @@ export default function Inflow() {
   );
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [addProductOpen, setAddProductOpen] = useState<boolean>(false);
+  const [addProviderOpen, setAddProviderOpen] = useState<boolean>(false);
+
+  const fetcher = useFetcher();
 
   // Show success notification
   useEffect(() => {
@@ -254,12 +257,15 @@ export default function Inflow() {
     setFormValues((prev) => ({ ...prev, [name]: value }));
 
     if (name === "inType") {
-      if (value === "FACTURA") {
-        setCurrentProviders(providers.companies);
-        setProviderType("company");
-      } else if (value === "TRASLADO") {
-        setCurrentProviders(providers.stores);
-        setProviderType("store");
+      switch (value) {
+        case "FACTURA":
+          setCurrentProviders(providers.companies);
+          setProviderType("company");
+          break;
+        case "TRASLADO":
+          setCurrentProviders(providers.stores);
+          setProviderType("store");
+          break;
       }
 
       setFormValues((prev) => ({
@@ -274,12 +280,12 @@ export default function Inflow() {
   const calculateAmount = (
     productId: string,
     quantity: string
-  ): { costAmount: number | null; saleAmount: number | null } => {
+  ): { costAmount: number; saleAmount: number } => {
     const product = products.find((p) => p.id === productId);
     const qty = parseInt(quantity, 10);
 
     if (!product || isNaN(qty) || qty <= 0) {
-      return { costAmount: null, saleAmount: null };
+      return { costAmount: 0, saleAmount: 0 };
     }
 
     const costPrice = product.costPrice;
@@ -354,10 +360,13 @@ export default function Inflow() {
     setFormValues({ ...row });
     setEditIndex(index);
 
-    if (row.inType === "FACTURA") {
-      setCurrentProviders(providers.companies);
-    } else if (row.inType === "TRASLADO") {
-      setCurrentProviders(providers.stores);
+    switch (row.inType) {
+      case "FACTURA":
+        setCurrentProviders(providers.companies);
+        break;
+      case "TRASLADO":
+        setCurrentProviders(providers.stores);
+        break;
     }
   };
 
@@ -369,46 +378,43 @@ export default function Inflow() {
   const handleConfirmSubmit = () => {
     setShowConfirmDialog(false);
     setIsSubmitting(true);
-    document
-      .getElementById("submit-form")
-      ?.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    fetcher.submit({ rows: JSON.stringify(rows) }, { method: "post" });
   };
 
-  const handleNewProvider = (newProvider: ComboboxOption) => {
-    setCurrentProviders((prev) => [
-      ...prev,
-      {
-        id: newProvider.value,
-        name: newProvider.label,
-      },
-    ]);
+  const handleNewProvider = (newProvider: Provider) => {
+    const providerToAdd: Provider = {
+      id: newProvider.id,
+      name: newProvider.name,
+    };
+
+    setCurrentProviders((prev) => [...prev, providerToAdd]);
 
     setFormValues((prev) => ({
       ...prev,
-      providerId: newProvider.value,
-      providerName: newProvider.label,
+      providerId: newProvider.id,
+      providerName: newProvider.name,
     }));
 
     toast.success("Proveedor agregado y seleccionado exitosamente");
   };
 
-  const handleNewProduct = (newProduct: ComboboxOption) => {
-    // const productToAdd: Product = {
-    //   id: newProduct.value,
-    //   name: newProduct.label,
-    //   warehouseId: newProduct.warehouseId || formValues.warehouseId,
-    //   costPrice: newProduct.costPrice || 0,
-    //   salePrice: newProduct.salePrice || 0,
-    //   unit: newProduct.unit || "un",
-    // };
+  const handleNewProduct = (newProduct: Product) => {
+    const productToAdd: Product = {
+      id: newProduct.id,
+      categoryId: newProduct.id,
+      name: newProduct.name,
+      costPrice: newProduct.costPrice,
+      salePrice: newProduct.salePrice,
+      unit: newProduct.unit,
+    };
 
-    // setProducts((prev) => [...prev, productToAdd]);
+    setProducts((prev) => [...prev, productToAdd]);
 
-    // setFormValues((prev) => ({
-    //   ...prev,
-    //   productId: newProduct.value,
-    //   productName: newProduct.label,
-    // }));
+    setFormValues((prev) => ({
+      ...prev,
+      productId: newProduct.id,
+      productName: newProduct.name,
+    }));
 
     toast.success("Producto agregado y seleccionado exitosamente");
   };
@@ -525,12 +531,9 @@ export default function Inflow() {
                       }));
                     }
                   }}
-                  showAddButton={currentProviders.length > 0}
-                  // dialogContent={(props) => (
-                  //   <AddProvider {...props} providerType={providerType} />
-                  // )}
-                  // onDialogSuccess={handleNewProvider}
-                  // required
+                  showAddButton={formValues.inType !== ""}
+                  onAddClick={() => setAddProviderOpen(true)}
+                  required
                 />
               </div>
               {formValues.inType === "FACTURA" && (
@@ -795,15 +798,20 @@ export default function Inflow() {
       </AlertDialog>
 
       {/* Hidden Form for Submission */}
-      <Form method="post" id="submit-form" className="hidden">
+      <fetcher.Form>
         <input type="hidden" name="rows" value={JSON.stringify(rows)} />
-      </Form>
+      </fetcher.Form>
       <AddProduct
         open={addProductOpen}
         onOpenChange={setAddProductOpen}
         onSuccess={handleNewProduct}
         categories={categories}
-        warehouseId={formValues.warehouseId}
+      />
+      <AddProvider
+        open={addProviderOpen}
+        onOpenChange={setAddProviderOpen}
+        onSuccess={handleNewProvider}
+        providerType={providerType}
       />
     </div>
   );

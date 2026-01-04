@@ -44,6 +44,7 @@ import {
   WarehouseIcon,
 } from "lucide-react";
 import type { Destination, OutletContext } from "@/types/types";
+import { AddDestination } from "~/components/add-destination";
 
 interface OutflowRow {
   userId: string;
@@ -58,8 +59,8 @@ interface OutflowRow {
   productId: string;
   productName: string;
   quantity: string;
-  saleAmount: number | null;
-  costAmount: number | null;
+  saleAmount: number;
+  costAmount: number;
 }
 
 const outTypeOptions = [
@@ -87,8 +88,8 @@ const initialFormValues: OutflowRow = {
   productId: "",
   productName: "",
   quantity: "",
-  saleAmount: null,
-  costAmount: null,
+  saleAmount: 0,
+  costAmount: 0,
 };
 
 // Server Action
@@ -220,7 +221,8 @@ export async function action({ request }: Route.ActionArgs) {
 
 // Component
 export default function Outflow() {
-  const { user, warehouses, destinations } = useOutletContext<OutletContext>();
+  const { user, userStores, warehouses, destinations } =
+    useOutletContext<OutletContext>();
 
   const [searchParams] = useSearchParams();
   const [rows, setRows] = useState<OutflowRow[]>([]);
@@ -236,6 +238,12 @@ export default function Outflow() {
   const [currentDestinations, setCurrentDestinations] = useState<Destination[]>(
     []
   );
+  const [destinationType, setDestinationType] = useState<
+    "store" | "salesArea" | "sale"
+  >("store");
+  const [addDestinationOpen, setAddDestinationOpen] = useState<boolean>(false);
+
+  const storeIds = userStores.map((us) => us.storeId);
 
   const availableProducts =
     warehouses
@@ -277,12 +285,15 @@ export default function Outflow() {
       switch (value) {
         case "TRASLADO":
           setCurrentDestinations(destinations.stores);
+          setDestinationType("store");
           break;
         case "VALE":
           setCurrentDestinations(destinations.salesAreas);
+          setDestinationType("salesArea");
           break;
         case "VENTA":
           setCurrentDestinations([]);
+          setDestinationType("sale");
           break;
       }
 
@@ -308,16 +319,16 @@ export default function Outflow() {
   const calculateAmount = (
     productId: string,
     quantity: string
-  ): { costAmount: number | null; saleAmount: number | null } => {
+  ): { costAmount: number; saleAmount: number } => {
     const product = availableProducts.find((prod) => prod.id === productId);
     const qty = parseInt(quantity, 10);
 
     if (!product || isNaN(qty) || qty <= 0) {
-      return { costAmount: null, saleAmount: null };
+      return { costAmount: 0, saleAmount: 0 };
     }
 
-    const costPrice = Number(product.costPrice.d);
-    const salePrice = Number(product.salePrice.d);
+    const costPrice = product.costPrice;
+    const salePrice = product.salePrice;
     return { costAmount: qty * costPrice, saleAmount: qty * salePrice };
   };
 
@@ -435,6 +446,23 @@ export default function Outflow() {
 
   const totalAmount = rows.reduce((sum, row) => sum + (row.costAmount || 0), 0);
 
+  const handleNewDestination = (newDestination: Destination) => {
+    const destinationToAdd: Destination = {
+      id: newDestination.id,
+      name: newDestination.name,
+    };
+
+    setCurrentDestinations((prev) => [...prev, destinationToAdd]);
+
+    setFormValues((prev) => ({
+      ...prev,
+      destinationId: newDestination.id,
+      destinationName: newDestination.name,
+    }));
+
+    toast.success("Destino agregado y seleccionado exitosamente");
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
@@ -520,6 +548,8 @@ export default function Outflow() {
                     }));
                   }
                 }}
+                showAddButton={formValues.outType !== ""}
+                onAddClick={() => setAddDestinationOpen(true)}
                 required
               />
             </div>
@@ -760,6 +790,13 @@ export default function Outflow() {
       <Form method="post" id="submit-form" className="hidden">
         <input type="hidden" name="rows" value={JSON.stringify(rows)} />
       </Form>
+      <AddDestination
+        open={addDestinationOpen}
+        onOpenChange={setAddDestinationOpen}
+        onSuccess={handleNewDestination}
+        destinationType={destinationType}
+        storeId={storeIds[0]}
+      />
     </div>
   );
 }

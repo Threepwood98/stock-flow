@@ -9,21 +9,20 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { ComboboxPlus, type ComboboxOption } from "./combobox-plus";
+import { ComboboxPlus } from "./combobox-plus";
 import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { SelectList } from "./select-list";
 import { AddCategory } from "./add-category";
 import { toast } from "sonner";
-import type { Category } from "@/types/types";
+import type { Category, Product } from "@/types/types";
 
 interface AddPrductProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (product: ComboboxOption) => void;
+  onSuccess: (newProduct: Product) => void;
   categories: Category[];
-  warehouseId: string;
 }
 
 export function AddProduct({
@@ -31,14 +30,13 @@ export function AddProduct({
   onOpenChange,
   onSuccess,
   categories: initialCategories = [],
-  warehouseId,
 }: AddPrductProps) {
   const fetcher = useFetcher<{
     success: boolean;
-    product?: ComboboxOption;
+    newProduct?: Product;
     error?: string;
   }>();
-  
+
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [categoryId, setCategoryId] = useState<string>("");
   const [unit, setUnit] = useState<string>("");
@@ -51,17 +49,13 @@ export function AddProduct({
   useEffect(() => {
     if (!fetcher.data || hasRun.current) return;
 
-    if (fetcher.data.success && fetcher.data.product) {
+    if (fetcher.data.success && fetcher.data.newProduct) {
       toast.success("Producto creado correctamente");
       hasRun.current = true;
-      onSuccess(fetcher.data.product);
+      onSuccess(fetcher.data.newProduct);
       onOpenChange(false);
     }
   }, [fetcher.data, onSuccess, onOpenChange]);
-
-  // const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.stopPropagation();
-  // };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,7 +65,6 @@ export function AddProduct({
           action="/api/add-product"
           className="flex flex-col gap-4"
           hidden={addCategoryOpen}
-          // onSubmit={handleFormSubmit}
         >
           <DialogHeader>
             <DialogTitle>Agregar Producto</DialogTitle>
@@ -79,7 +72,6 @@ export function AddProduct({
               Complete la información del nuevo producto.
             </DialogDescription>
           </DialogHeader>
-          <input type="hidden" name="warehouseId" value={warehouseId} />
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="id" className="pl-1">

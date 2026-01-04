@@ -58,25 +58,13 @@ export async function action({ request }: Route.ActionArgs) {
         },
       });
 
-      if (warehouseId) {
-        await tx.warehouseInventory.create({
-          data: {
-            warehouseId,
-            productId: newProduct.id,
-            quantity: 0,
-            minStock: 0,
-          },
-        });
-      }
-
       return newProduct;
     });
 
     return {
       success: true,
-      product: {
-        value: result.id,
-        label: result.name,
+      newProduct: {
+        ...result,
         costPrice: Number(result.costPrice),
         salePrice: Number(result.salePrice),
       },

@@ -9,29 +9,32 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import type { ComboboxOption } from "./combobox-plus";
 import { useFetcher } from "react-router";
 import { useEffect, useRef } from "react";
 import { Button } from "~/components/ui/button";
-import type { Provider } from "@/types/types";
+import type { Destination } from "@/types/types";
 import { toast } from "sonner";
 
-interface AddProviderProps {
+interface AddDestinationProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (newProvider: Provider) => void;
-  providerType: "company" | "store";
+  onSuccess: (newDestination: Destination) => void;
+  destinationType: "store" | "salesArea" | "sale";
+  storeId: string;
 }
 
-export function AddProvider({
+export function AddDestination({
   open = false,
   onOpenChange,
   onSuccess,
-  providerType,
-}: AddProviderProps) {
+  destinationType,
+  storeId,
+}: AddDestinationProps) {
+  if (destinationType === "sale") return null;
+
   const fetcher = useFetcher<{
     success: boolean;
-    newProvider?: Provider;
+    newDestination?: Destination;
     error?: string;
   }>();
 
@@ -42,10 +45,10 @@ export function AddProvider({
   useEffect(() => {
     if (!fetcher.data || hasRun.current) return;
 
-    if (fetcher.data.success && fetcher.data.newProvider) {
-      toast.success("Proveedor creado correctamente");
+    if (fetcher.data.success && fetcher.data.newDestination) {
+      toast.success("Destino creado correctamente");
       hasRun.current = true;
-      onSuccess(fetcher.data.newProvider);
+      onSuccess(fetcher.data.newDestination);
       onOpenChange(false);
     }
   }, [fetcher.data, onSuccess, onOpenChange]);
@@ -60,16 +63,20 @@ export function AddProvider({
         >
           <DialogHeader>
             <DialogTitle>
-              Agregar {providerType === "company" ? "Empresa" : "Tienda"}
+              Agregar {destinationType === "store" ? "Tienda" : "Área de Venta"}
             </DialogTitle>
             <DialogDescription>
               Complete la información del nuevo proveedor.
             </DialogDescription>
           </DialogHeader>
-          <input type="hidden" name="type" defaultValue={providerType} />
+          <input type="hidden" name="type" defaultValue={destinationType} />
+          <input type="hidden" name="storeId" defaultValue={storeId} />
           <div className="grid gap-2">
             <Label htmlFor="name" className="pl-1">
-              Nombre de la {providerType === "company" ? "Empresa" : "Tienda"}
+              Nombre{" "}
+              {destinationType === "store"
+                ? "de la Tienda"
+                : "del Área de Venta"}
             </Label>
             <Input
               id="name"

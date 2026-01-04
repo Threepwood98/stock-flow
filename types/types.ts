@@ -23,7 +23,6 @@ export interface Product {
   id: string;
   categoryId: string;
   name: string;
-  warehouseId: string;
   costPrice: number;
   salePrice: number;
   unit: string;
@@ -37,9 +36,11 @@ export interface Category {
 
 export interface WarehouseInventory {
   id: string;
+  warehouseId: string;
   productId: string;
   quantity: number;
   minStock: number;
+  product: Product;
 }
 
 export interface Destination {
