@@ -446,172 +446,170 @@ export default function Inflow() {
           <CardTitle>Entrada</CardTitle>
         </CardHeader>
         <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              <input
-                type="hidden"
-                name="userId"
-                defaultValue={user.id}
+          <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <input
+              type="hidden"
+              name="userId"
+              defaultValue={user.id}
+              required
+            />
+            <div className="grid gap-2">
+              <Label htmlFor="date" className="pl-1">
+                Fecha
+              </Label>
+              <DatePicker
+                name="date"
+                className="w-full min-w-40"
+                value={formValues.date}
+                onChange={(value) => {
+                  handleChange("date", value);
+                  console.log(value);
+                }}
                 required
               />
+            </div>
+            {warehouses.length > 1 && (
               <div className="grid gap-2">
-                <Label htmlFor="date" className="pl-1">
-                  Fecha
-                </Label>
-                <DatePicker
-                  name="date"
-                  className="w-full min-w-40"
-                  value={formValues.date}
-                  onChange={(value) => {
-                    handleChange("date", value);
-                    console.log(value);
-                  }}
-                  required
-                />
-              </div>
-              {warehouses.length > 1 && (
-                <div className="grid gap-2">
-                  <Label htmlFor="warehouseId" className="pl-1">
-                    Almacén
-                  </Label>
-                  <ComboboxPlus
-                    name="warehouseId"
-                    className="w-full min-w-40"
-                    options={warehouses.map((wh) => ({
-                      value: wh.id,
-                      label: wh.name,
-                    }))}
-                    value={formValues.warehouseId}
-                    onChange={(value) => {
-                      const wh = warehouses.find((w) => w.id === value);
-                      if (wh) {
-                        handleChange("warehouseId", value);
-                        setFormValues((prev) => ({
-                          ...prev,
-                          warehouseName: wh.name,
-                        }));
-                      }
-                    }}
-                    required
-                  />
-                </div>
-              )}
-              <div className="grid gap-2">
-                <Label htmlFor="type" className="pl-1">
-                  Tipo de Entrada
-                </Label>
-                <SelectList
-                  name="type"
-                  className="w-full min-w-40"
-                  options={inTypeOptions}
-                  value={formValues.inType}
-                  onChange={(value) => handleChange("inType", value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="provider" className="pl-1">
-                  Proveedor
+                <Label htmlFor="warehouseId" className="pl-1">
+                  Almacén
                 </Label>
                 <ComboboxPlus
-                  name="provider"
+                  name="warehouseId"
                   className="w-full min-w-40"
-                  options={currentProviders.map((prov) => ({
-                    value: prov.id,
-                    label: prov.name,
+                  options={warehouses.map((wh) => ({
+                    value: wh.id,
+                    label: wh.name,
                   }))}
-                  value={formValues.providerId}
+                  value={formValues.warehouseId}
                   onChange={(value) => {
-                    const prov = currentProviders.find((p) => p.id === value);
-                    if (prov) {
-                      handleChange("providerId", prov.id);
+                    const wh = warehouses.find((w) => w.id === value);
+                    if (wh) {
+                      handleChange("warehouseId", value);
                       setFormValues((prev) => ({
                         ...prev,
-                        providerName: prov.name,
+                        warehouseName: wh.name,
                       }));
                     }
                   }}
-                  showAddButton={formValues.inType !== ""}
-                  onAddClick={() => setAddProviderOpen(true)}
                   required
                 />
               </div>
-              {formValues.inType === "FACTURA" && (
-                <div className="grid gap-2">
-                  <Label htmlFor="invoiceNumber" className="pl-1">
-                    No. de Factura
-                  </Label>
-                  <Input
-                    id="invoiceNumber"
-                    name="invoiceNumber"
-                    value={formValues.invoiceNumber}
-                    onChange={(event) =>
-                      handleChange("invoiceNumber", event.target.value)
-                    }
-                    className="w-full min-w-40"
-                    required
-                  />
-                </div>
-              )}
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="type" className="pl-1">
+                Tipo de Entrada
+              </Label>
+              <SelectList
+                name="type"
+                className="w-full min-w-40"
+                options={inTypeOptions}
+                value={formValues.inType}
+                onChange={(value) => handleChange("inType", value)}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="provider" className="pl-1">
+                Proveedor
+              </Label>
+              <ComboboxPlus
+                name="provider"
+                className="w-full min-w-40"
+                options={currentProviders.map((prov) => ({
+                  value: prov.id,
+                  label: prov.name,
+                }))}
+                value={formValues.providerId}
+                onChange={(value) => {
+                  const prov = currentProviders.find((p) => p.id === value);
+                  if (prov) {
+                    handleChange("providerId", prov.id);
+                    setFormValues((prev) => ({
+                      ...prev,
+                      providerName: prov.name,
+                    }));
+                  }
+                }}
+                showAddButton={formValues.inType !== ""}
+                onAddClick={() => setAddProviderOpen(true)}
+                required
+              />
+            </div>
+            {formValues.inType === "FACTURA" && (
               <div className="grid gap-2">
-                <Label htmlFor="inNumber" className="pl-1">
-                  No. de Entrada
+                <Label htmlFor="invoiceNumber" className="pl-1">
+                  No. de Factura
                 </Label>
                 <Input
-                  id="inNumber"
-                  name="inNumber"
-                  value={formValues.inNumber}
+                  id="invoiceNumber"
+                  name="invoiceNumber"
+                  value={formValues.invoiceNumber}
                   onChange={(event) =>
-                    handleChange("inNumber", event.target.value)
+                    handleChange("invoiceNumber", event.target.value)
                   }
                   className="w-full min-w-40"
                   required
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="product" className="pl-1">
-                  Producto
-                </Label>
-                <ComboboxPlus
-                  name="product"
-                  className="w-full min-w-40"
-                  options={products.map((prod) => ({
-                    value: prod.id,
-                    label: prod.name,
-                  }))}
-                  value={formValues.productId}
-                  onChange={(value) => {
-                    const prod = products.find((p) => p.id === value);
-                    if (prod) {
-                      handleChange("productId", prod.id);
-                      setFormValues((prev) => ({
-                        ...prev,
-                        productName: prod.name,
-                      }));
-                    }
-                  }}
-                  showAddButton
-                  onAddClick={() => setAddProductOpen(true)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="quantity" className="pl-1">
-                  Cantidad
-                </Label>
-                <Input
-                  id="quantity"
-                  name="quantity"
-                  value={formValues.quantity}
-                  onChange={(event) =>
-                    handleChange("quantity", event.target.value)
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="inNumber" className="pl-1">
+                No. de Entrada
+              </Label>
+              <Input
+                id="inNumber"
+                name="inNumber"
+                value={formValues.inNumber}
+                onChange={(event) =>
+                  handleChange("inNumber", event.target.value)
+                }
+                className="w-full min-w-40"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="product" className="pl-1">
+                Producto
+              </Label>
+              <ComboboxPlus
+                name="product"
+                className="w-full min-w-40"
+                options={products.map((prod) => ({
+                  value: prod.id,
+                  label: prod.name,
+                }))}
+                value={formValues.productId}
+                onChange={(value) => {
+                  const prod = products.find((p) => p.id === value);
+                  if (prod) {
+                    handleChange("productId", prod.id);
+                    setFormValues((prev) => ({
+                      ...prev,
+                      productName: prod.name,
+                    }));
                   }
-                  type="number"
-                  min={1}
-                  className="w-full min-w-40"
-                  required
-                />
-              </div>
+                }}
+                showAddButton
+                onAddClick={() => setAddProductOpen(true)}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="quantity" className="pl-1">
+                Cantidad
+              </Label>
+              <Input
+                id="quantity"
+                name="quantity"
+                value={formValues.quantity}
+                onChange={(event) =>
+                  handleChange("quantity", event.target.value)
+                }
+                type="number"
+                min={1}
+                className="w-full min-w-40"
+                required
+              />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
@@ -689,7 +687,7 @@ export default function Inflow() {
                     <div className="flex flex-col items-center gap-4">
                       <WarehouseIcon className="size-32" />
                       <p className="font-semibold">
-                        No hay salidas agregadas. Complete el formulario y haga
+                        No hay entradas agregadas. Complete el formulario y haga
                         clic en "Agregar".
                       </p>
                     </div>
@@ -709,14 +707,10 @@ export default function Inflow() {
                     <TableCell>{row.productName}</TableCell>
                     <TableCell className="text-right">{row.quantity}</TableCell>
                     <TableCell className="text-right">
-                      {row.costAmount
-                        ? formatCurrency(row.costAmount, "cost")
-                        : formatCurrency(0, "cost")}
+                      {formatCurrency(row.costAmount, "cost")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {row.saleAmount
-                        ? formatCurrency(row.saleAmount)
-                        : formatCurrency(0, "cost")}
+                      {formatCurrency(row.saleAmount)}
                     </TableCell>
                     <TableCell>
                       <div className="flex">
@@ -776,7 +770,7 @@ export default function Inflow() {
             <AlertDialogDescription>
               Está a punto de contabilizar <strong>{rows.length}</strong>{" "}
               entrada{rows.length !== 1 ? "s" : ""} por un total de{" "}
-              <strong>${totalCostAmount.toFixed(2)}</strong>.
+              <strong>{formatCurrency(totalCostAmount, "cost")}</strong>.
               <br />
               <br />
               Esta acción registrará las entradas en el sistema de manera
