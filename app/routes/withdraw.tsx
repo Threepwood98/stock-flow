@@ -45,7 +45,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { Decimal } from "@prisma/client/runtime/client";
-import type { OutletContext } from "@/types/types";
+import type { OutletContext } from "~/lib/types/types";
 import {
   Card,
   CardAction,

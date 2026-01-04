@@ -11,7 +11,7 @@ import {
 } from "~/components/ui/table";
 import { Label } from "~/components/ui/label";
 import { ComboboxPlus } from "~/components/combobox-plus";
-import type { OutletContext } from "@/types/types";
+import type { OutletContext } from "~/lib/types/types";
 import { PackageIcon, AlertTriangle } from "lucide-react";
 import { writeFile, utils } from "xlsx";
 import {

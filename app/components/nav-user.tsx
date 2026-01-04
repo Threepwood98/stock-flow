@@ -1,4 +1,4 @@
-import type { User } from "@/types/types";
+import type { User } from "~/lib/types/types";
 import {
   Bell,
   ChevronsUpDown,

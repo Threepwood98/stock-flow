@@ -43,21 +43,16 @@ FROM base AS production
 
 WORKDIR /app
 
-# Copiar package.json
 COPY package.json ./
-
-# Copiar node_modules (incluye prisma CLI para migraciones)
 COPY --from=dependencies /app/node_modules ./node_modules
 
-# Copiar Prisma schema, config y migraciones
 COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/prisma.config.ts ./prisma.config.ts
-
-# Copiar build de la aplicación
-COPY --from=build /app/build ./build
-
-# Copiar Prisma Client generado
 COPY --from=build /app/generated ./generated
+COPY --from=build /app/app ./app
+COPY --from=build /app/build ./build
+COPY --from=build /app/prisma.config.ts ./prisma.config.ts
+COPY --from=build /app/tsconfig.json ./tsconfig.json
+
 
 # Exponer puerto
 EXPOSE 3000

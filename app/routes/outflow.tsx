@@ -45,7 +45,7 @@ import {
   Trash2Icon,
   WarehouseIcon,
 } from "lucide-react";
-import type { Destination, OutletContext } from "@/types/types";
+import type { Destination, OutletContext } from "~/lib/types/types";
 import { AddDestination } from "~/components/add-destination";
 import {
   Card,
