@@ -14,9 +14,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { ButtonGroup } from "./ui/button-group";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 
 export interface ComboboxOption {
   value: string;

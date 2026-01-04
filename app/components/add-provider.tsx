@@ -9,7 +9,6 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import type { ComboboxOption } from "./combobox-plus";
 import { useFetcher } from "react-router";
 import { useEffect, useRef } from "react";
 import { Button } from "~/components/ui/button";

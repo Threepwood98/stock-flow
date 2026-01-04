@@ -5,7 +5,6 @@ import {
   BadgeCheck,
   CircleCheck,
   Info,
-  OctagonAlert,
   Phone,
   Plus,
   ShoppingCartIcon,
@@ -13,6 +12,10 @@ import {
   Trash2,
   Warehouse,
 } from "lucide-react";
+
+import type { Route } from "./+types/complete-profile";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import {
   Card,
   CardAction,
@@ -24,20 +27,17 @@ import {
 } from "~/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Progress } from "~/components/ui/progress";
-import { Input } from "~/components/ui/input";
-import { Checkbox } from "~/components/ui/checkbox";
 import { Label } from "~/components/ui/label";
 import { Button } from "~/components/ui/button";
-import { Alert, AlertDescription } from "~/components/ui/alert";
-import type { Route } from "./+types/complete-profile";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
   InputGroupText,
 } from "~/components/ui/input-group";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Input } from "~/components/ui/input";
+import { Alert, AlertDescription } from "~/components/ui/alert";
 
 interface Phone {
   number: string;
