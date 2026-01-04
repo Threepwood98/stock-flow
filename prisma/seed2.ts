@@ -3,6 +3,14 @@ import { prisma } from "../lib/prisma";
 async function main() {
   console.log("🌱 Starting database seed...");
 
+  console.log("🧹 Cleaning existing data...");
+  await prisma.warehouseInventory.deleteMany();
+  await prisma.salesAreaInventory.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.generalCategory.deleteMany();
+  await prisma.company.deleteMany();
+
   // ============================================
   // COMPANIES
   // ============================================

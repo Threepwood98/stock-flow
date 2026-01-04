@@ -191,8 +191,8 @@ model Product {
   id         String  @id
   categoryId String
   name       String
-  costPrice  Decimal @db.Decimal(10, 6)
-  salePrice  Decimal @db.Decimal(10, 2)
+  costPrice  Decimal @db.Decimal(18, 6)
+  salePrice  Decimal @db.Decimal(18, 2)
   unit       String
 
   inflow             Inflow[]
@@ -276,8 +276,8 @@ model Inflow {
   inNumber          String
   productId         String
   quantity          Int      @default(0)
-  costAmount        Decimal  @db.Decimal(10, 2)
-  saleAmount        Decimal  @db.Decimal(10, 2)
+  costAmount        Decimal  @db.Decimal(18, 2)
+  saleAmount        Decimal  @db.Decimal(18, 2)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -308,8 +308,8 @@ model Outflow {
   outNumber              String
   productId              String
   quantity               Int      @default(0)
-  saleAmount             Decimal  @db.Decimal(10, 2)
-  costAmount             Decimal  @db.Decimal(10, 2)
+  saleAmount             Decimal  @db.Decimal(18, 2)
+  costAmount             Decimal  @db.Decimal(18, 2)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
@@ -336,8 +336,8 @@ model Sale {
   payMethod   String
   productId   String
   quantity    Int      @default(0)
-  saleAmount  Decimal  @db.Decimal(10, 2)
-  costAmount  Decimal  @db.Decimal(10, 2)
+  saleAmount  Decimal  @db.Decimal(18, 2)
+  costAmount  Decimal  @db.Decimal(18, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -357,7 +357,7 @@ model Withdraw {
   userId      String
   salesAreaId String
   date        DateTime @default(now()) @db.Date
-  amount      Decimal  @db.Decimal(10, 2)
+  amount      Decimal  @db.Decimal(18, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
