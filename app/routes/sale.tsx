@@ -45,7 +45,7 @@ import {
   StoreIcon,
   Trash2Icon,
 } from "lucide-react";
-import type { OutletContext } from "@/types/types";
+import type { OutletContext } from "~/lib/types/types";
 import {
   Card,
   CardAction,

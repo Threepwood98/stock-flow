@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 import { AddProvider } from "~/components/add-provider";
 import { AddProduct } from "~/components/add-product";
-import type { OutletContext, Product, Provider } from "@/types/types";
+import type { OutletContext, Product, Provider } from "~/lib/types/types";
 import {
   Card,
   CardAction,
