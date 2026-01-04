@@ -1,30 +1,7 @@
-import { parseISO } from "date-fns";
 import { prisma } from "~/lib/prisma";
 
 async function main() {
   console.log("🌱 Starting database seed...");
-
-  // Clean existing data (in order due to foreign keys)
-  // console.log("🧹 Cleaning existing data...");
-  // await prisma.withdraw.deleteMany();
-  // await prisma.sale.deleteMany();
-  // await prisma.outflow.deleteMany();
-  // await prisma.inflow.deleteMany();
-  // await prisma.salesAreaInventory.deleteMany();
-  // await prisma.warehouseInventory.deleteMany();
-  // await prisma.userStore.deleteMany();
-  // await prisma.phone.deleteMany();
-  // await prisma.product.deleteMany();
-  // await prisma.salesArea.deleteMany();
-  // await prisma.warehouse.deleteMany();
-  // await prisma.category.deleteMany();
-  // await prisma.generalCategory.deleteMany();
-  // await prisma.company.deleteMany();
-  // await prisma.store.deleteMany();
-  // await prisma.verification.deleteMany();
-  // await prisma.account.deleteMany();
-  // await prisma.session.deleteMany();
-  // await prisma.user.deleteMany();
 
   // ============================================
   // COMPANIES
