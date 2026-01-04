@@ -8,7 +8,7 @@
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "seed": "tsx prisma/seed.ts",
-    "seed2": "tsx lib/seed2.ts"
+    "seed2": "tsx prisma/seed2.ts"
   },
   "dependencies": {
     "@better-auth/cli": "^1.4.9",
