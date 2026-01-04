@@ -695,7 +695,10 @@ export default function Inflow() {
                 </TableRow>
               ) : (
                 rows.map((row, index) => (
-                  <TableRow key={index}>
+                  <TableRow
+                    key={index}
+                    className={`${index % 2 === 0 ? "bg-secondary" : ""}`}
+                  >
                     <TableCell>{row.date}</TableCell>
                     <TableCell>{row.warehouseName}</TableCell>
                     <TableCell>{row.inType}</TableCell>

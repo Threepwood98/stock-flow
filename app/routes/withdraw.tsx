@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   Form,
   redirect,
+  useFetcher,
   useOutletContext,
   useSearchParams,
 } from "react-router";
@@ -23,6 +24,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -44,6 +46,14 @@ import {
 } from "lucide-react";
 import { Decimal } from "@prisma/client/runtime/client";
 import type { OutletContext } from "@/types/types";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 
 interface WithdrawRow {
   userId: string;
@@ -111,7 +121,7 @@ export async function action({ request }: Route.ActionArgs) {
     });
 
     await prisma.$transaction(async (tx) => {
-      data.forEach(async (entry) => {
+      for (const entry of data) {
         const cashSalesTotal = await tx.sale.aggregate({
           where: {
             salesAreaId: entry.salesAreaId,
@@ -135,7 +145,7 @@ export async function action({ request }: Route.ActionArgs) {
 
         if (entry.amount.greaterThan(availableCash)) {
           throw new Error(
-            `El retiro de ${
+            `La extracción de ${
               entry.amount
             } excede el efectivo disponible de ${availableCash.toFixed(
               2
@@ -144,7 +154,7 @@ export async function action({ request }: Route.ActionArgs) {
         }
 
         await tx.withdraw.create({ data: entry });
-      });
+      }
     });
 
     return redirect("/main/sale-area/withdraw?success=1");
@@ -176,6 +186,8 @@ export default function Withdraw() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [availableCash, setAvailableCash] = useState<number>(0);
   const [isLoadingCash, setIsLoadingCash] = useState(false);
+
+  const fetcher = useFetcher();
 
   // Show success notification
   useEffect(() => {
@@ -314,9 +326,7 @@ export default function Withdraw() {
   const handleConfirmSubmit = () => {
     setShowConfirmDialog(false);
     setIsSubmitting(true);
-    document
-      .getElementById("submit-form")
-      ?.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    fetcher.submit({ rows: JSON.stringify(rows) }, { method: "post" });
   };
 
   const totalAmount = rows.reduce(
@@ -324,185 +334,211 @@ export default function Withdraw() {
     0
   );
 
+  const formatCurrency = (value: number, type?: string) => {
+    return new Intl.NumberFormat("es-CU", {
+      style: "currency",
+      currency: "CUP",
+      minimumFractionDigits: type === "cost" ? 6 : 2,
+      maximumFractionDigits: 6,
+    }).format(value);
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <input
-            name="userId"
-            defaultValue={user.id}
-            className="hidden"
-            required
-          />
-          <div className="grid gap-2">
-            <Label htmlFor="date" className="pl-1">
-              Fecha
-            </Label>
-            <DatePicker
-              name="date"
-              className="w-full min-w-40"
-              value={formValues.date}
-              onChange={(value) => handleChange("date", value)}
+      <Card>
+        <CardHeader>
+          <CardTitle>Caja Extra</CardTitle>
+        </CardHeader>
+        <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
+          <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <input
+              name="userId"
+              defaultValue={user.id}
+              className="hidden"
               required
             />
-          </div>
-          {salesAreas.length > 1 && (
             <div className="grid gap-2">
-              <Label htmlFor="salesAreaId" className="pl-1">
-                Área de Venta
+              <Label htmlFor="date" className="pl-1">
+                Fecha
               </Label>
-              <ComboboxPlus
-                name="salesAreaId"
+              <DatePicker
+                name="date"
                 className="w-full min-w-40"
-                options={salesAreas.map((sa) => ({
-                  value: sa.id,
-                  label: sa.name,
-                }))}
-                value={formValues.salesAreaId}
-                onChange={(value) => {
-                  const sa = salesAreas.find((s) => s.id === value);
-                  if (sa) {
-                    handleChange("salesAreaId", value);
-                    setFormValues((prev) => ({
-                      ...prev,
-                      salesAreaName: sa.name,
-                    }));
-                  }
-                }}
+                value={formValues.date}
+                onChange={(value) => handleChange("date", value)}
                 required
               />
             </div>
-          )}
-          <div className="grid gap-2">
-            <Label htmlFor="amount" className="pl-1">
-              Cantidad{" "}
-              {isLoadingCash
-                ? "(Cargando...)"
-                : `(Disponible: $${availableCash.toFixed(2)})`}
-            </Label>
-            <Input
-              id="amount"
-              name="amount"
-              value={formValues.amount}
-              onChange={(event) => handleChange("amount", event.target.value)}
-              inputMode="decimal"
-              placeholder="0.00"
-              className="w-full min-w-40"
-              disabled={isLoadingCash}
-              required
-            />
-          </div>
-        </div>
-        <div className="flex gap-4 justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-w-32 cursor-pointer"
-            onClick={editIndex !== null ? handleCancel : handleClean}
-          >
-            {editIndex !== null ? (
-              <div className="flex items-center gap-2">
-                Cancelar <BanIcon />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                Borrar <EraserIcon />
+            {salesAreas.length > 1 && (
+              <div className="grid gap-2">
+                <Label htmlFor="salesAreaId" className="pl-1">
+                  Área de Venta
+                </Label>
+                <ComboboxPlus
+                  name="salesAreaId"
+                  className="w-full min-w-40"
+                  options={salesAreas.map((sa) => ({
+                    value: sa.id,
+                    label: sa.name,
+                  }))}
+                  value={formValues.salesAreaId}
+                  onChange={(value) => {
+                    const sa = salesAreas.find((s) => s.id === value);
+                    if (sa) {
+                      handleChange("salesAreaId", value);
+                      setFormValues((prev) => ({
+                        ...prev,
+                        salesAreaName: sa.name,
+                      }));
+                    }
+                  }}
+                  required
+                />
               </div>
             )}
-          </Button>
-          <Button type="submit" className="min-w-32">
-            {editIndex !== null ? (
-              <div className="flex items-center gap-2">
-                Guardar <SaveIcon />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                Agregar <PlusIcon />
-              </div>
-            )}
-          </Button>
-        </div>
-      </form>
-
-      {/* Table */}
-      <div className="h-full border rounded-lg relative">
-        {(rows.length === 0 || editIndex !== null) && (
-          <div className="absolute inset-0 bg-white/50 cursor-not-allowed z-10 rounded-lg" />
-        )}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Área de Venta</TableHead>
-              <TableHead>Cantidad</TableHead>
-              <TableHead>Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="text-center text-muted-foreground py-8"
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <StoreIcon className="size-32" />
-                    <p className="font-semibold">
-                      No hay salidas agregadas. Complete el formulario y haga
-                      clic en "Agregar".
-                    </p>
+            <div className="grid gap-2">
+              <Label htmlFor="amount" className="pl-1">
+                Cantidad{" "}
+                {isLoadingCash
+                  ? "(Cargando...)"
+                  : `(Disponible: $${availableCash.toFixed(2)})`}
+              </Label>
+              <Input
+                id="amount"
+                name="amount"
+                value={formValues.amount}
+                onChange={(event) => handleChange("amount", event.target.value)}
+                inputMode="decimal"
+                placeholder="0.00"
+                className="w-full min-w-40"
+                disabled={isLoadingCash}
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <CardAction className="grid grid-cols-2 gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-w-32 cursor-pointer"
+                onClick={editIndex !== null ? handleCancel : handleClean}
+              >
+                {editIndex !== null ? (
+                  <div className="flex items-center gap-2">
+                    Cancelar <BanIcon />
                   </div>
-                </TableCell>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    Borrar <EraserIcon />
+                  </div>
+                )}
+              </Button>
+              <Button type="submit" className="min-w-32">
+                {editIndex !== null ? (
+                  <div className="flex items-center gap-2">
+                    Guardar <SaveIcon />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    Agregar <PlusIcon />
+                  </div>
+                )}
+              </Button>
+            </CardAction>
+          </CardFooter>
+        </form>
+      </Card>
+      {/* Table */}
+      <Card>
+        <CardContent className="relative">
+          {editIndex !== null && (
+            <div className="absolute inset-0 bg-white/50 cursor-not-allowed z-10 rounded-lg" />
+          )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-semibold">Fecha</TableHead>
+                <TableHead className="font-semibold">Área de Venta</TableHead>
+                <TableHead className="text-right font-semibold">
+                  Cantidad
+                </TableHead>
+                <TableHead className="font-semibold">Acciones</TableHead>
               </TableRow>
-            ) : (
-              rows.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.salesAreaName}</TableCell>
-                  <TableCell>{row.amount}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        className="cursor-pointer"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(index)}
-                        title="Editar"
-                      >
-                        <PencilLineIcon />
-                      </Button>
-                      <Button
-                        className="cursor-pointer"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemove(index)}
-                        title="Eliminar"
-                      >
-                        <Trash2Icon />
-                      </Button>
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <StoreIcon className="size-32" />
+                      <p className="font-semibold">
+                        No hay extracciones agregadas. Complete el formulario y
+                        haga clic en "Agregar".
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Summary and Submit */}
-      <div className="flex justify-between items-center">
-        <div className="text-lg font-semibold">
-          Total: ${totalAmount.toFixed(2)} ({rows.length} salida
-          {rows.length !== 1 ? "s" : ""})
-        </div>
-        <Button
-          className="min-w-32 cursor-pointer"
-          disabled={rows.length === 0 || editIndex !== null || isSubmitting}
-          onClick={() => setShowConfirmDialog(true)}
-        >
-          {isSubmitting ? "Procesando..." : "Contabilizar"} <CalculatorIcon />
-        </Button>
-      </div>
+              ) : (
+                rows.map((row, index) => (
+                  <TableRow
+                    key={index}
+                    className={`${index % 2 === 0 ? "bg-secondary" : ""}`}
+                  >
+                    <TableCell>{row.date}</TableCell>
+                    <TableCell>{row.salesAreaName}</TableCell>
+                    <TableCell className="text-right">{row.amount}</TableCell>
+                    <TableCell>
+                      <div className="flex">
+                        <Button
+                          className="cursor-pointer"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(index)}
+                          title="Editar"
+                        >
+                          <PencilLineIcon />
+                        </Button>
+                        <Button
+                          className="cursor-pointer"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemove(index)}
+                          title="Eliminar"
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+            <TableFooter>
+              <TableRow className="text-right font-semibold">
+                <TableCell colSpan={2}>TOTAL</TableCell>
+                <TableCell>{formatCurrency(totalAmount)}</TableCell>
+                <TableCell />
+              </TableRow>
+            </TableFooter>
+          </Table>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <CardAction>
+            <Button
+              className="min-w-32"
+              disabled={rows.length === 0 || editIndex !== null || isSubmitting}
+              onClick={() => setShowConfirmDialog(true)}
+            >
+              {isSubmitting ? "Procesando..." : "Contabilizar"}{" "}
+              <CalculatorIcon />
+            </Button>
+          </CardAction>
+        </CardFooter>
+      </Card>
 
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
@@ -510,12 +546,12 @@ export default function Withdraw() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Confirmar contabilización?</AlertDialogTitle>
             <AlertDialogDescription>
-              Está a punto de contabilizar <strong>{rows.length}</strong> retiro
-              {rows.length !== 1 ? "s" : ""} por un total de{" "}
-              <strong>${totalAmount.toFixed(2)}</strong>.
+              Está a punto de contabilizar <strong>{rows.length}</strong>{" "}
+              {rows.length !== 1 ? "extracciones" : "extracción"} por un total
+              de <strong>{formatCurrency(totalAmount)}</strong>.
               <br />
               <br />
-              Esta acción registrará los retiros en el sistema de manera
+              Esta acción registrará las salidas en el sistema de manera
               permanente.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -534,9 +570,9 @@ export default function Withdraw() {
       </AlertDialog>
 
       {/* Hidden Form for Submission */}
-      <Form method="post" id="submit-form" className="hidden">
+      <fetcher.Form>
         <input type="hidden" name="rows" value={JSON.stringify(rows)} />
-      </Form>
+      </fetcher.Form>
     </div>
   );
 }
