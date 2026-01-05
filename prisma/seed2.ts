@@ -1189,7 +1189,7 @@ async function main() {
       unit: "un",
     },
     {
-      id: "015613",
+      id: "015632",
       categoryId: "189-30-302-506",
       name: "Super Transp. Pintura",
       costPrice: 852,
