@@ -1356,6 +1356,14 @@ async function main() {
       salePrice: 90,
       unit: "un",
     },
+    {
+      id: "0132050",
+      categoryId: "189-30-304-504",
+      name: "Velas",
+      costPrice: 66.95,
+      salePrice: 85,
+      unit: "un",
+    },
   ];
 
   await prisma.product.createMany({
