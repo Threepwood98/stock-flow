@@ -122,9 +122,36 @@ export async function loader({ request }: Route.LoaderArgs) {
         })
       : [];
 
-  return {
+return {
     user,
-    userStores,
+    userStores: userStores.map((userStore) => ({
+      ...userStore,
+      store: {
+        ...userStore.store,
+        warehouses: userStore.store.warehouses.map((wh) => ({
+          ...wh,
+          warehouseInventories: wh.warehouseInventories.map((inv) => ({
+            ...inv,
+            product: {
+              ...inv.product,
+              costPrice: inv.product.costPrice.toNumber(),
+              salePrice: inv.product.salePrice.toNumber(),
+            },
+          })),
+        })),
+        salesAreas: userStore.store.salesAreas.map((sa) => ({
+          ...sa,
+          salesAreaInventories: sa.salesAreaInventories.map((inv) => ({
+            ...inv,
+            product: {
+              ...inv.product,
+              costPrice: inv.product.costPrice.toNumber(),
+              salePrice: inv.product.salePrice.toNumber(),
+            },
+          })),
+        })),
+      },
+    })),
     companies,
     products: productsDTO,
     categories,
@@ -201,6 +228,7 @@ export default function Main({ loaderData }: Route.ComponentProps) {
   const warehouses = currrentStore?.warehouses || [];
 
   const salesAreas = currrentStore?.salesAreas || [];
+  console.log("🚀 ~ Main ~ salesAreas:", salesAreas);
 
   const stores = userStores
     .map((us) => us.store)
