@@ -1,7 +1,12 @@
-import { useState, type FormEvent, useEffect } from "react";
+import {
+  useState,
+  type FormEvent,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { toast } from "sonner";
 import {
-  Form,
   redirect,
   useFetcher,
   useOutletContext,
@@ -39,6 +44,8 @@ import {
   BanIcon,
   CalculatorIcon,
   EraserIcon,
+  LockIcon,
+  LockOpenIcon,
   PencilLineIcon,
   PlusIcon,
   SaveIcon,
@@ -54,6 +61,8 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { InputGroup } from "~/components/ui/input-group";
+import { Toggle } from "~/components/ui/toggle";
 
 interface SaleRow {
   userId: string;
@@ -198,11 +207,16 @@ export default function Sale() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isDateLocked, setIsDateLocked] = useState(false);
+  const [isSalesAreaLocked, setIsSalesAreaLocked] = useState(false);
+  const [isPayMethodLocked, setIsPayMethodLocked] = useState(false);
 
-  const availableProducts =
-    salesAreas
-      .find((sa) => sa.id === formValues.salesAreaId)
-      ?.salesAreaInventories.filter((inv) => inv.quantity > 0)
+  const availableProducts = useMemo(() => {
+    const salesArea = salesAreas.find((sa) => sa.id === formValues.salesAreaId);
+    if (!salesArea) return [];
+
+    return salesArea.salesAreaInventories
+      .filter((inv) => inv.quantity > 0)
       .map((inv) => ({
         id: inv.product.id,
         name: inv.product.name,
@@ -210,7 +224,8 @@ export default function Sale() {
         salePrice: inv.product.salePrice,
         unit: inv.product.unit,
         availableQuantity: inv.quantity,
-      })) || [];
+      }));
+  }, [formValues.salesAreaId, salesAreas]);
 
   const fetcher = useFetcher();
 
@@ -234,55 +249,80 @@ export default function Sale() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editIndex]);
 
-  const handleChange = (name: keyof SaleRow, value: string) => {
-    setFormValues((prev) => ({ ...prev, [name]: value }));
-
+  const handleChange = useCallback((name: keyof SaleRow, value: string) => {
     if (name === "salesAreaId") {
       setFormValues((prev) => ({
         ...prev,
+        [name]: value,
         productId: "",
         productName: "",
         quantity: "",
       }));
+    } else {
+      setFormValues((prev) => ({ ...prev, [name]: value }));
     }
-  };
+  }, []);
 
-  const calculateAmount = (
-    productId: string,
-    quantity: string
-  ): { costAmount: number; saleAmount: number } => {
-    const product = availableProducts.find((prod) => prod.id === productId);
-    const qty = parseInt(quantity, 10);
+  const calculateAmount = useCallback(
+    (
+      productId: string,
+      quantity: string
+    ): { costAmount: number; saleAmount: number } => {
+      const product = availableProducts.find((prod) => prod.id === productId);
+      const qty = parseInt(quantity, 10);
 
-    if (!product || isNaN(qty) || qty <= 0) {
-      return { costAmount: 0, saleAmount: 0 };
-    }
+      if (!product || isNaN(qty) || qty <= 0) {
+        return { costAmount: 0, saleAmount: 0 };
+      }
 
-    const costPrice = product.costPrice;
-    const salePrice = product.salePrice;
-    return { costAmount: qty * costPrice, saleAmount: qty * salePrice };
-  };
+      const costPrice = product.costPrice;
+      const salePrice = product.salePrice;
+      return { costAmount: qty * costPrice, saleAmount: qty * salePrice };
+    },
+    [availableProducts]
+  );
 
-  const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleAddOrSave = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
 
-    const quantity = parseInt(formValues.quantity, 10);
+      const quantity = parseInt(formValues.quantity, 10);
 
-    if (quantity <= 0) {
-      toast.error("La cantidad debe ser mayor a 0.");
-      return;
-    }
+      // Validaciones
+      if (quantity <= 0) {
+        toast.error("La cantidad debe ser mayor a 0.");
+        return;
+      }
 
-    if (!formValues.salesAreaId) {
-      toast.error("Debe seleccionar un área de venta.");
-      return;
-    }
+      if (!formValues.salesAreaId) {
+        toast.error("Debe seleccionar un área de venta.");
+        return;
+      }
 
-    const product = availableProducts.find(
-      (avp) => avp.id === formValues.productId
-    );
+      if (!formValues.productId) {
+        toast.error("Debe seleccionar un producto.");
+        return;
+      }
 
-    if (product) {
+      if (!formValues.payMethod) {
+        toast.error("Debe seleccionar un método de pago.");
+        return;
+      }
+
+      if (!formValues.date) {
+        toast.error("Debe seleccionar una fecha.");
+        return;
+      }
+
+      const product = availableProducts.find(
+        (avp) => avp.id === formValues.productId
+      );
+
+      if (!product) {
+        toast.error("El producto seleccionado no está disponible.");
+        return;
+      }
+
       if (quantity > product.availableQuantity) {
         toast.error(
           `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`
@@ -308,65 +348,100 @@ export default function Sale() {
         setRows((prev) => [...prev, rowWithAmount]);
         toast.success("Fila agregada correctamente.");
       }
-    }
 
-    handleCancel();
-  };
+      // Preserve locked fields when adding to table
+      handleCancel();
+    },
+    [formValues, availableProducts, calculateAmount, editIndex]
+  );
 
-  const handleClean = () => {
+  const handleClean = useCallback(() => {
     setFormValues({
       ...initialFormValues,
       userId: user.id,
-      salesAreaId: salesAreas[0]?.id || "",
-      salesAreaName: salesAreas[0]?.name || "",
+      salesAreaId: isSalesAreaLocked
+        ? formValues.salesAreaId
+        : salesAreas[0]?.id || "",
+      salesAreaName: isSalesAreaLocked
+        ? formValues.salesAreaName
+        : salesAreas[0]?.name || "",
+      date: isDateLocked ? formValues.date : initialFormValues.date,
+      payMethod: isPayMethodLocked
+        ? formValues.payMethod
+        : initialFormValues.payMethod,
     });
-  };
+  }, [
+    user.id,
+    salesAreas,
+    formValues,
+    isDateLocked,
+    isSalesAreaLocked,
+    isPayMethodLocked,
+  ]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setFormValues({
       ...initialFormValues,
       userId: user.id,
-      salesAreaId: salesAreas[0]?.id || "",
-      salesAreaName: salesAreas[0]?.name || "",
+      salesAreaId: isSalesAreaLocked
+        ? formValues.salesAreaId
+        : salesAreas[0]?.id || "",
+      salesAreaName: isSalesAreaLocked
+        ? formValues.salesAreaName
+        : salesAreas[0]?.name || "",
+      date: isDateLocked ? formValues.date : initialFormValues.date,
+      payMethod: isPayMethodLocked
+        ? formValues.payMethod
+        : initialFormValues.payMethod,
     });
     setEditIndex(null);
-  };
+  }, [
+    user.id,
+    salesAreas,
+    formValues,
+    isDateLocked,
+    isSalesAreaLocked,
+    isPayMethodLocked,
+  ]);
 
-  const handleEdit = (index: number) => {
-    const row = rows[index];
-    setFormValues({ ...row });
-    setEditIndex(index);
-  };
+  const handleEdit = useCallback(
+    (index: number) => {
+      const row = rows[index];
+      setFormValues({ ...row });
+      setEditIndex(index);
+    },
+    [rows]
+  );
 
-  const handleRemove = (index: number) => {
+  const handleRemove = useCallback((index: number) => {
     setRows((prevRows) => prevRows.filter((_, i) => i !== index));
     toast.success("Fila eliminada correctamente.");
-  };
+  }, []);
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = useCallback(() => {
     setShowConfirmDialog(false);
     setIsSubmitting(true);
     fetcher.submit({ rows: JSON.stringify(rows) }, { method: "post" });
-  };
+  }, [rows, fetcher]);
 
-  const totalCostAmount = rows.reduce(
-    (sum, row) => sum + (row.costAmount || 0),
-    0
+  const totalCostAmount = useMemo(
+    () => rows.reduce((sum, row) => sum + (row.costAmount || 0), 0),
+    [rows]
   );
 
-  const totalSaleAmount = rows.reduce(
-    (sum, row) => sum + (row.saleAmount || 0),
-    0
+  const totalSaleAmount = useMemo(
+    () => rows.reduce((sum, row) => sum + (row.saleAmount || 0), 0),
+    [rows]
   );
 
-  const formatCurrency = (value: number, type?: string) => {
+  const formatCurrency = useCallback((value: number, type?: string) => {
     return new Intl.NumberFormat("es-CU", {
       style: "currency",
       currency: "CUP",
       minimumFractionDigits: type === "cost" ? 6 : 2,
       maximumFractionDigits: 6,
     }).format(value);
-  };
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -387,53 +462,109 @@ export default function Sale() {
               <Label htmlFor="date" className="pl-1">
                 Fecha
               </Label>
-              <DatePicker
-                name="date"
-                className="w-full min-w-40"
-                value={formValues.date}
-                onChange={(value) => handleChange("date", value)}
-                required
-              />
+              <InputGroup>
+                <DatePicker
+                  name="date"
+                  className="w-full min-w-40"
+                  value={formValues.date}
+                  onChange={(value) => handleChange("date", value)}
+                  disabled={isDateLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isDateLocked}
+                  onPressedChange={setIsDateLocked}
+                  aria-label={
+                    isDateLocked ? "Desbloquear fecha" : "Bloquear fecha"
+                  }
+                  title={
+                    isDateLocked ? "Fecha bloqueada" : "Fecha desbloqueada"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isDateLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             {salesAreas.length > 1 && (
               <div className="grid gap-2">
                 <Label htmlFor="salesAreaId" className="pl-1">
                   Área de Venta
                 </Label>
-                <ComboboxPlus
-                  name="salesAreaId"
-                  className="w-full min-w-40"
-                  options={salesAreas.map((sa) => ({
-                    value: sa.id,
-                    label: sa.name,
-                  }))}
-                  value={formValues.salesAreaId}
-                  onChange={(value) => {
-                    const sa = salesAreas.find((s) => s.id === value);
-                    if (sa) {
-                      handleChange("salesAreaId", value);
-                      setFormValues((prev) => ({
-                        ...prev,
-                        salesAreaName: sa.name,
-                      }));
+                <InputGroup>
+                  <ComboboxPlus
+                    name="salesAreaId"
+                    className="w-full min-w-40"
+                    options={salesAreas.map((sa) => ({
+                      value: sa.id,
+                      label: sa.name,
+                    }))}
+                    value={formValues.salesAreaId}
+                    onChange={(value) => {
+                      const sa = salesAreas.find((s) => s.id === value);
+                      if (sa) {
+                        handleChange("salesAreaId", value);
+                        setFormValues((prev) => ({
+                          ...prev,
+                          salesAreaName: sa.name,
+                        }));
+                      }
+                    }}
+                    disable={isSalesAreaLocked}
+                    required
+                  />
+                  <Toggle
+                    pressed={isSalesAreaLocked}
+                    onPressedChange={setIsSalesAreaLocked}
+                    aria-label={
+                      isSalesAreaLocked
+                        ? "Desbloquear área de venta"
+                        : "Bloquear área de venta"
                     }
-                  }}
-                  required
-                />
+                    title={
+                      isSalesAreaLocked
+                        ? "Área de venta bloqueada"
+                        : "Área de venta desbloqueada"
+                    }
+                    className="hover:bg-transparent data-[state=on]:bg-transparent"
+                  >
+                    {isSalesAreaLocked ? <LockOpenIcon /> : <LockIcon />}
+                  </Toggle>
+                </InputGroup>
               </div>
             )}
             <div className="grid gap-2">
               <Label htmlFor="payMethod" className="pl-1">
                 Método de Pago
               </Label>
-              <SelectList
-                name="payMethod"
-                className="w-full min-w-40"
-                options={payMethods}
-                value={formValues.payMethod}
-                onChange={(value) => handleChange("payMethod", value)}
-                required
-              />
+              <InputGroup>
+                <SelectList
+                  name="payMethod"
+                  className="w-full min-w-40"
+                  options={payMethods}
+                  value={formValues.payMethod}
+                  onChange={(value) => handleChange("payMethod", value)}
+                  disabled={isPayMethodLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isPayMethodLocked}
+                  onPressedChange={setIsPayMethodLocked}
+                  aria-label={
+                    isPayMethodLocked
+                      ? "Desbloquear método de pago"
+                      : "Bloquear método de pago"
+                  }
+                  title={
+                    isPayMethodLocked
+                      ? "Método de pago bloqueado"
+                      : "Método de pago desbloqueado"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isPayMethodLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="product" className="pl-1">
@@ -455,9 +586,9 @@ export default function Sale() {
                 onChange={(value) => {
                   const prod = availableProducts.find((p) => p.id === value);
                   if (prod) {
-                    handleChange("productId", prod.id);
                     setFormValues((prev) => ({
                       ...prev,
+                      productId: prod.id,
                       productName: prod.name,
                     }));
                   }

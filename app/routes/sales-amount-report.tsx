@@ -44,6 +44,7 @@ type DailyCashData = {
   payMethodsAmount: Record<string, number>;
   withdrawals: number;
   totalSales: number;
+  netCash: number;
 };
 
 const payMethods: Array<string> = ["EFECTIVO", "TRANSFERMOVIL", "ENZONA"];
@@ -182,6 +183,10 @@ export default function SalesAmountReport() {
           0
         );
 
+        // Calcular efectivo neto (efectivo - withdraws)
+        const cashAmount = payMethodsAmount["EFECTIVO"] || 0;
+        const netCash = cashAmount - totalWithdraws;
+
         return {
           date: dayStr,
           dateFormatted: format(day, "EEEE, d 'de' MMMM 'de' yyyy", {
@@ -190,6 +195,7 @@ export default function SalesAmountReport() {
           payMethodsAmount,
           withdrawals: totalWithdraws,
           totalSales: totalSales,
+          netCash: netCash,
         };
       });
 
@@ -201,6 +207,7 @@ export default function SalesAmountReport() {
     const result: Record<string, number> = {
       withdrawals: 0,
       totalSales: 0,
+      netCash: 0,
     };
 
     // Inicializar métodos de pago
@@ -215,6 +222,7 @@ export default function SalesAmountReport() {
       });
       result.withdrawals += day.withdrawals;
       result.totalSales += day.totalSales;
+      result.netCash += day.netCash;
     });
 
     return result;
@@ -233,6 +241,7 @@ export default function SalesAmountReport() {
       Transfermóvil: Number(day.payMethodsAmount["TRANSFERMOVIL"]) || 0,
       Enzona: Number(day.payMethodsAmount["ENZONA"]) || 0,
       "Caja Extra": Number(day.withdrawals) || 0,
+      "Efectivo Neto": Number(day.netCash) || 0,
       "Total Ventas": Number(day.totalSales) || 0,
     }));
 
@@ -243,6 +252,7 @@ export default function SalesAmountReport() {
       Transfermóvil: Number(totals["TRANSFERMOVIL"]),
       Enzona: Number(totals["ENZONA"]),
       "Caja Extra": Number(totals.withdrawals),
+      "Efectivo Neto": Number(totals.netCash),
       "Total Ventas": Number(totals.totalSales),
     });
 
@@ -253,8 +263,8 @@ export default function SalesAmountReport() {
     // Aplicar formato de moneda a las columnas
     const range = utils.decode_range(ws["!ref"] || "A1");
     for (let R = 1; R <= range.e.r; R++) {
-      for (let C = 1; C <= 5; C++) {
-        // Columnas B a F (Efectivo a Total Ventas)
+      for (let C = 1; C <= 6; C++) {
+        // Columnas B a G (Efectivo a Total Ventas)
         const cellAddress = utils.encode_cell({ r: R, c: C });
         if (ws[cellAddress] && typeof ws[cellAddress].v === "number") {
           ws[cellAddress].z = "$#,##0.00";
@@ -300,13 +310,22 @@ export default function SalesAmountReport() {
       formatCurrency(day.payMethodsAmount["TRANSFERMOVIL"] || 0),
       formatCurrency(day.payMethodsAmount["ENZONA"] || 0),
       formatCurrency(day.withdrawals),
+      formatCurrency(day.netCash),
       formatCurrency(day.totalSales),
     ]);
 
     // Generar tabla
     autoTable(doc, {
       head: [
-        ["Fecha", "Efectivo", "Transfermóvil", "Enzona", "Caja Extra", "Total"],
+        [
+          "Fecha",
+          "Efectivo",
+          "Transfermóvil",
+          "Enzona",
+          "Caja Extra",
+          "Efectivo Neto",
+          "Total",
+        ],
       ],
       body: tableData,
       foot: [
@@ -316,6 +335,7 @@ export default function SalesAmountReport() {
           formatCurrency(totals["TRANSFERMOVIL"]),
           formatCurrency(totals["ENZONA"]),
           formatCurrency(totals.withdrawals),
+          formatCurrency(totals.netCash),
           formatCurrency(totals.totalSales),
         ],
       ],
@@ -430,6 +450,9 @@ export default function SalesAmountReport() {
                   Caja Extra
                 </TableHead>
                 <TableHead className="text-right font-semibold">
+                  Efectivo Neto
+                </TableHead>
+                <TableHead className="text-right font-semibold">
                   Total Ventas
                 </TableHead>
               </TableRow>
@@ -438,7 +461,7 @@ export default function SalesAmountReport() {
               {dailyData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center text-muted-foreground py-8"
                   >
                     <div className="flex flex-col items-center gap-4">
@@ -467,6 +490,9 @@ export default function SalesAmountReport() {
                     <TableCell className="text-right">
                       {formatCurrency(day.withdrawals)}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(day.netCash)}
+                    </TableCell>
                     <TableCell className="text-right font-semibold">
                       {formatCurrency(day.totalSales)}
                     </TableCell>
@@ -488,6 +514,9 @@ export default function SalesAmountReport() {
                   ))}
                   <TableCell className="text-right font-semibold">
                     {formatCurrency(totals.withdrawals)}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {formatCurrency(totals.netCash)}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
                     {formatCurrency(totals.totalSales)}

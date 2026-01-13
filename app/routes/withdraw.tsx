@@ -60,14 +60,14 @@ interface WithdrawRow {
   salesAreaId: string;
   salesAreaName: string;
   date: string;
-  amount: string;
+  amount: number;
 }
 const initialFormValues: WithdrawRow = {
   userId: "",
   salesAreaId: "",
   salesAreaName: "",
   date: format(new Date(), "dd/MM/yyyy"),
-  amount: "",
+  amount: 0,
 };
 
 // Server Action
@@ -107,9 +107,9 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Fecha inválida: ${row.date}`);
       }
 
-      const amount = parseInt(row.amount, 10);
+const amount = row.amount;
       if (isNaN(amount) || amount <= 0) {
-        throw new Error(`Cantidad inválida: ${row.amount}`);
+        throw new Error(`Cantidad inválida: ${amount}`);
       }
 
       return {
@@ -240,14 +240,19 @@ export default function Withdraw() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editIndex]);
 
-  const handleChange = (name: keyof WithdrawRow, value: string) => {
-    setFormValues((prev) => ({ ...prev, [name]: value }));
+const handleChange = (name: keyof WithdrawRow, value: string) => {
+    if (name === "amount") {
+      const numValue = parseFloat(value) || 0;
+      setFormValues((prev) => ({ ...prev, [name]: numValue }));
+    } else {
+      setFormValues((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
+const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const amount = parseFloat(formValues.amount);
+    const amount = formValues.amount;
 
     if (isNaN(amount) || amount <= 0) {
       toast.error("La cantidad debe ser mayor a 0.");
@@ -259,14 +264,14 @@ export default function Withdraw() {
       return;
     }
 
-    const totalWithdrawsForDate = rows
+const totalWithdrawsForDate = rows
       .filter(
         (row) =>
           row.date === formValues.date &&
           row.salesAreaId === formValues.salesAreaId &&
           (editIndex === null || rows.indexOf(row) !== editIndex)
       )
-      .reduce((sum, row) => sum + parseFloat(row.amount), 0);
+      .reduce((sum, row) => sum + row.amount, 0);
 
     const remainingCash = availableCash - totalWithdrawsForDate;
 
@@ -329,8 +334,8 @@ export default function Withdraw() {
     fetcher.submit({ rows: JSON.stringify(rows) }, { method: "post" });
   };
 
-  const totalAmount = rows.reduce(
-    (sum, row) => sum + (parseFloat(row.amount) || 0),
+const totalAmount = rows.reduce(
+    (sum, row) => sum + row.amount,
     0
   );
 
@@ -403,10 +408,10 @@ export default function Withdraw() {
                   ? "(Cargando...)"
                   : `(Disponible: $${availableCash.toFixed(2)})`}
               </Label>
-              <Input
+<Input
                 id="amount"
                 name="amount"
-                value={formValues.amount}
+                value={formValues.amount.toString()}
                 onChange={(event) => handleChange("amount", event.target.value)}
                 inputMode="decimal"
                 placeholder="0.00"
@@ -490,7 +495,7 @@ export default function Withdraw() {
                   >
                     <TableCell>{row.date}</TableCell>
                     <TableCell>{row.salesAreaName}</TableCell>
-                    <TableCell className="text-right">{row.amount}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(row.amount)}</TableCell>
                     <TableCell>
                       <div className="flex">
                         <Button

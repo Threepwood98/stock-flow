@@ -20,6 +20,7 @@ interface SelectListProps {
   value?: string;
   onChange?: (value: string) => void;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export function SelectList({
@@ -30,13 +31,15 @@ export function SelectList({
   value,
   onChange,
   required = false,
+  disabled = false,
 }: SelectListProps) {
   return (
-    <Select
+<Select
       name={name}
       value={value}
       onValueChange={onChange}
       required={required}
+      disabled={disabled}
     >
       <SelectTrigger className={className}>
         <SelectValue id={name} placeholder={placeholder} />
