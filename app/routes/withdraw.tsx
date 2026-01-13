@@ -1,4 +1,4 @@
-import { useState, type FormEvent, useEffect } from "react";
+import { useState, useCallback, useMemo, type FormEvent, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Form,
@@ -20,6 +20,8 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { InputGroup } from "~/components/ui/input-group";
+import { Toggle } from "~/components/ui/toggle";
 import {
   Table,
   TableBody,
@@ -38,6 +40,8 @@ import {
   BanIcon,
   CalculatorIcon,
   EraserIcon,
+  LockIcon,
+  LockOpenIcon,
   PencilLineIcon,
   PlusIcon,
   SaveIcon,
@@ -84,7 +88,11 @@ export async function action({ request }: Route.ActionArgs) {
 
   let rows: WithdrawRow[];
   try {
-    rows = JSON.parse(rawRows as string);
+    const parsed = JSON.parse(rawRows as string);
+    if (!Array.isArray(parsed)) {
+      throw new Error("Expected array of rows");
+    }
+    rows = parsed;
   } catch {
     return new Response(
       JSON.stringify({ error: "Formato inválido de datos." }),
@@ -92,7 +100,7 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  if (!Array.isArray(rows) || rows.length === 0) {
+  if (rows.length === 0) {
     return new Response(
       JSON.stringify({ error: "No hay filas para insertar." }),
       { status: 400, headers: { "Content-Type": "application/json" } }
@@ -186,8 +194,34 @@ export default function Withdraw() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [availableCash, setAvailableCash] = useState<number>(0);
   const [isLoadingCash, setIsLoadingCash] = useState(false);
+  const [isDateLocked, setIsDateLocked] = useState(false);
+  const [isSalesAreaLocked, setIsSalesAreaLocked] = useState(false);
 
   const fetcher = useFetcher();
+
+  // Memoized functions
+  const resetForm = useCallback((preserveLocks: boolean = false) => {
+    setFormValues({
+      ...initialFormValues,
+      userId: user.id,
+      salesAreaId: preserveLocks && isSalesAreaLocked
+        ? formValues.salesAreaId
+        : salesAreas[0]?.id || "",
+      salesAreaName: preserveLocks && isSalesAreaLocked
+        ? formValues.salesAreaName
+        : salesAreas[0]?.name || "",
+      date: preserveLocks && isDateLocked ? formValues.date : initialFormValues.date,
+    });
+  }, [user.id, salesAreas, isSalesAreaLocked, isDateLocked, formValues.salesAreaId, formValues.salesAreaName, formValues.date]);
+
+  const handleClean = useCallback(() => {
+    resetForm(true);
+  }, [resetForm]);
+
+  const handleCancel = useCallback(() => {
+    resetForm(true);
+    setEditIndex(null);
+  }, [resetForm]);
 
   // Show success notification
   useEffect(() => {
@@ -195,9 +229,26 @@ export default function Withdraw() {
       toast.success("Retiros contabilizadas exitosamente.");
       setRows([]);
     }
+    if (searchParams.get("error")) {
+      toast.error(searchParams.get("error") || "Error desconocido");
+    }
   }, [searchParams]);
 
+  // Handle fetcher state
   useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.error) {
+      toast.error(fetcher.data.error);
+      setIsSubmitting(false);
+    }
+    if (fetcher.state === "idle" && fetcher.data?.success) {
+      setIsSubmitting(false);
+      setShowConfirmDialog(false);
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  useEffect(() => {
+    let isMounted = true;
+    
     const fetchAvailableCash = async () => {
       if (!formValues.salesAreaId || !formValues.date) return;
 
@@ -213,20 +264,30 @@ export default function Withdraw() {
           }&date=${format(parsedDate, "yyyy-MM-dd")}`
         );
 
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
         const data = await response.json();
 
-        if (data.success) {
+        if (data.success && isMounted) {
           setAvailableCash(data.availableCash);
         }
       } catch (error) {
-        toast.error(`Error al obtener efectivo disponible: ${error}`);
+        if (isMounted) {
+          toast.error(`Error al obtener efectivo disponible: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
       } finally {
-        setIsLoadingCash(false);
+        if (isMounted) {
+          setIsLoadingCash(false);
+        }
       }
     };
 
     fetchAvailableCash();
-  }, [formValues.salesAreaId, formValues.date]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [formValues.salesAreaId, formValues.date, toast]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -238,16 +299,18 @@ export default function Withdraw() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editIndex]);
+  }, [editIndex, handleCancel]);
 
-const handleChange = (name: keyof WithdrawRow, value: string) => {
+const handleChange = useCallback((name: keyof WithdrawRow, value: string) => {
     if (name === "amount") {
-      const numValue = parseFloat(value) || 0;
-      setFormValues((prev) => ({ ...prev, [name]: numValue }));
+      // Allow only valid decimal numbers
+      const cleanValue = value.replace(/[^\d.]/g, '');
+      const numValue = parseFloat(cleanValue) || 0;
+      setFormValues((prev) => ({ ...prev, [name]: Math.max(0, numValue) }));
     } else {
       setFormValues((prev) => ({ ...prev, [name]: value }));
     }
-  };
+  }, []);
 
 const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -298,24 +361,7 @@ const totalWithdrawsForDate = rows
     handleCancel();
   };
 
-  const handleClean = () => {
-    setFormValues({
-      ...initialFormValues,
-      userId: user.id,
-      salesAreaId: salesAreas[0]?.id || "",
-      salesAreaName: salesAreas[0]?.name || "",
-    });
-  };
 
-  const handleCancel = () => {
-    setFormValues({
-      ...initialFormValues,
-      userId: user.id,
-      salesAreaId: salesAreas[0]?.id || "",
-      salesAreaName: salesAreas[0]?.name || "",
-    });
-    setEditIndex(null);
-  };
 
   const handleEdit = (index: number) => {
     const row = rows[index];
@@ -334,19 +380,19 @@ const totalWithdrawsForDate = rows
     fetcher.submit({ rows: JSON.stringify(rows) }, { method: "post" });
   };
 
-const totalAmount = rows.reduce(
-    (sum, row) => sum + row.amount,
-    0
+  const totalAmount = useMemo(() => 
+    rows.reduce((sum, row) => sum + row.amount, 0),
+    [rows]
   );
 
-  const formatCurrency = (value: number, type?: string) => {
+  const formatCurrency = useCallback((value: number, type?: string) => {
     return new Intl.NumberFormat("es-CU", {
       style: "currency",
       currency: "CUP",
       minimumFractionDigits: type === "cost" ? 6 : 2,
       maximumFractionDigits: 6,
     }).format(value);
-  };
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -366,39 +412,75 @@ const totalAmount = rows.reduce(
               <Label htmlFor="date" className="pl-1">
                 Fecha
               </Label>
-              <DatePicker
-                name="date"
-                className="w-full min-w-40"
-                value={formValues.date}
-                onChange={(value) => handleChange("date", value)}
-                required
-              />
+              <InputGroup>
+                <DatePicker
+                  name="date"
+                  className="w-full min-w-40"
+                  value={formValues.date}
+                  onChange={(value) => handleChange("date", value)}
+                  disabled={isDateLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isDateLocked}
+                  onPressedChange={setIsDateLocked}
+                  aria-label={
+                    isDateLocked ? "Desbloquear fecha" : "Bloquear fecha"
+                  }
+                  title={
+                    isDateLocked ? "Fecha bloqueada" : "Fecha desbloqueada"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isDateLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             {salesAreas.length > 1 && (
               <div className="grid gap-2">
                 <Label htmlFor="salesAreaId" className="pl-1">
                   Área de Venta
                 </Label>
-                <ComboboxPlus
-                  name="salesAreaId"
-                  className="w-full min-w-40"
-                  options={salesAreas.map((sa) => ({
-                    value: sa.id,
-                    label: sa.name,
-                  }))}
-                  value={formValues.salesAreaId}
-                  onChange={(value) => {
-                    const sa = salesAreas.find((s) => s.id === value);
-                    if (sa) {
-                      handleChange("salesAreaId", value);
-                      setFormValues((prev) => ({
-                        ...prev,
-                        salesAreaName: sa.name,
-                      }));
+                <InputGroup>
+                  <ComboboxPlus
+                    name="salesAreaId"
+                    className="w-full min-w-40"
+                    options={salesAreas.map((sa) => ({
+                      value: sa.id,
+                      label: sa.name,
+                    }))}
+                    value={formValues.salesAreaId}
+                    onChange={(value) => {
+                      const sa = salesAreas.find((s) => s.id === value);
+                      if (sa) {
+                        handleChange("salesAreaId", value);
+                        setFormValues((prev) => ({
+                          ...prev,
+                          salesAreaName: sa.name,
+                        }));
+                      }
+                    }}
+                    disable={isSalesAreaLocked}
+                    required
+                  />
+                  <Toggle
+                    pressed={isSalesAreaLocked}
+                    onPressedChange={setIsSalesAreaLocked}
+                    aria-label={
+                      isSalesAreaLocked
+                        ? "Desbloquear área de venta"
+                        : "Bloquear área de venta"
                     }
-                  }}
-                  required
-                />
+                    title={
+                      isSalesAreaLocked
+                        ? "Área de venta bloqueada"
+                        : "Área de venta desbloqueada"
+                    }
+                    className="hover:bg-transparent data-[state=on]:bg-transparent"
+                  >
+                    {isSalesAreaLocked ? <LockOpenIcon /> : <LockIcon />}
+                  </Toggle>
+                </InputGroup>
               </div>
             )}
             <div className="grid gap-2">
@@ -408,7 +490,7 @@ const totalAmount = rows.reduce(
                   ? "(Cargando...)"
                   : `(Disponible: $${availableCash.toFixed(2)})`}
               </Label>
-<Input
+              <Input
                 id="amount"
                 name="amount"
                 value={formValues.amount.toString()}
@@ -417,7 +499,10 @@ const totalAmount = rows.reduce(
                 placeholder="0.00"
                 className="w-full min-w-40"
                 disabled={isLoadingCash}
+                min="0"
+                step="0.01"
                 required
+                aria-label="Cantidad a retirar"
               />
             </div>
           </CardContent>
@@ -488,38 +573,42 @@ const totalAmount = rows.reduce(
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((row, index) => (
-                  <TableRow
-                    key={index}
-                    className={`${index % 2 === 0 ? "bg-secondary" : ""}`}
-                  >
-                    <TableCell>{row.date}</TableCell>
-                    <TableCell>{row.salesAreaName}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(row.amount)}</TableCell>
-                    <TableCell>
-                      <div className="flex">
-                        <Button
-                          className="cursor-pointer"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(index)}
-                          title="Editar"
-                        >
-                          <PencilLineIcon />
-                        </Button>
-                        <Button
-                          className="cursor-pointer"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemove(index)}
-                          title="Eliminar"
-                        >
-                          <Trash2Icon />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                useMemo(() => 
+                  rows.map((row, index) => (
+                    <TableRow
+                      key={`${index}-${row.date}-${row.salesAreaId}`}
+                      className={`${index % 2 === 0 ? "bg-secondary" : ""}`}
+                    >
+                      <TableCell>{row.date}</TableCell>
+                      <TableCell>{row.salesAreaName}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(row.amount)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1" role="group" aria-label="Acciones de fila">
+                          <Button
+                            className="cursor-pointer"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(index)}
+                            title="Editar fila"
+                            aria-label={`Editar fila ${index + 1}`}
+                          >
+                            <PencilLineIcon />
+                          </Button>
+                          <Button
+                            className="cursor-pointer"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemove(index)}
+                            title="Eliminar fila"
+                            aria-label={`Eliminar fila ${index + 1}`}
+                          >
+                            <Trash2Icon />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )),
+                [rows, formatCurrency, handleEdit, handleRemove])
               )}
             </TableBody>
             <TableFooter>
@@ -535,11 +624,19 @@ const totalAmount = rows.reduce(
           <CardAction>
             <Button
               className="min-w-32"
-              disabled={rows.length === 0 || editIndex !== null || isSubmitting}
+              disabled={rows.length === 0 || editIndex !== null || isSubmitting || fetcher.state !== "idle"}
               onClick={() => setShowConfirmDialog(true)}
             >
-              {isSubmitting ? "Procesando..." : "Contabilizar"}{" "}
-              <CalculatorIcon />
+              {isSubmitting || fetcher.state !== "idle" ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  Contabilizar <CalculatorIcon />
+                </>
+              )}
             </Button>
           </CardAction>
         </CardFooter>
