@@ -66,6 +66,7 @@ interface SaleRow {
   quantity: string;
   saleAmount: number;
   costAmount: number;
+  stock: number;
 }
 
 const payMethods = [
@@ -85,6 +86,7 @@ const initialFormValues: SaleRow = {
   quantity: "",
   saleAmount: 0,
   costAmount: 0,
+  stock: 0,
 };
 
 // Server Action
@@ -280,29 +282,32 @@ export default function Sale() {
       (avp) => avp.id === formValues.productId
     );
 
-    if (product && quantity > product.availableQuantity) {
-      toast.error(
-        `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`
-      );
-      return;
-    }
+    if (product) {
+      if (quantity > product.availableQuantity) {
+        toast.error(
+          `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`
+        );
+        return;
+      }
 
-    const amount = calculateAmount(formValues.productId, formValues.quantity);
+      const amount = calculateAmount(formValues.productId, formValues.quantity);
 
-    const rowWithAmount: SaleRow = {
-      ...formValues,
-      costAmount: amount.costAmount,
-      saleAmount: amount.saleAmount,
-    };
+      const rowWithAmount: SaleRow = {
+        ...formValues,
+        costAmount: amount.costAmount,
+        saleAmount: amount.saleAmount,
+        stock: product.availableQuantity - quantity,
+      };
 
-    if (editIndex !== null) {
-      setRows((prev) =>
-        prev.map((row, i) => (i === editIndex ? rowWithAmount : row))
-      );
-      toast.success("Fila actualizada correctamente.");
-    } else {
-      setRows((prev) => [...prev, rowWithAmount]);
-      toast.success("Fila agregada correctamente.");
+      if (editIndex !== null) {
+        setRows((prev) =>
+          prev.map((row, i) => (i === editIndex ? rowWithAmount : row))
+        );
+        toast.success("Fila actualizada correctamente.");
+      } else {
+        setRows((prev) => [...prev, rowWithAmount]);
+        toast.success("Fila agregada correctamente.");
+      }
     }
 
     handleCancel();
@@ -533,6 +538,7 @@ export default function Sale() {
                 <TableHead className="text-right font-semibold">
                   Importe a la Venta
                 </TableHead>
+                <TableHead className="font-semibold">Existencia</TableHead>
                 <TableHead className="font-semibold">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -540,7 +546,7 @@ export default function Sale() {
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className="text-center text-muted-foreground py-8"
                   >
                     <div className="flex flex-col items-center gap-4">
@@ -569,6 +575,7 @@ export default function Sale() {
                     <TableCell className="text-right">
                       {formatCurrency(row.saleAmount)}
                     </TableCell>
+                    <TableCell className="text-right">{row.stock}</TableCell>
                     <TableCell>
                       <div className="flex">
                         <Button

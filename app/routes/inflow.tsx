@@ -443,10 +443,10 @@ export default function Inflow() {
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Entrada</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Entrada</CardTitle>
         </CardHeader>
         <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
-          <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <input
               type="hidden"
               name="userId"
@@ -454,28 +454,28 @@ export default function Inflow() {
               required
             />
             <div className="grid gap-2">
-              <Label htmlFor="date" className="pl-1">
+              <Label htmlFor="date" className="pl-1 text-sm font-medium">
                 Fecha
               </Label>
               <DatePicker
                 name="date"
-                className="w-full min-w-40"
+                className="w-full min-w-0 sm:min-w-40"
                 value={formValues.date}
-                onChange={(value) => {
-                  handleChange("date", value);
-                  console.log(value);
-                }}
+                onChange={(value) => handleChange("date", value)}
                 required
               />
             </div>
             {warehouses.length > 1 && (
               <div className="grid gap-2">
-                <Label htmlFor="warehouseId" className="pl-1">
+                <Label
+                  htmlFor="warehouseId"
+                  className="pl-1 text-sm font-medium"
+                >
                   Almacén
                 </Label>
                 <ComboboxPlus
                   name="warehouseId"
-                  className="w-full min-w-40"
+                  className="w-full h-10 min-w-0 sm:min-w-40"
                   options={warehouses.map((wh) => ({
                     value: wh.id,
                     label: wh.name,
@@ -496,12 +496,12 @@ export default function Inflow() {
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="type" className="pl-1">
+              <Label htmlFor="type" className="pl-1 text-sm font-medium">
                 Tipo de Entrada
               </Label>
               <SelectList
                 name="type"
-                className="w-full min-w-40"
+                className="w-full h-10 min-w-0 sm:min-w-40"
                 options={inTypeOptions}
                 value={formValues.inType}
                 onChange={(value) => handleChange("inType", value)}
@@ -509,12 +509,12 @@ export default function Inflow() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="provider" className="pl-1">
+              <Label htmlFor="provider" className="pl-1 text-sm font-medium">
                 Proveedor
               </Label>
               <ComboboxPlus
                 name="provider"
-                className="w-full min-w-40"
+                className="w-full h-10 min-w-0 sm:min-w-40"
                 options={currentProviders.map((prov) => ({
                   value: prov.id,
                   label: prov.name,
@@ -537,7 +537,10 @@ export default function Inflow() {
             </div>
             {formValues.inType === "FACTURA" && (
               <div className="grid gap-2">
-                <Label htmlFor="invoiceNumber" className="pl-1">
+                <Label
+                  htmlFor="invoiceNumber"
+                  className="pl-1 text-sm font-medium"
+                >
                   No. de Factura
                 </Label>
                 <Input
@@ -547,13 +550,13 @@ export default function Inflow() {
                   onChange={(event) =>
                     handleChange("invoiceNumber", event.target.value)
                   }
-                  className="w-full min-w-40"
+                  className="w-full h-10 min-w-0 sm:min-w-40"
                   required
                 />
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="inNumber" className="pl-1">
+              <Label htmlFor="inNumber" className="pl-1 text-sm font-medium">
                 No. de Entrada
               </Label>
               <Input
@@ -563,17 +566,17 @@ export default function Inflow() {
                 onChange={(event) =>
                   handleChange("inNumber", event.target.value)
                 }
-                className="w-full min-w-40"
+                className="w-full h-10 min-w-0 sm:min-w-40"
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="product" className="pl-1">
+              <Label htmlFor="product" className="pl-1 text-sm font-medium">
                 Producto
               </Label>
               <ComboboxPlus
                 name="product"
-                className="w-full min-w-40"
+                className="w-full h-10 min-w-0 sm:min-w-40"
                 options={products.map((prod) => ({
                   value: prod.id,
                   label: prod.name,
@@ -595,7 +598,7 @@ export default function Inflow() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="quantity" className="pl-1">
+              <Label htmlFor="quantity" className="pl-1 text-sm font-medium">
                 Cantidad
               </Label>
               <Input
@@ -607,37 +610,48 @@ export default function Inflow() {
                 }
                 type="number"
                 min={1}
-                className="w-full min-w-40"
+                className="w-full h-10 min-w-0 sm:min-w-40"
                 required
               />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <CardAction className="grid grid-cols-2 gap-4">
+            <CardAction className="grid grid-cols-2 gap-2 sm:gap-4">
               <Button
                 type="button"
                 variant="outline"
-                className="min-w-32 cursor-pointer"
+                className="min-w-24 cursor-pointer h-10 sm:min-w-32 text-xs sm:text-sm"
                 onClick={editIndex !== null ? handleCancel : handleClean}
               >
                 {editIndex !== null ? (
-                  <div className="flex items-center gap-2">
-                    Cancelar <BanIcon />
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <BanIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Cancelar</span>
+                    <span className="sm:hidden">Cancel</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    Borrar <EraserIcon />
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <EraserIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Borrar</span>
+                    <span className="sm:hidden">Limpiar</span>
                   </div>
                 )}
               </Button>
-              <Button type="submit" className="min-w-32">
+              <Button
+                type="submit"
+                className="min-w-24 h-10 sm:min-w-32 text-xs sm:text-sm"
+              >
                 {editIndex !== null ? (
-                  <div className="flex items-center gap-2">
-                    Guardar <SaveIcon />
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <SaveIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Guardar</span>
+                    <span className="sm:hidden">Guardar</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    Agregar <PlusIcon />
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <PlusIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Agregar</span>
+                    <span className="sm:hidden">Agregar</span>
                   </div>
                 )}
               </Button>
@@ -649,32 +663,44 @@ export default function Inflow() {
       <Card>
         <CardContent className="relative">
           {editIndex !== null && (
-            <div className="absolute inset-0 bg-white/50 cursor-not-allowed z-10 rounded-lg" />
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm cursor-not-allowed z-10 rounded-lg" />
           )}
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-semibold">Fecha</TableHead>
-                <TableHead className="font-semibold">Almacén</TableHead>
-                <TableHead className="font-semibold">Tipo de Entrada</TableHead>
-                <TableHead className="font-semibold">Proveedor</TableHead>
-                <TableHead className="text-right font-semibold">
-                  No. de Factura
+                <TableHead className="font-semibold text-xs sm:text-sm">
+                  Fecha
                 </TableHead>
-                <TableHead className="text-right font-semibold">
-                  No. de Entrada
+                <TableHead className="font-semibold text-xs sm:text-sm hidden sm:table-cell">
+                  Almacén
                 </TableHead>
-                <TableHead className="font-semibold">Producto</TableHead>
-                <TableHead className="text-right font-semibold">
-                  Cantidad
+                <TableHead className="font-semibold text-xs sm:text-sm hidden lg:table-cell">
+                  Tipo
                 </TableHead>
-                <TableHead className="text-right font-semibold">
-                  Importe al Costo
+                <TableHead className="font-semibold text-xs sm:text-sm">
+                  Proveedor
                 </TableHead>
-                <TableHead className="text-right font-semibold">
-                  Importe a la Venta
+                <TableHead className="text-right font-semibold text-xs sm:text-sm hidden md:table-cell">
+                  Factura
                 </TableHead>
-                <TableHead className="font-semibold">Acciones</TableHead>
+                <TableHead className="text-right font-semibold text-xs sm:text-sm hidden sm:table-cell">
+                  Entrada
+                </TableHead>
+                <TableHead className="font-semibold text-xs sm:text-sm">
+                  Producto
+                </TableHead>
+                <TableHead className="text-right font-semibold text-xs sm:text-sm">
+                  Cant.
+                </TableHead>
+                <TableHead className="text-right font-semibold text-xs sm:text-sm hidden lg:table-cell">
+                  Costo
+                </TableHead>
+                <TableHead className="text-right font-semibold text-xs sm:text-sm hidden md:table-cell">
+                  Venta
+                </TableHead>
+                <TableHead className="font-semibold text-xs sm:text-sm">
+                  Acciones
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -685,8 +711,8 @@ export default function Inflow() {
                     className="text-center text-muted-foreground py-8"
                   >
                     <div className="flex flex-col items-center gap-4">
-                      <WarehouseIcon className="size-32" />
-                      <p className="font-semibold">
+                      <WarehouseIcon className="size-20 sm:size-32" />
+                      <p className="font-semibold text-sm sm:text-base px-4">
                         No hay entradas agregadas. Complete el formulario y haga
                         clic en "Agregar".
                       </p>
@@ -697,43 +723,59 @@ export default function Inflow() {
                 rows.map((row, index) => (
                   <TableRow
                     key={index}
-                    className={`${index % 2 === 0 ? "bg-secondary" : ""}`}
+                    className={`${
+                      index % 2 === 0 ? "bg-secondary/50" : ""
+                    } hover:bg-muted/50`}
                   >
-                    <TableCell>{row.date}</TableCell>
-                    <TableCell>{row.warehouseName}</TableCell>
-                    <TableCell>{row.inType}</TableCell>
-                    <TableCell>{row.providerName}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-xs sm:text-sm">
+                      {row.date}
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm hidden sm:table-cell">
+                      {row.warehouseName}
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                      {row.inType}
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm max-w-32 truncate">
+                      {row.providerName}
+                    </TableCell>
+                    <TableCell className="text-right text-xs sm:text-sm hidden md:table-cell">
                       {row.invoiceNumber || "-"}
                     </TableCell>
-                    <TableCell className="text-right">{row.inNumber}</TableCell>
-                    <TableCell>{row.productName}</TableCell>
-                    <TableCell className="text-right">{row.quantity}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right text-xs sm:text-sm hidden sm:table-cell">
+                      {row.inNumber}
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm max-w-32 truncate">
+                      {row.productName}
+                    </TableCell>
+                    <TableCell className="text-right text-xs sm:text-sm">
+                      {row.quantity}
+                    </TableCell>
+                    <TableCell className="text-right text-xs sm:text-sm hidden lg:table-cell">
                       {formatCurrency(row.costAmount, "cost")}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right text-xs sm:text-sm hidden md:table-cell">
                       {formatCurrency(row.saleAmount)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex">
+                      <div className="flex gap-1">
                         <Button
-                          className="cursor-pointer"
+                          className="cursor-pointer h-8 w-8 sm:h-9 sm:w-9"
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEdit(index)}
                           title="Editar"
                         >
-                          <PencilLineIcon />
+                          <PencilLineIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                         <Button
-                          className="cursor-pointer"
+                          className="cursor-pointer h-8 w-8 sm:h-9 sm:w-9"
                           variant="ghost"
                           size="icon"
                           onClick={() => handleRemove(index)}
                           title="Eliminar"
                         >
-                          <Trash2Icon />
+                          <Trash2Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -742,10 +784,25 @@ export default function Inflow() {
               )}
             </TableBody>
             <TableFooter>
-              <TableRow className="text-right font-semibold">
-                <TableCell colSpan={8}>TOTAL</TableCell>
-                <TableCell>{formatCurrency(totalCostAmount, "cost")}</TableCell>
-                <TableCell>{formatCurrency(totalSaleAmount)}</TableCell>
+              <TableRow className="text-right font-semibold bg-muted/50">
+                <TableCell colSpan={7} className="text-xs sm:text-sm">
+                  TOTAL
+                </TableCell>
+                <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                  {formatCurrency(totalCostAmount, "cost")}
+                </TableCell>
+                <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                  {formatCurrency(totalSaleAmount)}
+                </TableCell>
+                <TableCell
+                  className="text-xs sm:text-sm lg:hidden md:hidden"
+                  colSpan={2}
+                >
+                  <div className="text-left">
+                    <div>C: {formatCurrency(totalCostAmount, "cost")}</div>
+                    <div>V: {formatCurrency(totalSaleAmount)}</div>
+                  </div>
+                </TableCell>
                 <TableCell />
               </TableRow>
             </TableFooter>
@@ -754,12 +811,12 @@ export default function Inflow() {
         <CardFooter className="flex justify-end">
           <CardAction>
             <Button
-              className="min-w-32"
+              className="min-w-24 h-10 sm:min-w-32 text-xs sm:text-sm"
               disabled={rows.length === 0 || editIndex !== null || isSubmitting}
               onClick={() => setShowConfirmDialog(true)}
             >
-              {isSubmitting ? "Procesando..." : "Contabilizar"}{" "}
-              <CalculatorIcon />
+              <CalculatorIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              {isSubmitting ? "Procesando..." : "Contabilizar"}
             </Button>
           </CardAction>
         </CardFooter>

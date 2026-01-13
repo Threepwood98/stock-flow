@@ -461,15 +461,11 @@ export default function SalesAmountReport() {
                     <TableCell>{formatDate(day.date)}</TableCell>
                     {payMethods.map((method) => (
                       <TableCell key={method} className="text-right">
-                        {day.payMethodsAmount[method] > 0
-                          ? formatCurrency(day.payMethodsAmount[method])
-                          : "-"}
+                        {formatCurrency(day.payMethodsAmount[method])}
                       </TableCell>
                     ))}
                     <TableCell className="text-right">
-                      {day.withdrawals > 0
-                        ? formatCurrency(day.withdrawals)
-                        : "-"}
+                      {formatCurrency(day.withdrawals)}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
                       {formatCurrency(day.totalSales)}

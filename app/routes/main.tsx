@@ -122,7 +122,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         })
       : [];
 
-return {
+  return {
     user,
     userStores: userStores.map((userStore) => ({
       ...userStore,
@@ -161,9 +161,9 @@ return {
       date: inflow.date.toISOString().split("T")[0],
       providerName: inflow.providerCompany?.name ?? inflow.providerStore?.name,
       productName: inflow.product.name,
-      quantity: Number(inflow.quantity),
-      costAmount: Number(inflow.costAmount).toFixed(6),
-      saleAmount: Number(inflow.saleAmount).toFixed(2),
+      quantity: inflow.quantity,
+      costAmount: inflow.costAmount.toNumber(),
+      saleAmount: inflow.saleAmount.toNumber(),
     })),
     outflows: outflows.map((outflow) => ({
       ...outflow,
@@ -172,9 +172,9 @@ return {
       destinationName:
         outflow.destinationStore?.name ?? outflow.destinationSalesArea?.name,
       productName: outflow.product.name,
-      quantity: Number(outflow.quantity),
-      costAmount: Number(outflow.costAmount).toFixed(6),
-      saleAmount: Number(outflow.saleAmount).toFixed(2),
+      quantity: outflow.quantity,
+      costAmount: outflow.costAmount.toNumber(),
+      saleAmount: outflow.saleAmount.toNumber(),
     })),
     sales: sales.map((sale) => ({
       ...sale,
@@ -182,10 +182,9 @@ return {
       productName: sale.product.name,
       categoryId: sale.product.categoryId,
       categoryName: sale.product.category.name,
-      quantity: Number(sale.quantity),
-      saleAmount: Number(sale.saleAmount).toFixed(2),
-      costAmount: Number(sale.costAmount).toFixed(6),
-      // profit: Number(sale.saleAmount) - Number(sale.costAmount),
+      quantity: sale.quantity,
+      saleAmount: sale.saleAmount.toNumber(),
+      costAmount: sale.costAmount.toNumber(),
       salesAreaName: sale.salesArea.name,
       storeId: sale.salesArea.storeId,
       storeName: sale.salesArea.store.name,
@@ -228,7 +227,6 @@ export default function Main({ loaderData }: Route.ComponentProps) {
   const warehouses = currrentStore?.warehouses || [];
 
   const salesAreas = currrentStore?.salesAreas || [];
-  console.log("🚀 ~ Main ~ salesAreas:", salesAreas);
 
   const stores = userStores
     .map((us) => us.store)
