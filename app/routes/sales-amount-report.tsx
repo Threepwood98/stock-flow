@@ -50,7 +50,8 @@ type DailyCashData = {
 const payMethods: Array<string> = ["EFECTIVO", "TRANSFERMOVIL", "ENZONA"];
 
 export default function SalesAmountReport() {
-  const { sales, withdraws, salesAreas } = useOutletContext<OutletContext>();
+  const { sales, withdraws, outflows, salesAreas } =
+    useOutletContext<OutletContext>();
 
   // Estados para filtros
   const [dateFrom, setDateFrom] = useState(
@@ -131,6 +132,23 @@ export default function SalesAmountReport() {
       return true;
     });
 
+    // Filtrar outflows de tipo VENTA por rango de fecha
+    const filteredOutflows = outflows.filter((outflow) => {
+      const outflowDate = parse(outflow.date, "yyyy-MM-dd", new Date());
+
+      if (!isValid(outflowDate)) return false;
+
+      const inRange = isWithinInterval(outflowDate, {
+        start: startOfDay(fromDate),
+        end: endOfDay(toDate),
+      });
+
+      if (!inRange) return false;
+
+      // Solo outflows de tipo VENTA
+      return outflow.outType === "VENTA";
+    });
+
     // Agrupar ventas por fecha
     const salesByDate: Record<string, typeof filteredSales> = {};
     filteredSales.forEach((sale) => {
@@ -149,10 +167,20 @@ export default function SalesAmountReport() {
       withdrawsByDate[withdraw.date].push(withdraw);
     });
 
-    // Obtener todas las fechas únicas que tienen datos (ventas o withdraws)
+    // Agrupar outflows de tipo VENTA por fecha
+    const outflowsByDate: Record<string, typeof filteredOutflows> = {};
+    filteredOutflows.forEach((outflow) => {
+      if (!outflowsByDate[outflow.date]) {
+        outflowsByDate[outflow.date] = [];
+      }
+      outflowsByDate[outflow.date].push(outflow);
+    });
+
+    // Obtener todas las fechas únicas que tienen datos (ventas, withdraws o outflows)
     const datesWithData = new Set([
       ...Object.keys(salesByDate),
       ...Object.keys(withdrawsByDate),
+      ...Object.keys(outflowsByDate),
     ]);
 
     // Procesar cada día
@@ -162,6 +190,7 @@ export default function SalesAmountReport() {
         const day = parse(dayStr, "yyyy-MM-dd", new Date());
         const daySales = salesByDate[dayStr] || [];
         const dayWithdraws = withdrawsByDate[dayStr] || [];
+        const dayOutflows = outflowsByDate[dayStr] || [];
 
         const payMethodsAmount: Record<string, number> = {};
         let totalSales = 0;
@@ -175,6 +204,18 @@ export default function SalesAmountReport() {
         daySales.forEach((sale) => {
           payMethodsAmount[sale.payMethod] += sale.saleAmount;
           totalSales += sale.saleAmount;
+        });
+
+        // Sumar outflows de tipo VENTA según su método de pago
+        dayOutflows.forEach((outflow) => {
+          const payMethod = outflow.payMethod || "EFECTIVO"; // Por defecto EFECTIVO si no tiene método
+          if (payMethods.includes(payMethod)) {
+            payMethodsAmount[payMethod] += outflow.saleAmount;
+          } else {
+            // Si el método de pago no está en la lista, se suma como EFECTIVO
+            payMethodsAmount["EFECTIVO"] += outflow.saleAmount;
+          }
+          totalSales += outflow.saleAmount;
         });
 
         // Sumar withdraws del día
@@ -200,7 +241,7 @@ export default function SalesAmountReport() {
       });
 
     return dailyReport;
-  }, [sales, withdraws, dateFrom, dateTo, salesAreaId]);
+  }, [sales, withdraws, outflows, dateFrom, dateTo, salesAreaId]);
 
   // Calcular totales generales
   const totals = useMemo(() => {
