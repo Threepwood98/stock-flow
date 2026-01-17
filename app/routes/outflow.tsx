@@ -55,6 +55,9 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { InputGroup } from "~/components/ui/input-group";
+import { Toggle } from "~/components/ui/toggle";
+import { LockIcon, LockOpenIcon } from "lucide-react";
 
 interface OutflowRow {
   userId: string;
@@ -252,6 +255,10 @@ export default function Outflow() {
     "store" | "salesArea" | "sale"
   >("store");
   const [addDestinationOpen, setAddDestinationOpen] = useState<boolean>(false);
+  const [isDateLocked, setIsDateLocked] = useState(false);
+  const [isOutTypeLocked, setIsOutTypeLocked] = useState(false);
+  const [isDestinationLocked, setIsDestinationLocked] = useState(false);
+  const [isProductLocked, setIsProductLocked] = useState(false);
 
   const storeIds = userStores.map((us) => us.storeId);
 
@@ -410,6 +417,20 @@ export default function Outflow() {
       userId: user.id,
       warehouseId: warehouses[0]?.id || "",
       warehouseName: warehouses[0]?.name || "",
+      date: isDateLocked ? formValues.date : initialFormValues.date,
+      outType: isOutTypeLocked ? formValues.outType : initialFormValues.outType,
+      destinationId: isDestinationLocked
+        ? formValues.destinationId
+        : initialFormValues.destinationId,
+      destinationName: isDestinationLocked
+        ? formValues.destinationName
+        : initialFormValues.destinationName,
+      productId: isProductLocked
+        ? formValues.productId
+        : initialFormValues.productId,
+      productName: isProductLocked
+        ? formValues.productName
+        : initialFormValues.productName,
     });
     setCurrentDestinations([]);
   };
@@ -420,6 +441,20 @@ export default function Outflow() {
       userId: user.id,
       warehouseId: warehouses[0]?.id || "",
       warehouseName: warehouses[0]?.name || "",
+      date: isDateLocked ? formValues.date : initialFormValues.date,
+      outType: isOutTypeLocked ? formValues.outType : initialFormValues.outType,
+      destinationId: isDestinationLocked
+        ? formValues.destinationId
+        : initialFormValues.destinationId,
+      destinationName: isDestinationLocked
+        ? formValues.destinationName
+        : initialFormValues.destinationName,
+      productId: isProductLocked
+        ? formValues.productId
+        : initialFormValues.productId,
+      productName: isProductLocked
+        ? formValues.productName
+        : initialFormValues.productName,
     });
     setEditIndex(null);
     setCurrentDestinations([]);
@@ -509,13 +544,29 @@ export default function Outflow() {
               <Label htmlFor="date" className="pl-1">
                 Fecha
               </Label>
-              <DatePicker
-                name="date"
-                className="w-full min-w-40"
-                value={formValues.date}
-                onChange={(value) => handleChange("date", value)}
-                required
-              />
+              <InputGroup>
+                <DatePicker
+                  name="date"
+                  className="w-full min-w-40"
+                  value={formValues.date}
+                  onChange={(value) => handleChange("date", value)}
+                  disabled={isDateLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isDateLocked}
+                  onPressedChange={setIsDateLocked}
+                  aria-label={
+                    isDateLocked ? "Desbloquear fecha" : "Bloquear fecha"
+                  }
+                  title={
+                    isDateLocked ? "Fecha bloqueada" : "Fecha desbloqueada"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isDateLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             {warehouses.length > 1 && (
               <div className="grid gap-2">
@@ -548,44 +599,84 @@ export default function Outflow() {
               <Label htmlFor="outType" className="pl-1">
                 Tipo de Salida
               </Label>
-              <SelectList
-                name="outType"
-                className="w-full min-w-40"
-                options={outTypeOptions}
-                value={formValues.outType}
-                onChange={(value) => handleChange("outType", value)}
-                required
-              />
+              <InputGroup>
+                <SelectList
+                  name="outType"
+                  className="w-full min-w-40"
+                  options={outTypeOptions}
+                  value={formValues.outType}
+                  onChange={(value) => handleChange("outType", value)}
+                  disabled={isOutTypeLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isOutTypeLocked}
+                  onPressedChange={setIsOutTypeLocked}
+                  aria-label={
+                    isOutTypeLocked
+                      ? "Desbloquear tipo de salida"
+                      : "Bloquear tipo de salida"
+                  }
+                  title={
+                    isOutTypeLocked
+                      ? "Tipo de salida bloqueado"
+                      : "Tipo de salida desbloqueado"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isOutTypeLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             {formValues.outType !== "VENTA" && (
               <div className="grid gap-2">
                 <Label htmlFor="destination" className="pl-1">
                   Destino
                 </Label>
-                <ComboboxPlus
-                  name="destination"
-                  className="w-full min-w-40"
-                  options={currentDestinations.map((dest) => ({
-                    value: dest.id,
-                    label: dest.name,
-                  }))}
-                  value={formValues.destinationId}
-                  onChange={(value) => {
-                    const dest = currentDestinations.find(
-                      (d) => d.id === value
-                    );
-                    if (dest) {
-                      handleChange("destinationId", dest.id);
-                      setFormValues((prev) => ({
-                        ...prev,
-                        destinationName: dest.name,
-                      }));
+                <InputGroup>
+                  <ComboboxPlus
+                    name="destination"
+                    className="w-full min-w-40"
+                    options={currentDestinations.map((dest) => ({
+                      value: dest.id,
+                      label: dest.name,
+                    }))}
+                    value={formValues.destinationId}
+                    onChange={(value) => {
+                      const dest = currentDestinations.find(
+                        (d) => d.id === value
+                      );
+                      if (dest) {
+                        handleChange("destinationId", dest.id);
+                        setFormValues((prev) => ({
+                          ...prev,
+                          destinationName: dest.name,
+                        }));
+                      }
+                    }}
+                    showAddButton={formValues.outType !== ""}
+                    onAddClick={() => setAddDestinationOpen(true)}
+                    disable={isDestinationLocked}
+                    required
+                  />
+                  <Toggle
+                    pressed={isDestinationLocked}
+                    onPressedChange={setIsDestinationLocked}
+                    aria-label={
+                      isDestinationLocked
+                        ? "Desbloquear destino"
+                        : "Bloquear destino"
                     }
-                  }}
-                  showAddButton={formValues.outType !== ""}
-                  onAddClick={() => setAddDestinationOpen(true)}
-                  required
-                />
+                    title={
+                      isDestinationLocked
+                        ? "Destino bloqueado"
+                        : "Destino desbloqueado"
+                    }
+                    className="hover:bg-transparent data-[state=on]:bg-transparent"
+                  >
+                    {isDestinationLocked ? <LockOpenIcon /> : <LockIcon />}
+                  </Toggle>
+                </InputGroup>
               </div>
             )}
             {formValues.outType === "VENTA" && (
@@ -622,31 +713,51 @@ export default function Outflow() {
               <Label htmlFor="product" className="pl-1">
                 Producto
               </Label>
-              <ComboboxPlus
-                name="product"
-                className="w-full min-w-40"
-                placeholder={
-                  availableProducts.length === 0
-                    ? "Sin productos disponibles"
-                    : "Selecciona..."
-                }
-                options={availableProducts.map((prod) => ({
-                  value: prod.id,
-                  label: `${prod.name} (${prod.availableQuantity} ${prod.unit})`,
-                }))}
-                value={formValues.productId}
-                onChange={(value) => {
-                  const prod = availableProducts.find((p) => p.id === value);
-                  if (prod) {
-                    handleChange("productId", prod.id);
-                    setFormValues((prev) => ({
-                      ...prev,
-                      productName: prod.name,
-                    }));
+              <InputGroup>
+                <ComboboxPlus
+                  name="product"
+                  className="w-full min-w-40"
+                  placeholder={
+                    availableProducts.length === 0
+                      ? "Sin productos disponibles"
+                      : "Selecciona..."
                   }
-                }}
-                required
-              />
+                  options={availableProducts.map((prod) => ({
+                    value: prod.id,
+                    label: `${prod.name} (${prod.availableQuantity} ${prod.unit})`,
+                  }))}
+                  value={formValues.productId}
+                  onChange={(value) => {
+                    const prod = availableProducts.find((p) => p.id === value);
+                    if (prod) {
+                      handleChange("productId", prod.id);
+                      setFormValues((prev) => ({
+                        ...prev,
+                        productName: prod.name,
+                      }));
+                    }
+                  }}
+                  disable={isProductLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isProductLocked}
+                  onPressedChange={setIsProductLocked}
+                  aria-label={
+                    isProductLocked
+                      ? "Desbloquear producto"
+                      : "Bloquear producto"
+                  }
+                  title={
+                    isProductLocked
+                      ? "Producto bloqueado"
+                      : "Producto desbloqueado"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isProductLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="quantity" className="pl-1">

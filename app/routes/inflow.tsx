@@ -56,6 +56,9 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Decimal } from "@prisma/client/runtime/client";
+import { InputGroup } from "~/components/ui/input-group";
+import { Toggle } from "~/components/ui/toggle";
+import { LockIcon, LockOpenIcon } from "lucide-react";
 
 interface InflowRow {
   userId: string;
@@ -230,6 +233,10 @@ export default function Inflow() {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [addProductOpen, setAddProductOpen] = useState<boolean>(false);
   const [addProviderOpen, setAddProviderOpen] = useState<boolean>(false);
+  const [isDateLocked, setIsDateLocked] = useState(false);
+  const [isInTypeLocked, setIsInTypeLocked] = useState(false);
+  const [isProviderLocked, setIsProviderLocked] = useState(false);
+  const [isProductLocked, setIsProductLocked] = useState(false);
 
   const fetcher = useFetcher();
 
@@ -340,6 +347,20 @@ export default function Inflow() {
       userId: user.id,
       warehouseId: warehouses[0]?.id || "",
       warehouseName: warehouses[0]?.name || "",
+      date: isDateLocked ? formValues.date : initialFormValues.date,
+      inType: isInTypeLocked ? formValues.inType : initialFormValues.inType,
+      providerId: isProviderLocked
+        ? formValues.providerId
+        : initialFormValues.providerId,
+      providerName: isProviderLocked
+        ? formValues.providerName
+        : initialFormValues.providerName,
+      productId: isProductLocked
+        ? formValues.productId
+        : initialFormValues.productId,
+      productName: isProductLocked
+        ? formValues.productName
+        : initialFormValues.productName,
     });
     setCurrentProviders([]);
   };
@@ -350,6 +371,20 @@ export default function Inflow() {
       userId: user.id,
       warehouseId: warehouses[0]?.id || "",
       warehouseName: warehouses[0]?.name || "",
+      date: isDateLocked ? formValues.date : initialFormValues.date,
+      inType: isInTypeLocked ? formValues.inType : initialFormValues.inType,
+      providerId: isProviderLocked
+        ? formValues.providerId
+        : initialFormValues.providerId,
+      providerName: isProviderLocked
+        ? formValues.providerName
+        : initialFormValues.providerName,
+      productId: isProductLocked
+        ? formValues.productId
+        : initialFormValues.productId,
+      productName: isProductLocked
+        ? formValues.productName
+        : initialFormValues.productName,
     });
     setEditIndex(null);
     setCurrentProviders([]);
@@ -457,13 +492,29 @@ export default function Inflow() {
               <Label htmlFor="date" className="pl-1 text-sm font-medium">
                 Fecha
               </Label>
-              <DatePicker
-                name="date"
-                className="w-full min-w-0 sm:min-w-40"
-                value={formValues.date}
-                onChange={(value) => handleChange("date", value)}
-                required
-              />
+              <InputGroup>
+                <DatePicker
+                  name="date"
+                  className="w-full min-w-0 sm:min-w-40"
+                  value={formValues.date}
+                  onChange={(value) => handleChange("date", value)}
+                  disabled={isDateLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isDateLocked}
+                  onPressedChange={setIsDateLocked}
+                  aria-label={
+                    isDateLocked ? "Desbloquear fecha" : "Bloquear fecha"
+                  }
+                  title={
+                    isDateLocked ? "Fecha bloqueada" : "Fecha desbloqueada"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isDateLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             {warehouses.length > 1 && (
               <div className="grid gap-2">
@@ -499,41 +550,81 @@ export default function Inflow() {
               <Label htmlFor="type" className="pl-1 text-sm font-medium">
                 Tipo de Entrada
               </Label>
-              <SelectList
-                name="type"
-                className="w-full h-10 min-w-0 sm:min-w-40"
-                options={inTypeOptions}
-                value={formValues.inType}
-                onChange={(value) => handleChange("inType", value)}
-                required
-              />
+              <InputGroup>
+                <SelectList
+                  name="type"
+                  className="w-full h-10 min-w-0 sm:min-w-40"
+                  options={inTypeOptions}
+                  value={formValues.inType}
+                  onChange={(value) => handleChange("inType", value)}
+                  disabled={isInTypeLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isInTypeLocked}
+                  onPressedChange={setIsInTypeLocked}
+                  aria-label={
+                    isInTypeLocked
+                      ? "Desbloquear tipo de entrada"
+                      : "Bloquear tipo de entrada"
+                  }
+                  title={
+                    isInTypeLocked
+                      ? "Tipo de entrada bloqueado"
+                      : "Tipo de entrada desbloqueado"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isInTypeLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="provider" className="pl-1 text-sm font-medium">
                 Proveedor
               </Label>
-              <ComboboxPlus
-                name="provider"
-                className="w-full h-10 min-w-0 sm:min-w-40"
-                options={currentProviders.map((prov) => ({
-                  value: prov.id,
-                  label: prov.name,
-                }))}
-                value={formValues.providerId}
-                onChange={(value) => {
-                  const prov = currentProviders.find((p) => p.id === value);
-                  if (prov) {
-                    handleChange("providerId", prov.id);
-                    setFormValues((prev) => ({
-                      ...prev,
-                      providerName: prov.name,
-                    }));
+              <InputGroup>
+                <ComboboxPlus
+                  name="provider"
+                  className="w-full h-10 min-w-0 sm:min-w-40"
+                  options={currentProviders.map((prov) => ({
+                    value: prov.id,
+                    label: prov.name,
+                  }))}
+                  value={formValues.providerId}
+                  onChange={(value) => {
+                    const prov = currentProviders.find((p) => p.id === value);
+                    if (prov) {
+                      handleChange("providerId", prov.id);
+                      setFormValues((prev) => ({
+                        ...prev,
+                        providerName: prov.name,
+                      }));
+                    }
+                  }}
+                  showAddButton={formValues.inType !== ""}
+                  onAddClick={() => setAddProviderOpen(true)}
+                  disable={isProviderLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isProviderLocked}
+                  onPressedChange={setIsProviderLocked}
+                  aria-label={
+                    isProviderLocked
+                      ? "Desbloquear proveedor"
+                      : "Bloquear proveedor"
                   }
-                }}
-                showAddButton={formValues.inType !== ""}
-                onAddClick={() => setAddProviderOpen(true)}
-                required
-              />
+                  title={
+                    isProviderLocked
+                      ? "Proveedor bloqueado"
+                      : "Proveedor desbloqueado"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isProviderLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             {formValues.inType === "FACTURA" && (
               <div className="grid gap-2">
@@ -574,28 +665,48 @@ export default function Inflow() {
               <Label htmlFor="product" className="pl-1 text-sm font-medium">
                 Producto
               </Label>
-              <ComboboxPlus
-                name="product"
-                className="w-full h-10 min-w-0 sm:min-w-40"
-                options={products.map((prod) => ({
-                  value: prod.id,
-                  label: prod.name,
-                }))}
-                value={formValues.productId}
-                onChange={(value) => {
-                  const prod = products.find((p) => p.id === value);
-                  if (prod) {
-                    handleChange("productId", prod.id);
-                    setFormValues((prev) => ({
-                      ...prev,
-                      productName: prod.name,
-                    }));
+              <InputGroup>
+                <ComboboxPlus
+                  name="product"
+                  className="w-full h-10 min-w-0 sm:min-w-40"
+                  options={products.map((prod) => ({
+                    value: prod.id,
+                    label: prod.name,
+                  }))}
+                  value={formValues.productId}
+                  onChange={(value) => {
+                    const prod = products.find((p) => p.id === value);
+                    if (prod) {
+                      handleChange("productId", prod.id);
+                      setFormValues((prev) => ({
+                        ...prev,
+                        productName: prod.name,
+                      }));
+                    }
+                  }}
+                  showAddButton
+                  onAddClick={() => setAddProductOpen(true)}
+                  disable={isProductLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isProductLocked}
+                  onPressedChange={setIsProductLocked}
+                  aria-label={
+                    isProductLocked
+                      ? "Desbloquear producto"
+                      : "Bloquear producto"
                   }
-                }}
-                showAddButton
-                onAddClick={() => setAddProductOpen(true)}
-                required
-              />
+                  title={
+                    isProductLocked
+                      ? "Producto bloqueado"
+                      : "Producto desbloqueado"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isProductLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="quantity" className="pl-1 text-sm font-medium">
