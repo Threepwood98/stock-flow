@@ -448,24 +448,24 @@ export default function Sale() {
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Venta</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Venta</CardTitle>
         </CardHeader>
         <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
-          <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <input
+              type="hidden"
               name="userId"
               defaultValue={user.id}
-              className="hidden"
               required
             />
             <div className="grid gap-2">
-              <Label htmlFor="date" className="pl-1">
+              <Label htmlFor="date" className="pl-1 text-sm font-medium">
                 Fecha
               </Label>
               <InputGroup>
                 <DatePicker
                   name="date"
-                  className="w-full min-w-40"
+                  className="w-full min-w-0 sm:min-w-40"
                   value={formValues.date}
                   onChange={(value) => handleChange("date", value)}
                   disabled={isDateLocked}
@@ -488,13 +488,16 @@ export default function Sale() {
             </div>
             {salesAreas.length > 1 && (
               <div className="grid gap-2">
-                <Label htmlFor="salesAreaId" className="pl-1">
+                <Label
+                  htmlFor="salesAreaId"
+                  className="pl-1 text-sm font-medium"
+                >
                   Área de Venta
                 </Label>
                 <InputGroup>
                   <ComboboxPlus
                     name="salesAreaId"
-                    className="w-full min-w-40"
+                    className="w-full min-w-0 sm:min-w-40"
                     options={salesAreas.map((sa) => ({
                       value: sa.id,
                       label: sa.name,
@@ -534,13 +537,13 @@ export default function Sale() {
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="payMethod" className="pl-1">
+              <Label htmlFor="payMethod" className="pl-1 text-sm font-medium">
                 Método de Pago
               </Label>
               <InputGroup>
                 <SelectList
                   name="payMethod"
-                  className="w-full min-w-40"
+                  className="w-full min-w-0 sm:min-w-40"
                   options={payMethods}
                   value={formValues.payMethod}
                   onChange={(value) => handleChange("payMethod", value)}
@@ -567,12 +570,12 @@ export default function Sale() {
               </InputGroup>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="product" className="pl-1">
+              <Label htmlFor="product" className="pl-1 text-sm font-medium">
                 Producto
               </Label>
               <ComboboxPlus
                 name="product"
-                className="w-full min-w-40"
+                className="w-full min-w-0 sm:min-w-40"
                 placeholder={
                   availableProducts.length === 0
                     ? "Sin productos disponibles"
@@ -597,7 +600,7 @@ export default function Sale() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="quantity" className="pl-1">
+              <Label htmlFor="quantity" className="pl-1 text-sm font-medium">
                 Cantidad
               </Label>
               <Input
@@ -609,7 +612,7 @@ export default function Sale() {
                 }
                 type="number"
                 min={1}
-                className="w-full min-w-40"
+                className="w-full min-w-0 sm:min-w-40"
                 required
               />
             </div>

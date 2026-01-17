@@ -1248,8 +1248,8 @@ async function main() {
       id: "0131750",
       categoryId: "189-30-304-504",
       name: "Keratina",
-      costPrice: 26.625,
-      salePrice: 35,
+      costPrice: 341.7,
+      salePrice: 430,
       unit: "un",
     },
     {

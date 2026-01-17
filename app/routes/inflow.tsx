@@ -526,7 +526,7 @@ export default function Inflow() {
                 </Label>
                 <ComboboxPlus
                   name="warehouseId"
-                  className="w-full h-10 min-w-0 sm:min-w-40"
+                  className="w-full min-w-0 sm:min-w-40"
                   options={warehouses.map((wh) => ({
                     value: wh.id,
                     label: wh.name,
@@ -553,7 +553,7 @@ export default function Inflow() {
               <InputGroup>
                 <SelectList
                   name="type"
-                  className="w-full h-10 min-w-0 sm:min-w-40"
+                  className="w-full min-w-0 sm:min-w-40"
                   options={inTypeOptions}
                   value={formValues.inType}
                   onChange={(value) => handleChange("inType", value)}
@@ -586,7 +586,7 @@ export default function Inflow() {
               <InputGroup>
                 <ComboboxPlus
                   name="provider"
-                  className="w-full h-10 min-w-0 sm:min-w-40"
+                  className="w-full min-w-0 sm:min-w-40"
                   options={currentProviders.map((prov) => ({
                     value: prov.id,
                     label: prov.name,
@@ -641,7 +641,7 @@ export default function Inflow() {
                   onChange={(event) =>
                     handleChange("invoiceNumber", event.target.value)
                   }
-                  className="w-full h-10 min-w-0 sm:min-w-40"
+                  className="w-full min-w-0 sm:min-w-40"
                   required
                 />
               </div>
@@ -657,7 +657,7 @@ export default function Inflow() {
                 onChange={(event) =>
                   handleChange("inNumber", event.target.value)
                 }
-                className="w-full h-10 min-w-0 sm:min-w-40"
+                className="w-full min-w-0 sm:min-w-40"
                 required
               />
             </div>
@@ -668,7 +668,7 @@ export default function Inflow() {
               <InputGroup>
                 <ComboboxPlus
                   name="product"
-                  className="w-full h-10 min-w-0 sm:min-w-40"
+                  className="w-full min-w-0 sm:min-w-40"
                   options={products.map((prod) => ({
                     value: prod.id,
                     label: prod.name,
