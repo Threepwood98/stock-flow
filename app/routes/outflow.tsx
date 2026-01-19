@@ -259,6 +259,8 @@ export default function Outflow() {
   const [isOutTypeLocked, setIsOutTypeLocked] = useState(false);
   const [isDestinationLocked, setIsDestinationLocked] = useState(false);
   const [isProductLocked, setIsProductLocked] = useState(false);
+  const [isPayMethodLocked, setIsPayMethodLocked] = useState(false);
+  const [isOutNumberLocked, setIsOutNumberLocked] = useState(false);
 
   const storeIds = userStores.map((us) => us.storeId);
 
@@ -425,6 +427,12 @@ export default function Outflow() {
       destinationName: isDestinationLocked
         ? formValues.destinationName
         : initialFormValues.destinationName,
+      payMethod: isPayMethodLocked
+        ? formValues.payMethod
+        : initialFormValues.payMethod,
+      outNumber: isOutNumberLocked
+        ? formValues.outNumber
+        : initialFormValues.outNumber,
       productId: isProductLocked
         ? formValues.productId
         : initialFormValues.productId,
@@ -449,6 +457,12 @@ export default function Outflow() {
       destinationName: isDestinationLocked
         ? formValues.destinationName
         : initialFormValues.destinationName,
+      payMethod: isPayMethodLocked
+        ? formValues.payMethod
+        : initialFormValues.payMethod,
+      outNumber: isOutNumberLocked
+        ? formValues.outNumber
+        : initialFormValues.outNumber,
       productId: isProductLocked
         ? formValues.productId
         : initialFormValues.productId,
@@ -684,30 +698,70 @@ export default function Outflow() {
                 <Label htmlFor="payMethod" className="pl-1">
                   Método de Pago
                 </Label>
-                <SelectList
-                  name="payMethod"
-                  className="w-full min-w-40"
-                  options={payMethods}
-                  value={formValues.payMethod}
-                  onChange={(value) => handleChange("payMethod", value)}
-                  required
-                />
+                <InputGroup>
+                  <SelectList
+                    name="payMethod"
+                    className="w-full min-w-40"
+                    options={payMethods}
+                    value={formValues.payMethod}
+                    onChange={(value) => handleChange("payMethod", value)}
+                    disabled={isPayMethodLocked}
+                    required
+                  />
+                  <Toggle
+                    pressed={isPayMethodLocked}
+                    onPressedChange={setIsPayMethodLocked}
+                    aria-label={
+                      isPayMethodLocked
+                        ? "Desbloquear método de pago"
+                        : "Bloquear método de pago"
+                    }
+                    title={
+                      isPayMethodLocked
+                        ? "Método de pago bloqueado"
+                        : "Método de pago desbloqueado"
+                    }
+                    className="hover:bg-transparent data-[state=on]:bg-transparent"
+                  >
+                    {isPayMethodLocked ? <LockOpenIcon /> : <LockIcon />}
+                  </Toggle>
+                </InputGroup>
               </div>
             )}
             <div className="grid gap-2">
               <Label htmlFor="outNumber" className="pl-1">
                 No. de Salida
               </Label>
-              <Input
-                id="outNumber"
-                name="outNumber"
-                value={formValues.outNumber}
-                onChange={(event) =>
-                  handleChange("outNumber", event.target.value)
-                }
-                className="w-full min-w-40"
-                required
-              />
+              <InputGroup>
+                <Input
+                  id="outNumber"
+                  name="outNumber"
+                  value={formValues.outNumber}
+                  onChange={(event) =>
+                    handleChange("outNumber", event.target.value)
+                  }
+                  disabled={isOutNumberLocked}
+                  className="w-full min-w-40"
+                  required
+                />
+                <Toggle
+                  pressed={isOutNumberLocked}
+                  onPressedChange={setIsOutNumberLocked}
+                  aria-label={
+                    isOutNumberLocked
+                      ? "Desbloquear número de salida"
+                      : "Bloquear número de salida"
+                  }
+                  title={
+                    isOutNumberLocked
+                      ? "Número de salida bloqueado"
+                      : "Número de salida desbloqueado"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isOutNumberLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="product" className="pl-1">
