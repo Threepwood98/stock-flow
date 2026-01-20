@@ -77,9 +77,10 @@ interface OutflowRow {
 }
 
 const outTypeOptions = [
-  { value: "TRASLADO", label: "Por Traslado" },
-  { value: "VALE", label: "Por Vale" },
-  { value: "VENTA", label: "Por Venta" },
+  { value: "TRASLADO", label: "TRASLADO" },
+  { value: "VALE", label: "VALE" },
+  { value: "VENTA", label: "VENTA" },
+  { value: "BAJA", label: "BAJA" },
 ];
 
 const payMethods = [
@@ -113,7 +114,7 @@ export async function action({ request }: Route.ActionArgs) {
   if (!rawRows) {
     return new Response(
       JSON.stringify({ error: "No hay datos para insertar." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -123,14 +124,14 @@ export async function action({ request }: Route.ActionArgs) {
   } catch {
     return new Response(
       JSON.stringify({ error: "Formato inválido de datos." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return new Response(
       JSON.stringify({ error: "No hay filas para insertar." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -216,7 +217,7 @@ export async function action({ request }: Route.ActionArgs) {
               });
             }
           }
-        })
+        }),
       );
     });
 
@@ -227,7 +228,7 @@ export async function action({ request }: Route.ActionArgs) {
       JSON.stringify({
         error: error.message || "Error al guardar en la base de datos.",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }
@@ -249,7 +250,7 @@ export default function Outflow() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [currentDestinations, setCurrentDestinations] = useState<Destination[]>(
-    []
+    [],
   );
   const [destinationType, setDestinationType] = useState<
     "store" | "salesArea" | "sale"
@@ -339,7 +340,7 @@ export default function Outflow() {
 
   const calculateAmount = (
     productId: string,
-    quantity: string
+    quantity: string,
   ): { costAmount: number; saleAmount: number } => {
     const product = availableProducts.find((prod) => prod.id === productId);
     const qty = parseInt(quantity, 10);
@@ -369,12 +370,12 @@ export default function Outflow() {
     }
 
     const product = availableProducts.find(
-      (avp) => avp.id === formValues.productId
+      (avp) => avp.id === formValues.productId,
     );
 
     if (product && quantity > product.availableQuantity) {
       toast.error(
-        `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`
+        `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`,
       );
       return;
     }
@@ -402,7 +403,7 @@ export default function Outflow() {
 
     if (editIndex !== null) {
       setRows((prev) =>
-        prev.map((row, i) => (i === editIndex ? rowWithAmount : row))
+        prev.map((row, i) => (i === editIndex ? rowWithAmount : row)),
       );
       toast.success("Fila actualizada correctamente.");
     } else {
@@ -522,12 +523,12 @@ export default function Outflow() {
 
   const totalCostAmount = rows.reduce(
     (sum, row) => sum + (row.costAmount || 0),
-    0
+    0,
   );
 
   const totalSaleAmount = rows.reduce(
     (sum, row) => sum + (row.saleAmount || 0),
-    0
+    0,
   );
 
   const formatCurrency = (value: number, type?: string) => {
@@ -658,7 +659,7 @@ export default function Outflow() {
                     value={formValues.destinationId}
                     onChange={(value) => {
                       const dest = currentDestinations.find(
-                        (d) => d.id === value
+                        (d) => d.id === value,
                       );
                       if (dest) {
                         handleChange("destinationId", dest.id);

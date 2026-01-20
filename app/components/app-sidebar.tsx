@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRightIcon,
   BoxesIcon,
   ClipboardListIcon,
   LayoutDashboard,
@@ -72,6 +73,12 @@ const data = {
           title: "Caja Extra",
           url: "/main/sale-area/withdraw",
           icon: QrCodeIcon,
+          isActive: true,
+        },
+        {
+          title: "Movimiento",
+          url: "/main/sale-area/movement",
+          icon: ArrowLeftRightIcon,
           isActive: true,
         },
         {

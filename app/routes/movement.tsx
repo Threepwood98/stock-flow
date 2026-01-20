@@ -44,9 +44,11 @@ import {
   Trash2Icon,
   WarehouseIcon,
 } from "lucide-react";
-import { AddProvider } from "~/components/add-provider";
-import { AddProduct } from "~/components/add-product";
-import type { OutletContext, Product, Provider } from "@/lib/types/types";
+import type { OutletContext, Product } from "@/lib/types/types";
+
+interface ProductWithStock extends Product {
+  stock?: number;
+}
 import {
   Card,
   CardAction,
@@ -60,16 +62,17 @@ import { InputGroup } from "~/components/ui/input-group";
 import { Toggle } from "~/components/ui/toggle";
 import { LockIcon, LockOpenIcon } from "lucide-react";
 
-interface InflowRow {
+interface MovementRow {
   userId: string;
-  warehouseId: string;
-  warehouseName: string;
+  sourceSalesAreaId: string;
+  sourceSalesAreaName: string;
   date: string;
-  inType: string;
-  providerId: string;
-  providerName: string;
-  invoiceNumber: string;
-  inNumber: string;
+  movementType: string;
+  destinationWarehouseId: string;
+  destinationWarehouseName: string;
+  destinationSalesAreaId: string;
+  destinationSalesAreaName: string;
+  movementNumber: string;
   productId: string;
   productName: string;
   quantity: string;
@@ -77,22 +80,22 @@ interface InflowRow {
   costAmount: number;
 }
 
-const inTypeOptions = [
-  { value: "FACTURA", label: "FACTURA" },
-  { value: "TRASLADO", label: "TRASLADO" },
+const movementTypeOptions = [
   { value: "DEVOLUCION", label: "DEVOLUCION" },
+  { value: "TRASLADO", label: "TRASLADO" },
 ];
 
-const initialFormValues: InflowRow = {
+const initialFormValues: MovementRow = {
   userId: "",
-  warehouseId: "",
-  warehouseName: "",
+  sourceSalesAreaId: "",
+  sourceSalesAreaName: "",
   date: format(new Date(), "dd/MM/yyyy"),
-  inType: "",
-  providerId: "",
-  providerName: "",
-  invoiceNumber: "",
-  inNumber: "",
+  movementType: "",
+  destinationWarehouseId: "",
+  destinationWarehouseName: "",
+  destinationSalesAreaId: "",
+  destinationSalesAreaName: "",
+  movementNumber: "",
   productId: "",
   productName: "",
   quantity: "",
@@ -112,7 +115,7 @@ export async function action({ request }: Route.ActionArgs) {
     );
   }
 
-  let rows: InflowRow[];
+  let rows: MovementRow[];
   try {
     rows = JSON.parse(rawRows as string);
   } catch {
@@ -142,18 +145,20 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Cantidad inválida: ${row.quantity}`);
       }
 
-      const isFACTURA = row.inType === "FACTURA";
+      const isDEVOLUCION = row.movementType === "DEVOLUCION";
 
       return {
         userId: row.userId,
-        warehouseId: row.warehouseId,
-        inType: row.inType,
+        movementType: row.movementType,
         date: parsedDate,
-        providerCompanyId: isFACTURA ? row.providerId : null,
-        providerStoreId: !isFACTURA ? row.providerId : null,
-        payMethod: isFACTURA ? "CHEQUE" : null,
-        invoiceNumber: isFACTURA ? row.invoiceNumber : null,
-        inNumber: row.inNumber,
+        sourceSalesAreaId: row.sourceSalesAreaId,
+        destinationWarehouseId: isDEVOLUCION
+          ? row.destinationWarehouseId
+          : null,
+        destinationSalesAreaId: !isDEVOLUCION
+          ? row.destinationSalesAreaId
+          : null,
+        movementNumber: row.movementNumber,
         productId: row.productId,
         quantity,
         costAmount: new Decimal(row.costAmount ?? 0),
@@ -164,37 +169,113 @@ export async function action({ request }: Route.ActionArgs) {
     await prisma.$transaction(async (tx) => {
       await Promise.all(
         data.map(async (entry) => {
-          await tx.inflow.create({ data: entry });
+          await tx.movement.create({ data: entry });
 
-          const extingInventory = await tx.warehouseInventory.findUnique({
+          // Reduce inventory in source sales area
+          const sourceInventory = await tx.salesAreaInventory.findUnique({
             where: {
-              warehouseId_productId: {
-                warehouseId: entry.warehouseId,
+              salesAreaId_productId: {
+                salesAreaId: entry.sourceSalesAreaId,
                 productId: entry.productId,
               },
             },
           });
 
-          if (extingInventory) {
-            await tx.warehouseInventory.update({
-              where: { id: extingInventory.id },
-              data: { quantity: { increment: entry.quantity } },
-            });
-          } else {
-            await tx.warehouseInventory.create({
-              data: {
-                warehouseId: entry.warehouseId,
-                productId: entry.productId,
-                quantity: entry.quantity,
-                minStock: 0,
+          if (!sourceInventory) {
+            throw new Error(
+              `No existe inventario en el área de venta origen para el producto ${entry.productId}`,
+            );
+          }
+
+          if (sourceInventory.quantity < entry.quantity) {
+            throw new Error(
+              `Inventario insuficiente en el área de venta origen. Disponible: ${sourceInventory.quantity}, Requerido: ${entry.quantity}`,
+            );
+          }
+
+          await tx.salesAreaInventory.update({
+            where: { id: sourceInventory.id },
+            data: { quantity: { decrement: entry.quantity } },
+          });
+
+          // Increase inventory in destination
+          if (entry.destinationWarehouseId) {
+            // DEVOLUCION: Add to warehouse inventory and create inflow record
+            const destInventory = await tx.warehouseInventory.findUnique({
+              where: {
+                warehouseId_productId: {
+                  warehouseId: entry.destinationWarehouseId,
+                  productId: entry.productId,
+                },
               },
             });
+
+            if (destInventory) {
+              await tx.warehouseInventory.update({
+                where: { id: destInventory.id },
+                data: { quantity: { increment: entry.quantity } },
+              });
+            } else {
+              await tx.warehouseInventory.create({
+                data: {
+                  warehouseId: entry.destinationWarehouseId,
+                  productId: entry.productId,
+                  quantity: entry.quantity,
+                  minStock: 0,
+                },
+              });
+            }
+
+            // Create inflow record for DEVOLUCION
+            await tx.inflow.create({
+              data: {
+                userId: entry.userId,
+                warehouseId: entry.destinationWarehouseId,
+                date: entry.date,
+                inType: "DEVOLUCION",
+                providerCompanyId: null,
+                providerStoreId: null,
+                payMethod: null,
+                invoiceNumber: null,
+                inNumber: entry.movementNumber,
+                productId: entry.productId,
+                quantity: entry.quantity,
+                costAmount: entry.costAmount,
+                saleAmount: entry.saleAmount,
+              },
+            });
+          } else if (entry.destinationSalesAreaId) {
+            // TRASLADO: Add to destination sales area inventory
+            const destInventory = await tx.salesAreaInventory.findUnique({
+              where: {
+                salesAreaId_productId: {
+                  salesAreaId: entry.destinationSalesAreaId,
+                  productId: entry.productId,
+                },
+              },
+            });
+
+            if (destInventory) {
+              await tx.salesAreaInventory.update({
+                where: { id: destInventory.id },
+                data: { quantity: { increment: entry.quantity } },
+              });
+            } else {
+              await tx.salesAreaInventory.create({
+                data: {
+                  salesAreaId: entry.destinationSalesAreaId,
+                  productId: entry.productId,
+                  quantity: entry.quantity,
+                  minStock: 0,
+                },
+              });
+            }
           }
         }),
       );
     });
 
-    return redirect("/main/warehouse/inflow?success=1");
+    return redirect("/main/sale-area/movement?success=1");
   } catch (error: any) {
     console.error("❌ Error al insertar:", error);
     return new Response(
@@ -207,44 +288,53 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 // Component
-export default function Inflow() {
+export default function Movement() {
   const {
     user,
     warehouses,
-    providers,
     products: initialProducts,
-    categories,
+    salesAreas,
   } = useOutletContext<OutletContext>();
 
+  // Get initial available products based on first sales area
+  const getInitialAvailableProducts = () => {
+    const firstSalesArea = salesAreas[0];
+    if (firstSalesArea && firstSalesArea.salesAreaInventories) {
+      return firstSalesArea.salesAreaInventories.map((inv) => ({
+        ...inv.product,
+        stock: inv.quantity,
+      }));
+    }
+    return initialProducts;
+  };
+
   const [searchParams] = useSearchParams();
-  const [rows, setRows] = useState<InflowRow[]>([]);
+  const [rows, setRows] = useState<MovementRow[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [formValues, setFormValues] = useState<InflowRow>({
+  const [formValues, setFormValues] = useState<MovementRow>({
     ...initialFormValues,
     userId: user.id,
-    warehouseId: warehouses[0]?.id || "",
-    warehouseName: warehouses[0]?.name || "",
+    sourceSalesAreaId: salesAreas[0]?.id || "",
+    sourceSalesAreaName: salesAreas[0]?.name || "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [currentProviders, setCurrentProviders] = useState<Provider[]>([]);
-  const [providerType, setProviderType] = useState<"company" | "store">(
-    "company",
+  const [products, setProducts] = useState<ProductWithStock[]>(
+    getInitialAvailableProducts(),
   );
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [addProductOpen, setAddProductOpen] = useState<boolean>(false);
-  const [addProviderOpen, setAddProviderOpen] = useState<boolean>(false);
   const [isDateLocked, setIsDateLocked] = useState(false);
   const [isInTypeLocked, setIsInTypeLocked] = useState(false);
-  const [isProviderLocked, setIsProviderLocked] = useState(false);
   const [isProductLocked, setIsProductLocked] = useState(false);
+  const [isSourceAreaLocked, setIsSourceAreaLocked] = useState(false);
+  const [isDestAreaLocked, setIsDestAreaLocked] = useState(false);
+  const [isMovementNumberLocked, setIsMovementNumberLocked] = useState(false);
 
   const fetcher = useFetcher();
 
   // Show success notification
   useEffect(() => {
     if (searchParams.get("success") === "1") {
-      toast.success("Entradas contabilizadas exitosamente.");
+      toast.success("Movimientos contabilizados exitosamente.");
       setRows([]);
     }
   }, [searchParams]);
@@ -261,27 +351,34 @@ export default function Inflow() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editIndex]);
 
-  const handleChange = (name: keyof InflowRow, value: string) => {
+  const handleChange = (name: keyof MovementRow, value: string) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
 
-    if (name === "inType") {
-      switch (value) {
-        case "FACTURA":
-          setCurrentProviders(providers.companies);
-          setProviderType("company");
-          break;
-        case "TRASLADO":
-          setCurrentProviders(providers.stores);
-          setProviderType("store");
-          break;
-      }
+    // Update available products when source sales area changes
+    if (name === "sourceSalesAreaId") {
+      const salesArea = salesAreas.find((sa) => sa.id === value);
+      if (salesArea && salesArea.salesAreaInventories) {
+        const availableProducts: ProductWithStock[] =
+          salesArea.salesAreaInventories.map((inv) => ({
+            ...inv.product,
+            stock: inv.quantity,
+          }));
+        setProducts(availableProducts);
 
-      setFormValues((prev) => ({
-        ...prev,
-        inType: value,
-        providerId: "",
-        providerName: "",
-      }));
+        // Reset product selection if current product is not in new inventory
+        const currentProductAvailable = availableProducts.some(
+          (p) => p.id === formValues.productId,
+        );
+        if (!currentProductAvailable) {
+          setFormValues((prev) => ({
+            ...prev,
+            productId: "",
+            productName: "",
+          }));
+        }
+      } else {
+        setProducts(initialProducts);
+      }
     }
   };
 
@@ -311,19 +408,32 @@ export default function Inflow() {
       return;
     }
 
-    if (!formValues.warehouseId) {
-      toast.error("Debe seleccionar un almacén.");
+    if (!formValues.sourceSalesAreaId) {
+      toast.error("Debe seleccionar un área de venta origen.");
       return;
     }
 
-    if (!formValues.providerId) {
-      toast.error("Debe seleccionar un proveedor.");
+    if (
+      formValues.movementType === "DEVOLUCION" &&
+      !formValues.destinationWarehouseId
+    ) {
+      toast.error("Debe seleccionar un almacén destino para la devolución.");
+      return;
+    }
+
+    if (
+      formValues.movementType === "TRASLADO" &&
+      !formValues.destinationSalesAreaId
+    ) {
+      toast.error(
+        "Debe seleccionar un área de venta destino para el traslado.",
+      );
       return;
     }
 
     const amount = calculateAmount(formValues.productId, formValues.quantity);
 
-    const rowWithAmount: InflowRow = {
+    const rowWithAmount: MovementRow = {
       ...formValues,
       costAmount: amount.costAmount,
       saleAmount: amount.saleAmount,
@@ -346,64 +456,89 @@ export default function Inflow() {
     setFormValues({
       ...initialFormValues,
       userId: user.id,
-      warehouseId: warehouses[0]?.id || "",
-      warehouseName: warehouses[0]?.name || "",
+      sourceSalesAreaId: isSourceAreaLocked
+        ? formValues.sourceSalesAreaId
+        : salesAreas[0]?.id || "",
+      sourceSalesAreaName: isSourceAreaLocked
+        ? formValues.sourceSalesAreaName
+        : salesAreas[0]?.name || "",
       date: isDateLocked ? formValues.date : initialFormValues.date,
-      inType: isInTypeLocked ? formValues.inType : initialFormValues.inType,
-      providerId: isProviderLocked
-        ? formValues.providerId
-        : initialFormValues.providerId,
-      providerName: isProviderLocked
-        ? formValues.providerName
-        : initialFormValues.providerName,
-      productId: isProductLocked
-        ? formValues.productId
-        : initialFormValues.productId,
-      productName: isProductLocked
-        ? formValues.productName
-        : initialFormValues.productName,
+      movementType: isInTypeLocked
+        ? formValues.movementType
+        : initialFormValues.movementType,
+      destinationWarehouseId: "",
+      destinationWarehouseName: "",
+      destinationSalesAreaId: isDestAreaLocked
+        ? formValues.destinationSalesAreaId
+        : "",
+      destinationSalesAreaName: isDestAreaLocked
+        ? formValues.destinationSalesAreaName
+        : "",
+      movementNumber: isMovementNumberLocked ? formValues.movementNumber : "",
+      productId: "",
+      productName: "",
     });
-    setCurrentProviders([]);
+
+    // Reset products to match the cleaned sales area
+    const firstSalesArea = salesAreas[0];
+    if (firstSalesArea && firstSalesArea.salesAreaInventories) {
+      setProducts(
+        firstSalesArea.salesAreaInventories.map((inv) => ({
+          ...inv.product,
+          stock: inv.quantity,
+        })),
+      );
+    } else {
+      setProducts(initialProducts);
+    }
   };
 
   const handleCancel = () => {
     setFormValues({
       ...initialFormValues,
       userId: user.id,
-      warehouseId: warehouses[0]?.id || "",
-      warehouseName: warehouses[0]?.name || "",
+      sourceSalesAreaId: isSourceAreaLocked
+        ? formValues.sourceSalesAreaId
+        : salesAreas[0]?.id || "",
+      sourceSalesAreaName: isSourceAreaLocked
+        ? formValues.sourceSalesAreaName
+        : salesAreas[0]?.name || "",
       date: isDateLocked ? formValues.date : initialFormValues.date,
-      inType: isInTypeLocked ? formValues.inType : initialFormValues.inType,
-      providerId: isProviderLocked
-        ? formValues.providerId
-        : initialFormValues.providerId,
-      providerName: isProviderLocked
-        ? formValues.providerName
-        : initialFormValues.providerName,
-      productId: isProductLocked
-        ? formValues.productId
-        : initialFormValues.productId,
-      productName: isProductLocked
-        ? formValues.productName
-        : initialFormValues.productName,
+      movementType: isInTypeLocked
+        ? formValues.movementType
+        : initialFormValues.movementType,
+      destinationWarehouseId: "",
+      destinationWarehouseName: "",
+      destinationSalesAreaId: isDestAreaLocked
+        ? formValues.destinationSalesAreaId
+        : "",
+      destinationSalesAreaName: isDestAreaLocked
+        ? formValues.destinationSalesAreaName
+        : "",
+      movementNumber: isMovementNumberLocked ? formValues.movementNumber : "",
+      productId: "",
+      productName: "",
     });
     setEditIndex(null);
-    setCurrentProviders([]);
+
+    // Reset products to match the default sales area
+    const firstSalesArea = salesAreas[0];
+    if (firstSalesArea && firstSalesArea.salesAreaInventories) {
+      setProducts(
+        firstSalesArea.salesAreaInventories.map((inv) => ({
+          ...inv.product,
+          stock: inv.quantity,
+        })),
+      );
+    } else {
+      setProducts(initialProducts);
+    }
   };
 
   const handleEdit = (index: number) => {
     const row = rows[index];
     setFormValues({ ...row });
     setEditIndex(index);
-
-    switch (row.inType) {
-      case "FACTURA":
-        setCurrentProviders(providers.companies);
-        break;
-      case "TRASLADO":
-        setCurrentProviders(providers.stores);
-        break;
-    }
   };
 
   const handleRemove = (index: number) => {
@@ -417,31 +552,26 @@ export default function Inflow() {
     fetcher.submit({ rows: JSON.stringify(rows) }, { method: "post" });
   };
 
-  const handleNewProvider = (newProvider: Provider) => {
-    const providerToAdd: Provider = {
-      id: newProvider.id,
-      name: newProvider.name,
-    };
+  // Handle fetcher state changes
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data) {
+      setIsSubmitting(false);
 
-    setCurrentProviders((prev) => [...prev, providerToAdd]);
-
-    setFormValues((prev) => ({
-      ...prev,
-      providerId: newProvider.id,
-      providerName: newProvider.name,
-    }));
-
-    toast.success("Proveedor agregado y seleccionado exitosamente");
-  };
+      if (fetcher.data.error) {
+        toast.error(fetcher.data.error);
+      }
+    }
+  }, [fetcher.state, fetcher.data]);
 
   const handleNewProduct = (newProduct: Product) => {
-    const productToAdd: Product = {
+    const productToAdd: ProductWithStock = {
       id: newProduct.id,
-      categoryId: newProduct.id,
+      categoryId: newProduct.categoryId,
       name: newProduct.name,
       costPrice: newProduct.costPrice,
       salePrice: newProduct.salePrice,
       unit: newProduct.unit,
+      stock: 0,
     };
 
     setProducts((prev) => [...prev, productToAdd]);
@@ -479,7 +609,7 @@ export default function Inflow() {
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">Entrada</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Movimiento</CardTitle>
         </CardHeader>
         <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -517,47 +647,68 @@ export default function Inflow() {
                 </Toggle>
               </InputGroup>
             </div>
-            {warehouses.length > 1 && (
-              <div className="grid gap-2">
-                <Label
-                  htmlFor="warehouseId"
-                  className="pl-1 text-sm font-medium"
-                >
-                  Almacén
-                </Label>
+            <div className="grid gap-2">
+              <Label
+                htmlFor="sourceSalesAreaId"
+                className="pl-1 text-sm font-medium"
+              >
+                Área de Venta Origen
+              </Label>
+              <InputGroup>
                 <ComboboxPlus
-                  name="warehouseId"
+                  name="sourceSalesAreaId"
                   className="w-full min-w-0 sm:min-w-40"
-                  options={warehouses.map((wh) => ({
-                    value: wh.id,
-                    label: wh.name,
+                  options={salesAreas.map((sa) => ({
+                    value: sa.id,
+                    label: sa.name,
                   }))}
-                  value={formValues.warehouseId}
+                  value={formValues.sourceSalesAreaId}
                   onChange={(value) => {
-                    const wh = warehouses.find((w) => w.id === value);
-                    if (wh) {
-                      handleChange("warehouseId", value);
+                    const sa = salesAreas.find((s) => s.id === value);
+                    if (sa) {
+                      handleChange("sourceSalesAreaId", value);
                       setFormValues((prev) => ({
                         ...prev,
-                        warehouseName: wh.name,
+                        sourceSalesAreaName: sa.name,
                       }));
                     }
                   }}
+                  disable={isSourceAreaLocked}
                   required
                 />
-              </div>
-            )}
+                <Toggle
+                  pressed={isSourceAreaLocked}
+                  onPressedChange={setIsSourceAreaLocked}
+                  aria-label={
+                    isSourceAreaLocked
+                      ? "Desbloquear área de venta origen"
+                      : "Bloquear área de venta origen"
+                  }
+                  title={
+                    isSourceAreaLocked
+                      ? "Área de venta origen bloqueada"
+                      : "Área de venta origen desbloqueada"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isSourceAreaLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
+            </div>
             <div className="grid gap-2">
-              <Label htmlFor="type" className="pl-1 text-sm font-medium">
-                Tipo de Entrada
+              <Label
+                htmlFor="movementType"
+                className="pl-1 text-sm font-medium"
+              >
+                Tipo de Movimiento
               </Label>
               <InputGroup>
                 <SelectList
-                  name="type"
+                  name="movementType"
                   className="w-full min-w-0 sm:min-w-40"
-                  options={inTypeOptions}
-                  value={formValues.inType}
-                  onChange={(value) => handleChange("inType", value)}
+                  options={movementTypeOptions}
+                  value={formValues.movementType}
+                  onChange={(value) => handleChange("movementType", value)}
                   disabled={isInTypeLocked}
                   required
                 />
@@ -566,13 +717,13 @@ export default function Inflow() {
                   onPressedChange={setIsInTypeLocked}
                   aria-label={
                     isInTypeLocked
-                      ? "Desbloquear tipo de entrada"
-                      : "Bloquear tipo de entrada"
+                      ? "Desbloquear tipo de movimiento"
+                      : "Bloquear tipo de movimiento"
                   }
                   title={
                     isInTypeLocked
-                      ? "Tipo de entrada bloqueado"
-                      : "Tipo de entrada desbloqueado"
+                      ? "Tipo de movimiento bloqueado"
+                      : "Tipo de movimiento desbloqueado"
                   }
                   className="hover:bg-transparent data-[state=on]:bg-transparent"
                 >
@@ -580,87 +731,126 @@ export default function Inflow() {
                 </Toggle>
               </InputGroup>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="provider" className="pl-1 text-sm font-medium">
-                Proveedor
-              </Label>
-              <InputGroup>
+            {formValues.movementType === "DEVOLUCION" && (
+              <div className="grid gap-2">
+                <Label
+                  htmlFor="destinationWarehouseId"
+                  className="pl-1 text-sm font-medium"
+                >
+                  Almacén Destino
+                </Label>
                 <ComboboxPlus
-                  name="provider"
+                  name="destinationWarehouseId"
                   className="w-full min-w-0 sm:min-w-40"
-                  options={currentProviders.map((prov) => ({
-                    value: prov.id,
-                    label: prov.name,
+                  options={warehouses.map((wh) => ({
+                    value: wh.id,
+                    label: wh.name,
                   }))}
-                  value={formValues.providerId}
+                  value={formValues.destinationWarehouseId}
                   onChange={(value) => {
-                    const prov = currentProviders.find((p) => p.id === value);
-                    if (prov) {
-                      handleChange("providerId", prov.id);
+                    const wh = warehouses.find((w) => w.id === value);
+                    if (wh) {
+                      handleChange("destinationWarehouseId", value);
                       setFormValues((prev) => ({
                         ...prev,
-                        providerName: prov.name,
+                        destinationWarehouseName: wh.name,
                       }));
                     }
                   }}
-                  showAddButton={formValues.inType !== ""}
-                  onAddClick={() => setAddProviderOpen(true)}
-                  disable={isProviderLocked}
-                  required
-                />
-                <Toggle
-                  pressed={isProviderLocked}
-                  onPressedChange={setIsProviderLocked}
-                  aria-label={
-                    isProviderLocked
-                      ? "Desbloquear proveedor"
-                      : "Bloquear proveedor"
-                  }
-                  title={
-                    isProviderLocked
-                      ? "Proveedor bloqueado"
-                      : "Proveedor desbloqueado"
-                  }
-                  className="hover:bg-transparent data-[state=on]:bg-transparent"
-                >
-                  {isProviderLocked ? <LockOpenIcon /> : <LockIcon />}
-                </Toggle>
-              </InputGroup>
-            </div>
-            {formValues.inType === "FACTURA" && (
-              <div className="grid gap-2">
-                <Label
-                  htmlFor="invoiceNumber"
-                  className="pl-1 text-sm font-medium"
-                >
-                  No. de Factura
-                </Label>
-                <Input
-                  id="invoiceNumber"
-                  name="invoiceNumber"
-                  value={formValues.invoiceNumber}
-                  onChange={(event) =>
-                    handleChange("invoiceNumber", event.target.value)
-                  }
-                  className="w-full min-w-0 sm:min-w-40"
                   required
                 />
               </div>
             )}
+
+            {formValues.movementType === "TRASLADO" && (
+              <div className="grid gap-2">
+                <Label
+                  htmlFor="destinationSalesAreaId"
+                  className="pl-1 text-sm font-medium"
+                >
+                  Área de Venta Destino
+                </Label>
+                <InputGroup>
+                  <ComboboxPlus
+                    name="destinationSalesAreaId"
+                    className="w-full min-w-0 sm:min-w-40"
+                    options={salesAreas
+                      .filter((sa) => sa.id !== formValues.sourceSalesAreaId)
+                      .map((sa) => ({
+                        value: sa.id,
+                        label: sa.name,
+                      }))}
+                    value={formValues.destinationSalesAreaId}
+                    onChange={(value) => {
+                      const sa = salesAreas.find((s) => s.id === value);
+                      if (sa) {
+                        handleChange("destinationSalesAreaId", value);
+                        setFormValues((prev) => ({
+                          ...prev,
+                          destinationSalesAreaName: sa.name,
+                        }));
+                      }
+                    }}
+                    disable={isDestAreaLocked}
+                    required
+                  />
+                  <Toggle
+                    pressed={isDestAreaLocked}
+                    onPressedChange={setIsDestAreaLocked}
+                    aria-label={
+                      isDestAreaLocked
+                        ? "Desbloquear área de venta destino"
+                        : "Bloquear área de venta destino"
+                    }
+                    title={
+                      isDestAreaLocked
+                        ? "Área de venta destino bloqueada"
+                        : "Área de venta destino desbloqueada"
+                    }
+                    className="hover:bg-transparent data-[state=on]:bg-transparent"
+                  >
+                    {isDestAreaLocked ? <LockOpenIcon /> : <LockIcon />}
+                  </Toggle>
+                </InputGroup>
+              </div>
+            )}
             <div className="grid gap-2">
-              <Label htmlFor="inNumber" className="pl-1 text-sm font-medium">
-                No. de Entrada
+              <Label
+                htmlFor="movementNumber"
+                className="pl-1 text-sm font-medium"
+              >
+                No. de Movimiento
               </Label>
-              <Input
-                id="inNumber"
-                name="inNumber"
-                value={formValues.inNumber}
-                onChange={(event) =>
-                  handleChange("inNumber", event.target.value)
-                }
-                className="w-full min-w-0 sm:min-w-40"
-                required
-              />
+              <InputGroup>
+                <Input
+                  id="movementNumber"
+                  name="movementNumber"
+                  value={formValues.movementNumber}
+                  onChange={(event) =>
+                    handleChange("movementNumber", event.target.value)
+                  }
+                  className="w-full min-w-0 sm:min-w-40"
+                  disabled={isMovementNumberLocked}
+                  required
+                />
+                <Toggle
+                  pressed={isMovementNumberLocked}
+                  onPressedChange={setIsMovementNumberLocked}
+                  aria-label={
+                    isMovementNumberLocked
+                      ? "Desbloquear número de movimiento"
+                      : "Bloquear número de movimiento"
+                  }
+                  title={
+                    isMovementNumberLocked
+                      ? "Número de movimiento bloqueado"
+                      : "Número de movimiento desbloqueado"
+                  }
+                  className="hover:bg-transparent data-[state=on]:bg-transparent"
+                >
+                  {isMovementNumberLocked ? <LockOpenIcon /> : <LockIcon />}
+                </Toggle>
+              </InputGroup>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="product" className="pl-1 text-sm font-medium">
@@ -672,7 +862,8 @@ export default function Inflow() {
                   className="w-full min-w-0 sm:min-w-40"
                   options={products.map((prod) => ({
                     value: prod.id,
-                    label: prod.name,
+                    label: `${prod.name} (${prod.stock || 0} disponibles)`,
+                    stock: prod.stock || 0,
                   }))}
                   value={formValues.productId}
                   onChange={(value) => {
@@ -685,8 +876,6 @@ export default function Inflow() {
                       }));
                     }
                   }}
-                  showAddButton
-                  onAddClick={() => setAddProductOpen(true)}
                   disable={isProductLocked}
                   required
                 />
@@ -784,19 +973,16 @@ export default function Inflow() {
                   Fecha
                 </TableHead>
                 <TableHead className="font-semibold text-xs sm:text-sm hidden sm:table-cell">
-                  Almacén
+                  Área Origen
                 </TableHead>
                 <TableHead className="font-semibold text-xs sm:text-sm hidden lg:table-cell">
                   Tipo
                 </TableHead>
                 <TableHead className="font-semibold text-xs sm:text-sm">
-                  Proveedor
-                </TableHead>
-                <TableHead className="text-right font-semibold text-xs sm:text-sm hidden md:table-cell">
-                  Factura
+                  Destino
                 </TableHead>
                 <TableHead className="text-right font-semibold text-xs sm:text-sm hidden sm:table-cell">
-                  Entrada
+                  Movimiento
                 </TableHead>
                 <TableHead className="font-semibold text-xs sm:text-sm">
                   Producto
@@ -825,8 +1011,8 @@ export default function Inflow() {
                     <div className="flex flex-col items-center gap-4">
                       <WarehouseIcon className="size-20 sm:size-32" />
                       <p className="font-semibold text-sm sm:text-base px-4">
-                        No hay entradas agregadas. Complete el formulario y haga
-                        clic en "Agregar".
+                        No hay movimientos agregados. Complete el formulario y
+                        haga clic en "Agregar".
                       </p>
                     </div>
                   </TableCell>
@@ -843,19 +1029,18 @@ export default function Inflow() {
                       {row.date}
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm hidden sm:table-cell">
-                      {row.warehouseName}
+                      {row.sourceSalesAreaName}
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
-                      {row.inType}
+                      {row.movementType}
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm max-w-32 truncate">
-                      {row.providerName}
-                    </TableCell>
-                    <TableCell className="text-right text-xs sm:text-sm hidden md:table-cell">
-                      {row.invoiceNumber || "-"}
+                      {row.movementType === "DEVOLUCION"
+                        ? row.destinationWarehouseName
+                        : row.destinationSalesAreaName}
                     </TableCell>
                     <TableCell className="text-right text-xs sm:text-sm hidden sm:table-cell">
-                      {row.inNumber}
+                      {row.movementNumber}
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm max-w-32 truncate">
                       {row.productName}
@@ -897,7 +1082,7 @@ export default function Inflow() {
             </TableBody>
             <TableFooter>
               <TableRow className="text-right font-semibold bg-muted/50">
-                <TableCell colSpan={7} className="text-xs sm:text-sm">
+                <TableCell colSpan={6} className="text-xs sm:text-sm">
                   TOTAL
                 </TableCell>
                 <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
@@ -941,11 +1126,11 @@ export default function Inflow() {
             <AlertDialogTitle>¿Confirmar contabilización?</AlertDialogTitle>
             <AlertDialogDescription>
               Está a punto de contabilizar <strong>{rows.length}</strong>{" "}
-              entrada{rows.length !== 1 ? "s" : ""} por un total de{" "}
+              movimiento{rows.length !== 1 ? "s" : ""} por un total de{" "}
               <strong>{formatCurrency(totalCostAmount, "cost")}</strong>.
               <br />
               <br />
-              Esta acción registrará las entradas en el sistema de manera
+              Esta acción registrará los movimientos en el sistema de manera
               permanente.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -967,18 +1152,6 @@ export default function Inflow() {
       <fetcher.Form>
         <input type="hidden" name="rows" value={JSON.stringify(rows)} />
       </fetcher.Form>
-      <AddProduct
-        open={addProductOpen}
-        onOpenChange={setAddProductOpen}
-        onSuccess={handleNewProduct}
-        categories={categories}
-      />
-      <AddProvider
-        open={addProviderOpen}
-        onOpenChange={setAddProviderOpen}
-        onSuccess={handleNewProvider}
-        providerType={providerType}
-      />
     </div>
   );
 }

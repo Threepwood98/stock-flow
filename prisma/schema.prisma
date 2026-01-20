@@ -29,6 +29,7 @@ model User {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   withdraws        Withdraw[]
+  movements        Movement[]
 
   @@index([email])
   @@index([role])
@@ -135,6 +136,7 @@ model Warehouse {
   inflows              Inflow[]
   outflows             Outflow[]
   warehouseInventories WarehouseInventory[]
+  destinationMovements Movement[]
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -152,6 +154,8 @@ model SalesArea {
   sales                Sale[]
   withdraws            Withdraw[]
   salesAreaInventories SalesAreaInventory[]
+  sourceMovements      Movement[]
+  destinationMovements Movement[]          @relation("DestinationSalesAreaMovement")
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -200,6 +204,7 @@ model Product {
   outflow            Outflow[]
   warehouseInventory WarehouseInventory[]
   salesAreaInventory SalesAreaInventory[]
+  movements          Movement[]
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
@@ -366,5 +371,36 @@ model Withdraw {
 
   @@index([userId])
   @@index([salesAreaId])
+  @@index([date])
+}
+
+model Movement {
+  id                String   @id @default(cuid())
+  userId            String
+  movementType      String // DEVOLUCION, TRASLADO
+  date              DateTime @default(now()) @db.Date
+  movementNumber    String
+  sourceSalesAreaId String
+  destinationWarehouseId  String?
+  destinationSalesAreaId  String?
+  productId         String
+  quantity          Int      @default(0)
+  costAmount        Decimal  @db.Decimal(18, 2)
+  saleAmount        Decimal  @db.Decimal(18, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user                User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  sourceSalesArea     SalesArea  @relation(fields: [sourceSalesAreaId], references: [id], onDelete: Restrict)
+  destinationWarehouse Warehouse? @relation(fields: [destinationWarehouseId], references: [id], onDelete: SetNull)
+  destinationSalesArea SalesArea? @relation("DestinationSalesAreaMovement", fields: [destinationSalesAreaId], references: [id], onDelete: SetNull)
+  product             Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([movementType])
+  @@index([sourceSalesAreaId])
+  @@index([destinationWarehouseId])
+  @@index([destinationSalesAreaId])
+  @@index([productId])
   @@index([date])
 }
