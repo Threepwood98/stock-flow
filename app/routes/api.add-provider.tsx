@@ -1,7 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import type { Route } from "./+types/api.add-provider";
+import { auth } from "@/lib/auth";
+import { redirect } from "react-router";
 
 export async function action({ request }: Route.ActionArgs) {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session) {
+    throw redirect("/signin");
+  }
+
+  const userId = session.user.id;
   const formData = await request.formData();
 
   const name = formData.get("name") as string;
@@ -19,8 +28,21 @@ export async function action({ request }: Route.ActionArgs) {
         data: { name: name.trim() },
       });
     } else if (type === "store") {
-      newProvider = await prisma.store.create({
-        data: { name: name.trim() },
+      newProvider = await prisma.$transaction(async (tx) => {
+        // Crear la tienda
+        const store = await tx.store.create({
+          data: { name: name.trim() },
+        });
+
+        // Crear la relación UserStore
+        await tx.userStore.create({
+          data: {
+            userId: userId,
+            storeId: store.id,
+          },
+        });
+
+        return store;
       });
     } else {
       return {
