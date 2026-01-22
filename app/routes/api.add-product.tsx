@@ -7,16 +7,15 @@ export async function action({ request }: Route.ActionArgs) {
 
   const id = formData.get("id") as string;
   const categoryId = formData.get("categoryId") as string;
-  const warehouseId = formData.get("warehouseId") as string;
+  
   const name = formData.get("name") as string;
   const costPriceStr = formData.get("costPrice") as string;
   const salePriceStr = formData.get("salePrice") as string;
   const unit = formData.get("unit") as string;
 
-  if (
+if (
     !id ||
     !categoryId ||
-    !warehouseId ||
     !name ||
     !costPriceStr ||
     !salePriceStr ||
