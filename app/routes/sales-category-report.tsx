@@ -37,7 +37,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 type SalesByProduct = {
-  date: string;
   productId: string;
   productName: string;
   categoryId: string;
@@ -122,13 +121,13 @@ export default function SalesCategoryReport() {
       return true;
     });
 
-    // Agrupar ventas por fecha y producto
-    const salesByDateAndProduct: Record<string, SalesByProduct> = {};
+    // Agrupar ventas por producto (sin importar la fecha)
+    const salesByProduct: Record<string, SalesByProduct> = {};
 
     filteredSales.forEach((sale) => {
-      const key = `${sale.date}_${sale.productId}`;
+      const key = sale.productId;
 
-      if (!salesByDateAndProduct[key]) {
+      if (!salesByProduct[key]) {
         // Encontrar el producto para obtener precio de costo
         const product = products.find((p) => p.id === sale.productId);
 
@@ -143,8 +142,7 @@ export default function SalesCategoryReport() {
           }
         });
 
-        salesByDateAndProduct[key] = {
-          date: sale.date,
+        salesByProduct[key] = {
           productId: sale.productId,
           productName: sale.productName,
           categoryId: sale.categoryId,
@@ -158,16 +156,16 @@ export default function SalesCategoryReport() {
         };
       }
 
-      salesByDateAndProduct[key].quantity += sale.quantity;
-      salesByDateAndProduct[key].costAmount +=
-        salesByDateAndProduct[key].costPrice * sale.quantity;
-      salesByDateAndProduct[key].saleAmount += sale.saleAmount;
+      salesByProduct[key].quantity += sale.quantity;
+      salesByProduct[key].costAmount +=
+        salesByProduct[key].costPrice * sale.quantity;
+      salesByProduct[key].saleAmount += sale.saleAmount;
     });
 
     // Agrupar por categoría
     const groupedByCategory: Record<string, GroupedByCategory> = {};
 
-    Object.values(salesByDateAndProduct).forEach((sale) => {
+    Object.values(salesByProduct).forEach((sale) => {
       if (!groupedByCategory[sale.categoryId]) {
         groupedByCategory[sale.categoryId] = {
           categoryId: sale.categoryId,
@@ -185,9 +183,9 @@ export default function SalesCategoryReport() {
       groupedByCategory[sale.categoryId].totalSaleAmount += sale.saleAmount;
     });
 
-    // Ordenar productos dentro de cada categoría por fecha
+    // Ordenar productos dentro de cada categoría por nombre de producto
     Object.values(groupedByCategory).forEach((category) => {
-      category.products.sort((a, b) => a.date.localeCompare(b.date));
+      category.products.sort((a, b) => a.productName.localeCompare(b.productName));
     });
 
     // Convertir a array y ordenar por nombre de categoría
@@ -220,8 +218,7 @@ export default function SalesCategoryReport() {
     salesByCategory.forEach((category) => {
       // Header de categoría
       data.push({
-        Fecha: `---------- ${category.categoryId}: ${category.categoryName} ----------`,
-        "ID Producto": "",
+        "ID Producto": `---------- ${category.categoryId}: ${category.categoryName} ----------`,
         "Nombre Producto": "",
         Cantidad: "",
         "Precio Costo": "",
@@ -234,7 +231,6 @@ export default function SalesCategoryReport() {
       // Productos de la categoría
       category.products.forEach((product) => {
         data.push({
-          Fecha: formatDate(product.date),
           "ID Producto": product.productId,
           "Nombre Producto": product.productName,
           Cantidad: product.quantity,
@@ -248,8 +244,7 @@ export default function SalesCategoryReport() {
 
       // Subtotal de categoría
       data.push({
-        Fecha: "SUBTOTAL",
-        "ID Producto": "",
+        "ID Producto": "SUBTOTAL",
         "Nombre Producto": "",
         Cantidad: category.totalQuantity,
         "Precio Costo": "",
@@ -265,8 +260,7 @@ export default function SalesCategoryReport() {
 
     // Total general
     data.push({
-      Fecha: "TOTAL GENERAL",
-      "ID Producto": "",
+      "ID Producto": "TOTAL GENERAL",
       "Nombre Producto": "",
       Cantidad: grandTotals.quantity,
       "Precio Costo": "",
@@ -317,7 +311,6 @@ export default function SalesCategoryReport() {
 
       // Tabla de productos
       const tableData = category.products.map((product) => [
-        formatDate(product.date),
         product.productId,
         product.productName,
         product.quantity.toString(),
@@ -331,7 +324,6 @@ export default function SalesCategoryReport() {
       autoTable(doc, {
         head: [
           [
-            "Fecha",
             "ID",
             "Producto",
             "Cant.",
@@ -346,7 +338,6 @@ export default function SalesCategoryReport() {
         foot: [
           [
             "SUBTOTAL",
-            "",
             "",
             category.totalQuantity.toString(),
             "",
@@ -368,15 +359,14 @@ export default function SalesCategoryReport() {
           fontStyle: "bold",
         },
         columnStyles: {
-          0: { cellWidth: 22 },
-          1: { cellWidth: 20 },
-          2: { cellWidth: 50 },
-          3: { halign: "right", cellWidth: 15 },
-          4: { halign: "right", cellWidth: 20 },
-          5: { halign: "right", cellWidth: 25 },
-          6: { halign: "right", cellWidth: 20 },
-          7: { halign: "right", cellWidth: 25 },
-          8: { halign: "right", cellWidth: 15 },
+          0: { cellWidth: 20 },
+          1: { cellWidth: 50 },
+          2: { halign: "right", cellWidth: 15 },
+          3: { halign: "right", cellWidth: 20 },
+          4: { halign: "right", cellWidth: 25 },
+          5: { halign: "right", cellWidth: 20 },
+          6: { halign: "right", cellWidth: 25 },
+          7: { halign: "right", cellWidth: 15 },
         },
       });
 
@@ -394,7 +384,6 @@ export default function SalesCategoryReport() {
         [
           "TOTAL GENERAL",
           "",
-          "",
           grandTotals.quantity.toString(),
           "",
           formatCurrency(grandTotals.costAmount),
@@ -409,15 +398,14 @@ export default function SalesCategoryReport() {
         fillColor: [200, 200, 200],
       },
       columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 20 },
-        2: { cellWidth: 50 },
-        3: { halign: "right", cellWidth: 15 },
-        4: { halign: "right", cellWidth: 20 },
-        5: { halign: "right", cellWidth: 25 },
-        6: { halign: "right", cellWidth: 20 },
-        7: { halign: "right", cellWidth: 25 },
-        8: { halign: "right", cellWidth: 15 },
+        0: { cellWidth: 20 },
+        1: { cellWidth: 50 },
+        2: { halign: "right", cellWidth: 15 },
+        3: { halign: "right", cellWidth: 20 },
+        4: { halign: "right", cellWidth: 25 },
+        5: { halign: "right", cellWidth: 20 },
+        6: { halign: "right", cellWidth: 25 },
+        7: { halign: "right", cellWidth: 15 },
       },
     });
 
@@ -499,7 +487,6 @@ export default function SalesCategoryReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-semibold">Fecha</TableHead>
                 <TableHead className="font-semibold">ID Producto</TableHead>
                 <TableHead className="font-semibold">Producto</TableHead>
                 <TableHead className="text-right font-semibold">
@@ -526,7 +513,7 @@ export default function SalesCategoryReport() {
               {salesByCategory.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={8}
                     className="text-center text-muted-foreground py-8"
                   >
                     <div className="flex flex-col items-center gap-4">
@@ -545,7 +532,7 @@ export default function SalesCategoryReport() {
                   <>
                     <TableRow>
                       <TableCell
-                        colSpan={9}
+                        colSpan={8}
                         className="text-center font-semibold"
                       >
                         {category.categoryId}: {category.categoryName}
@@ -553,10 +540,9 @@ export default function SalesCategoryReport() {
                     </TableRow>
                     {category.products.map((product, index) => (
                       <TableRow
-                        key={`${product.date}_${product.productId}`}
+                        key={product.productId}
                         className={index % 2 === 0 ? "bg-secondary" : ""}
                       >
-                        <TableCell>{formatDate(product.date)}</TableCell>
                         <TableCell>{product.productId}</TableCell>
                         <TableCell>{product.productName}</TableCell>
                         <TableCell className="text-right">
@@ -580,7 +566,7 @@ export default function SalesCategoryReport() {
                       </TableRow>
                     ))}
                     <TableRow className="font-semibold">
-                      <TableCell colSpan={4}>SUBTOTAL</TableCell>
+                      <TableCell colSpan={3}>SUBTOTAL</TableCell>
                       <TableCell colSpan={2} className="text-right">
                         {formatCurrency(category.totalCostAmount, "cost")}
                       </TableCell>
