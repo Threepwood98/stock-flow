@@ -59,7 +59,7 @@ type GroupedByCategory = {
 };
 
 export default function SalesCategoryReport() {
-  const { sales, salesAreas, products } = useOutletContext<OutletContext>();
+  const { sales, salesAreas, products, outflows } = useOutletContext<OutletContext>();
 
   const [dateFrom, setDateFrom] = useState(
     format(startOfMonth(new Date()), "dd/MM/yyyy")
@@ -101,7 +101,7 @@ export default function SalesCategoryReport() {
 
     if (!fromDate || !toDate) return [];
 
-    // Filtrar ventas por rango de fecha y área
+    // Filtrar ventas (Sales) por rango de fecha y área
     const filteredSales = sales.filter((sale) => {
       const saleDate = parse(sale.date, "yyyy-MM-dd", new Date());
 
@@ -121,10 +121,51 @@ export default function SalesCategoryReport() {
       return true;
     });
 
+    // Filtrar salidas de tipo VENTA por rango de fecha y área
+    const filteredOutflows = outflows.filter((outflow) => {
+      if (outflow.outType !== "VENTA") return false;
+
+      const outflowDate = parse(outflow.date, "yyyy-MM-dd", new Date());
+
+      if (!isValid(outflowDate)) return false;
+
+      const inRange = isWithinInterval(outflowDate, {
+        start: startOfDay(fromDate),
+        end: endOfDay(toDate),
+      });
+
+      if (!inRange) return false;
+
+      if (salesAreaId !== "all" && outflow.destinationSalesAreaId !== salesAreaId) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Combinar ventas de Sales y Outflows (tipo VENTA)
+    const allSales = [
+      ...filteredSales.map(sale => ({
+        ...sale,
+        source: 'SALE'
+      })),
+      ...filteredOutflows.map(outflow => ({
+        productId: outflow.productId,
+        productName: outflow.productName,
+        categoryId: outflow.categoryId,
+        categoryName: outflow.categoryName,
+        quantity: outflow.quantity,
+        saleAmount: outflow.saleAmount,
+        costAmount: outflow.costAmount,
+        salesAreaId: outflow.destinationSalesAreaId,
+        source: 'OUTFLOW'
+      }))
+    ];
+
     // Agrupar ventas por producto (sin importar la fecha)
     const salesByProduct: Record<string, SalesByProduct> = {};
 
-    filteredSales.forEach((sale) => {
+    allSales.forEach((sale) => {
       const key = sale.productId;
 
       if (!salesByProduct[key]) {
@@ -192,7 +233,7 @@ export default function SalesCategoryReport() {
     return Object.values(groupedByCategory).sort((a, b) =>
       a.categoryName.localeCompare(b.categoryName)
     );
-  }, [sales, salesAreas, products, dateFrom, dateTo, salesAreaId]);
+  }, [sales, outflows, salesAreas, products, dateFrom, dateTo, salesAreaId]);
 
   // Calcular totales generales
   const grandTotals = useMemo(() => {

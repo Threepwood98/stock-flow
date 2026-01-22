@@ -87,7 +87,7 @@ export async function loader({ request }: Route.LoaderArgs) {
           where: { userId: user.id, warehouse: { storeId: { in: storeIds } } },
           include: {
             warehouse: true,
-            product: true,
+            product: { include: { category: true } },
             destinationStore: true,
             destinationSalesArea: true,
           },
@@ -172,6 +172,8 @@ export async function loader({ request }: Route.LoaderArgs) {
       destinationName:
         outflow.destinationStore?.name ?? outflow.destinationSalesArea?.name,
       productName: outflow.product.name,
+      categoryId: outflow.product.categoryId,
+      categoryName: outflow.product.category.name,
       quantity: outflow.quantity,
       costAmount: outflow.costAmount.toNumber(),
       saleAmount: outflow.saleAmount.toNumber(),

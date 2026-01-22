@@ -94,6 +94,8 @@ export interface Outflow {
   outNumber: string;
   productId: string;
   productName: string;
+  categoryId: string;
+  categoryName: string;
   quantity: number;
   costAmount: number;
   saleAmount: number;
