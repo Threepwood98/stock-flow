@@ -15,6 +15,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -59,13 +60,14 @@ type GroupedByCategory = {
 };
 
 export default function SalesCategoryReport() {
-  const { sales, salesAreas, products, outflows } = useOutletContext<OutletContext>();
+  const { sales, salesAreas, products, outflows } =
+    useOutletContext<OutletContext>();
 
   const [dateFrom, setDateFrom] = useState(
-    format(startOfMonth(new Date()), "dd/MM/yyyy")
+    format(startOfMonth(new Date()), "dd/MM/yyyy"),
   );
   const [dateTo, setDateTo] = useState(
-    format(endOfMonth(new Date()), "dd/MM/yyyy")
+    format(endOfMonth(new Date()), "dd/MM/yyyy"),
   );
   const [salesAreaId, setSalesAreaId] = useState<string>("all");
 
@@ -136,7 +138,10 @@ export default function SalesCategoryReport() {
 
       if (!inRange) return false;
 
-      if (salesAreaId !== "all" && outflow.destinationSalesAreaId !== salesAreaId) {
+      if (
+        salesAreaId !== "all" &&
+        outflow.destinationSalesAreaId !== salesAreaId
+      ) {
         return false;
       }
 
@@ -145,11 +150,11 @@ export default function SalesCategoryReport() {
 
     // Combinar ventas de Sales y Outflows (tipo VENTA)
     const allSales = [
-      ...filteredSales.map(sale => ({
+      ...filteredSales.map((sale) => ({
         ...sale,
-        source: 'SALE'
+        source: "SALE",
       })),
-      ...filteredOutflows.map(outflow => ({
+      ...filteredOutflows.map((outflow) => ({
         productId: outflow.productId,
         productName: outflow.productName,
         categoryId: outflow.categoryId,
@@ -158,8 +163,8 @@ export default function SalesCategoryReport() {
         saleAmount: outflow.saleAmount,
         costAmount: outflow.costAmount,
         salesAreaId: outflow.destinationSalesAreaId,
-        source: 'OUTFLOW'
-      }))
+        source: "OUTFLOW",
+      })),
     ];
 
     // Agrupar ventas por producto (sin importar la fecha)
@@ -176,7 +181,7 @@ export default function SalesCategoryReport() {
         let totalStock = 0;
         salesAreas.forEach((area) => {
           const inventory = area.salesAreaInventories?.find(
-            (inv) => inv.product.id === sale.productId
+            (inv) => inv.product.id === sale.productId,
           );
           if (inventory) {
             totalStock += inventory.quantity;
@@ -226,12 +231,14 @@ export default function SalesCategoryReport() {
 
     // Ordenar productos dentro de cada categoría por nombre de producto
     Object.values(groupedByCategory).forEach((category) => {
-      category.products.sort((a, b) => a.productName.localeCompare(b.productName));
+      category.products.sort((a, b) =>
+        a.productName.localeCompare(b.productName),
+      );
     });
 
     // Convertir a array y ordenar por nombre de categoría
     return Object.values(groupedByCategory).sort((a, b) =>
-      a.categoryName.localeCompare(b.categoryName)
+      a.categoryName.localeCompare(b.categoryName),
     );
   }, [sales, outflows, salesAreas, products, dateFrom, dateTo, salesAreaId]);
 
@@ -243,7 +250,7 @@ export default function SalesCategoryReport() {
         costAmount: acc.costAmount + category.totalCostAmount,
         saleAmount: acc.saleAmount + category.totalSaleAmount,
       }),
-      { quantity: 0, costAmount: 0, saleAmount: 0 }
+      { quantity: 0, costAmount: 0, saleAmount: 0 },
     );
   }, [salesByCategory]);
 
@@ -318,8 +325,8 @@ export default function SalesCategoryReport() {
     writeFile(
       wb,
       `${formatDateForFilename(dateFrom)}_${formatDateForFilename(
-        dateTo
-      )}_ventas_categoria.xlsx`
+        dateTo,
+      )}_ventas_categoria.xlsx`,
     );
   };
 
@@ -452,8 +459,8 @@ export default function SalesCategoryReport() {
 
     doc.save(
       `${formatDateForFilename(dateFrom)}_${formatDateForFilename(
-        dateTo
-      )}_ventas_categoria.pdf`
+        dateTo,
+      )}_ventas_categoria.pdf`,
     );
   };
 
@@ -619,6 +626,18 @@ export default function SalesCategoryReport() {
                 ))
               )}
             </TableBody>
+            <TableFooter>
+              <TableRow className="font-semibold bg-secondary">
+                <TableCell colSpan={3}>TOTAL</TableCell>
+                <TableCell colSpan={2} className="text-right">
+                  {formatCurrency(grandTotals.costAmount, "cost")}
+                </TableCell>
+                <TableCell colSpan={2} className="text-right">
+                  {formatCurrency(grandTotals.saleAmount)}
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            </TableFooter>
           </Table>
         </CardContent>
       </Card>
