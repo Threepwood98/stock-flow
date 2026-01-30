@@ -186,59 +186,100 @@ export default function InventoryBalanceReport() {
       };
     });
 
-    // Calcular Saldo Inicial (transacciones antes de la fecha inicial)
-    const initialDate = startOfDay(fromDate);
+    const rangeStart = startOfDay(fromDate);
+    const rangeEnd = endOfDay(toDate);
+    const today = endOfDay(new Date());
 
-    // Inflows antes de fecha inicial
+    warehouses.forEach((warehouse) => {
+      if (
+        locationType === "store" ||
+        (locationType === "warehouse" &&
+          (locationFilter === "all" || warehouse.id === locationFilter))
+      ) {
+        warehouse.warehouseInventories.forEach((inventory: any) => {
+          const product = products.find((p) => p.id === inventory.productId);
+          if (product && categoryBalance[product.categoryId]) {
+            const amount =
+              balanceType === "costPrice"
+                ? product.costPrice * inventory.quantity
+                : product.salePrice * inventory.quantity;
+            categoryBalance[product.categoryId].saldoInicial += amount;
+          }
+        });
+      }
+    });
+
+    salesAreas.forEach((salesArea) => {
+      if (
+        locationType === "store" ||
+        (locationType === "salesArea" &&
+          (locationFilter === "all" || salesArea.id === locationFilter))
+      ) {
+        salesArea.salesAreaInventories.forEach((inventory: any) => {
+          const product = products.find((p) => p.id === inventory.productId);
+          if (product && categoryBalance[product.categoryId]) {
+            const amount =
+              balanceType === "costPrice"
+                ? product.costPrice * inventory.quantity
+                : product.salePrice * inventory.quantity;
+            categoryBalance[product.categoryId].saldoInicial += amount;
+          }
+        });
+      }
+    });
+
+    // - Inflows (restar compras desde dateFrom hasta hoy)
     allInflows.forEach((inflow) => {
       const inflowDate = parse(inflow.date, "yyyy-MM-dd", new Date());
-      if (isValid(inflowDate) && inflowDate < initialDate) {
+      if (
+        isValid(inflowDate) &&
+        isWithinInterval(inflowDate, { start: rangeStart, end: today })
+      ) {
         const product = products.find((p) => p.id === inflow.productId);
         if (product && categoryBalance[product.categoryId]) {
           const amount =
             balanceType === "costPrice" ? inflow.costAmount : inflow.saleAmount;
-          categoryBalance[product.categoryId].saldoInicial += amount;
-        }
-      }
-    });
-
-    // Outflows antes de fecha inicial
-    allOutflows.forEach((outflow) => {
-      const outflowDate = parse(outflow.date, "yyyy-MM-dd", new Date());
-      if (isValid(outflowDate) && outflowDate < initialDate) {
-        const product = products.find((p) => p.id === outflow.productId);
-        if (product && categoryBalance[product.categoryId]) {
-          const amount =
-            balanceType === "costPrice"
-              ? outflow.costAmount
-              : outflow.saleAmount;
-          if (outflow.outType === "VENTA") {
-            categoryBalance[product.categoryId].saldoInicial -= amount;
-          } else if (outflow.outType === "TRASLADO") {
-            categoryBalance[product.categoryId].saldoInicial -= amount;
-          }
-        }
-      }
-    });
-
-    // Sales antes de fecha inicial
-    allSales.forEach((sale) => {
-      const saleDate = parse(sale.date, "yyyy-MM-dd", new Date());
-      if (isValid(saleDate) && saleDate < initialDate) {
-        const product = products.find((p) => p.id === sale.productId);
-        if (product && categoryBalance[product.categoryId]) {
-          const amount =
-            balanceType === "costPrice" ? sale.costAmount : sale.saleAmount;
           categoryBalance[product.categoryId].saldoInicial -= amount;
         }
       }
     });
 
-    // Calcular transacciones dentro del rango de fechas
-    const rangeStart = startOfDay(fromDate);
-    const rangeEnd = endOfDay(toDate);
+    // + Sales (sumar ventas desde dateFrom hasta hoy)
+    allSales.forEach((sale) => {
+      const saleDate = parse(sale.date, "yyyy-MM-dd", new Date());
+      if (
+        isValid(saleDate) &&
+        isWithinInterval(saleDate, { start: rangeStart, end: today })
+      ) {
+        const product = products.find((p) => p.id === sale.productId);
+        if (product && categoryBalance[product.categoryId]) {
+          const amount =
+            balanceType === "costPrice" ? sale.costAmount : sale.saleAmount;
+          categoryBalance[product.categoryId].saldoInicial += amount;
+        }
+      }
+    });
 
-    // Compras (Inflows en el rango)
+    // + Outflows tipo VENTA y TRASLADO (sumar desde dateFrom hasta hoy)
+    allOutflows.forEach((outflow) => {
+      const outflowDate = parse(outflow.date, "yyyy-MM-dd", new Date());
+      if (
+        isValid(outflowDate) &&
+        isWithinInterval(outflowDate, { start: rangeStart, end: today })
+      ) {
+        if (outflow.outType === "VENTA" || outflow.outType === "TRASLADO") {
+          const product = products.find((p) => p.id === outflow.productId);
+          if (product && categoryBalance[product.categoryId]) {
+            const amount =
+              balanceType === "costPrice"
+                ? outflow.costAmount
+                : outflow.saleAmount;
+            categoryBalance[product.categoryId].saldoInicial += amount;
+          }
+        }
+      }
+    });
+
     allInflows.forEach((inflow) => {
       const inflowDate = parse(inflow.date, "yyyy-MM-dd", new Date());
       if (
@@ -249,33 +290,15 @@ export default function InventoryBalanceReport() {
         if (product && categoryBalance[product.categoryId]) {
           const amount =
             balanceType === "costPrice" ? inflow.costAmount : inflow.saleAmount;
-          categoryBalance[product.categoryId].compras += amount;
-        }
-      }
-    });
-
-    // Traslados Recibidos (Outflows tipo TRASLADO que entran a esta tienda)
-    allOutflows.forEach((outflow) => {
-      const outflowDate = parse(outflow.date, "yyyy-MM-dd", new Date());
-      if (
-        isValid(outflowDate) &&
-        isWithinInterval(outflowDate, { start: rangeStart, end: rangeEnd })
-      ) {
-        if (outflow.outType === "TRASLADO" && outflow.destinationStoreId) {
-          const product = products.find((p) => p.id === outflow.productId);
-          if (product && categoryBalance[product.categoryId]) {
-            const amount =
-              balanceType === "costPrice"
-                ? outflow.costAmount
-                : outflow.saleAmount;
+          if (inflow.inType === "FACTURA") {
+            categoryBalance[product.categoryId].compras += amount;
+          } else {
             categoryBalance[product.categoryId].trasladosRecibidos += amount;
           }
         }
       }
     });
 
-    // Ventas (Sales + Outflows tipo VENTA en el rango)
-    // Sales
     allSales.forEach((sale) => {
       const saleDate = parse(sale.date, "yyyy-MM-dd", new Date());
       if (
@@ -291,40 +314,21 @@ export default function InventoryBalanceReport() {
       }
     });
 
-    // Outflows tipo VENTA
     allOutflows.forEach((outflow) => {
       const outflowDate = parse(outflow.date, "yyyy-MM-dd", new Date());
       if (
         isValid(outflowDate) &&
         isWithinInterval(outflowDate, { start: rangeStart, end: rangeEnd })
       ) {
-        if (outflow.outType === "VENTA") {
-          const product = products.find((p) => p.id === outflow.productId);
-          if (product && categoryBalance[product.categoryId]) {
-            const amount =
-              balanceType === "costPrice"
-                ? outflow.costAmount
-                : outflow.saleAmount;
+        const product = products.find((p) => p.id === outflow.productId);
+        if (product && categoryBalance[product.categoryId]) {
+          const amount =
+            balanceType === "costPrice"
+              ? outflow.costAmount
+              : outflow.saleAmount;
+          if (outflow.outType === "VENTA") {
             categoryBalance[product.categoryId].ventas += amount;
-          }
-        }
-      }
-    });
-
-    // Traslados Enviados (Outflows tipo TRASLADO que salen de esta tienda)
-    allOutflows.forEach((outflow) => {
-      const outflowDate = parse(outflow.date, "yyyy-MM-dd", new Date());
-      if (
-        isValid(outflowDate) &&
-        isWithinInterval(outflowDate, { start: rangeStart, end: rangeEnd })
-      ) {
-        if (outflow.outType === "TRASLADO") {
-          const product = products.find((p) => p.id === outflow.productId);
-          if (product && categoryBalance[product.categoryId]) {
-            const amount =
-              balanceType === "costPrice"
-                ? outflow.costAmount
-                : outflow.saleAmount;
+          } else if (outflow.outType === "TRASLADO") {
             categoryBalance[product.categoryId].trasladosEnviados += amount;
           }
         }

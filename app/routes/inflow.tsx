@@ -80,7 +80,6 @@ interface InflowRow {
 const inTypeOptions = [
   { value: "FACTURA", label: "FACTURA" },
   { value: "TRASLADO", label: "TRASLADO" },
-  { value: "DEVOLUCION", label: "DEVOLUCION" },
 ];
 
 const initialFormValues: InflowRow = {
