@@ -23,7 +23,7 @@ import {
 import { Label } from "~/components/ui/label";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import type { OutletContext, Category, Product } from "@/lib/types/types";
-import { PackageIcon } from "lucide-react";
+import { BoxesIcon, PackageIcon } from "lucide-react";
 import { writeFile, utils } from "xlsx";
 import {
   Card,
@@ -48,7 +48,6 @@ type CategoryBalance = {
   ventas: number;
   trasladosEnviados: number;
   saldoFinal: number;
-  variacionPrecio: number;
 };
 
 type GroupedByGeneralCategory = {
@@ -61,7 +60,6 @@ type GroupedByGeneralCategory = {
   totalVentas: number;
   totalTrasladosEnviados: number;
   totalSaldoFinal: number;
-  totalVariacionPrecio: number;
 };
 
 export default function InventoryBalanceReport() {
@@ -82,6 +80,11 @@ export default function InventoryBalanceReport() {
     format(endOfMonth(new Date()), "dd/MM/yyyy"),
   );
   const [generalCategoryId, setGeneralCategoryId] = useState<string>("all");
+  const [showCategoryName, setShowCategoryName] = useState<boolean>(false);
+  const [salesAreaId, setSalesAreaId] = useState<string>("all");
+  const [balanceType, setBalanceType] = useState<string>("costPrice");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [locationType, setLocationType] = useState<string>("store"); // "store", "warehouse", "salesArea"
 
   const parseDate = (dateStr: string): Date | null => {
     if (dateStr.length !== 10) return null;
@@ -118,11 +121,6 @@ export default function InventoryBalanceReport() {
     return names;
   }, [categories]);
 
-  // Obtener categorías generales únicas
-  const generalCategories = useMemo(() => {
-    return Object.keys(generalCategoryNames);
-  }, [generalCategoryNames]);
-
   // Procesar datos del reporte de cuadre de inventario
   const inventoryBalanceByGeneralCategory = useMemo(() => {
     const fromDate = parseDate(dateFrom);
@@ -130,10 +128,46 @@ export default function InventoryBalanceReport() {
 
     if (!fromDate || !toDate) return [];
 
-    // Obtener todas las transacciones relevantes
-    const allInflows = inflows;
-    const allOutflows = outflows;
-    const allSales = sales;
+    // Filtrar transacciones según la ubicación seleccionada
+    const filterByLocation = (transaction: any, isOutflow: boolean = false) => {
+      if (locationFilter === "all") return true;
+
+      if (locationType === "store") {
+        return true; // Para "store" mostramos todo de la tienda
+      }
+
+      if (locationType === "warehouse" && isOutflow) {
+        // Para outflows, filtramos por warehouse de origen
+        return transaction.warehouseId === locationFilter;
+      }
+
+      if (locationType === "salesArea") {
+        // Para sales y destinationSalesArea de outflows
+        if (transaction.salesAreaId) {
+          return transaction.salesAreaId === locationFilter;
+        }
+        if (transaction.destinationSalesAreaId) {
+          return transaction.destinationSalesAreaId === locationFilter;
+        }
+      }
+
+      return false;
+    };
+
+    const filteredSales = sales.filter((sale) => filterByLocation(sale));
+    const filteredOutflows = outflows.filter((outflow) =>
+      filterByLocation(outflow, true),
+    );
+
+    // Inflows se filtran por warehouse si se selecciona un warehouse específico
+    const filteredInflows =
+      locationType === "warehouse" && locationFilter !== "all"
+        ? inflows.filter((inflow) => inflow.warehouseId === locationFilter)
+        : inflows;
+
+    const allInflows = filteredInflows;
+    const allOutflows = filteredOutflows;
+    const allSales = filteredSales;
 
     // Agrupar por categoría (individual)
     const categoryBalance: Record<string, CategoryBalance> = {};
@@ -149,7 +183,6 @@ export default function InventoryBalanceReport() {
         ventas: 0,
         trasladosEnviados: 0,
         saldoFinal: 0,
-        variacionPrecio: 0,
       };
     });
 
@@ -162,7 +195,9 @@ export default function InventoryBalanceReport() {
       if (isValid(inflowDate) && inflowDate < initialDate) {
         const product = products.find((p) => p.id === inflow.productId);
         if (product && categoryBalance[product.categoryId]) {
-          categoryBalance[product.categoryId].saldoInicial += inflow.costAmount;
+          const amount =
+            balanceType === "costPrice" ? inflow.costAmount : inflow.saleAmount;
+          categoryBalance[product.categoryId].saldoInicial += amount;
         }
       }
     });
@@ -173,12 +208,14 @@ export default function InventoryBalanceReport() {
       if (isValid(outflowDate) && outflowDate < initialDate) {
         const product = products.find((p) => p.id === outflow.productId);
         if (product && categoryBalance[product.categoryId]) {
+          const amount =
+            balanceType === "costPrice"
+              ? outflow.costAmount
+              : outflow.saleAmount;
           if (outflow.outType === "VENTA") {
-            categoryBalance[product.categoryId].saldoInicial -=
-              outflow.costAmount;
+            categoryBalance[product.categoryId].saldoInicial -= amount;
           } else if (outflow.outType === "TRASLADO") {
-            categoryBalance[product.categoryId].saldoInicial -=
-              outflow.costAmount;
+            categoryBalance[product.categoryId].saldoInicial -= amount;
           }
         }
       }
@@ -190,7 +227,9 @@ export default function InventoryBalanceReport() {
       if (isValid(saleDate) && saleDate < initialDate) {
         const product = products.find((p) => p.id === sale.productId);
         if (product && categoryBalance[product.categoryId]) {
-          categoryBalance[product.categoryId].saldoInicial -= sale.costAmount;
+          const amount =
+            balanceType === "costPrice" ? sale.costAmount : sale.saleAmount;
+          categoryBalance[product.categoryId].saldoInicial -= amount;
         }
       }
     });
@@ -208,7 +247,9 @@ export default function InventoryBalanceReport() {
       ) {
         const product = products.find((p) => p.id === inflow.productId);
         if (product && categoryBalance[product.categoryId]) {
-          categoryBalance[product.categoryId].compras += inflow.costAmount;
+          const amount =
+            balanceType === "costPrice" ? inflow.costAmount : inflow.saleAmount;
+          categoryBalance[product.categoryId].compras += amount;
         }
       }
     });
@@ -223,8 +264,11 @@ export default function InventoryBalanceReport() {
         if (outflow.outType === "TRASLADO" && outflow.destinationStoreId) {
           const product = products.find((p) => p.id === outflow.productId);
           if (product && categoryBalance[product.categoryId]) {
-            categoryBalance[product.categoryId].trasladosRecibidos +=
-              outflow.costAmount;
+            const amount =
+              balanceType === "costPrice"
+                ? outflow.costAmount
+                : outflow.saleAmount;
+            categoryBalance[product.categoryId].trasladosRecibidos += amount;
           }
         }
       }
@@ -240,7 +284,9 @@ export default function InventoryBalanceReport() {
       ) {
         const product = products.find((p) => p.id === sale.productId);
         if (product && categoryBalance[product.categoryId]) {
-          categoryBalance[product.categoryId].ventas += sale.costAmount;
+          const amount =
+            balanceType === "costPrice" ? sale.costAmount : sale.saleAmount;
+          categoryBalance[product.categoryId].ventas += amount;
         }
       }
     });
@@ -255,7 +301,11 @@ export default function InventoryBalanceReport() {
         if (outflow.outType === "VENTA") {
           const product = products.find((p) => p.id === outflow.productId);
           if (product && categoryBalance[product.categoryId]) {
-            categoryBalance[product.categoryId].ventas += outflow.costAmount;
+            const amount =
+              balanceType === "costPrice"
+                ? outflow.costAmount
+                : outflow.saleAmount;
+            categoryBalance[product.categoryId].ventas += amount;
           }
         }
       }
@@ -271,14 +321,17 @@ export default function InventoryBalanceReport() {
         if (outflow.outType === "TRASLADO") {
           const product = products.find((p) => p.id === outflow.productId);
           if (product && categoryBalance[product.categoryId]) {
-            categoryBalance[product.categoryId].trasladosEnviados +=
-              outflow.costAmount;
+            const amount =
+              balanceType === "costPrice"
+                ? outflow.costAmount
+                : outflow.saleAmount;
+            categoryBalance[product.categoryId].trasladosEnviados += amount;
           }
         }
       }
     });
 
-    // Calcular Saldo Final y Variación de Precio para cada categoría
+    // Calcular Saldo Final para cada categoría
     Object.values(categoryBalance).forEach((category) => {
       category.saldoFinal =
         category.saldoInicial +
@@ -286,7 +339,6 @@ export default function InventoryBalanceReport() {
         category.trasladosRecibidos -
         category.ventas -
         category.trasladosEnviados;
-      category.variacionPrecio = category.saldoFinal - category.saldoInicial;
     });
 
     // Agrupar por categoría general
@@ -310,7 +362,6 @@ export default function InventoryBalanceReport() {
           totalVentas: 0,
           totalTrasladosEnviados: 0,
           totalSaldoFinal: 0,
-          totalVariacionPrecio: 0,
         };
       }
 
@@ -327,8 +378,6 @@ export default function InventoryBalanceReport() {
         category.trasladosEnviados;
       groupedByGeneralCategory[generalCategoryId].totalSaldoFinal +=
         category.saldoFinal;
-      groupedByGeneralCategory[generalCategoryId].totalVariacionPrecio +=
-        category.variacionPrecio;
     });
 
     // Ordenar categorías dentro de cada categoría general
@@ -360,6 +409,10 @@ export default function InventoryBalanceReport() {
     dateTo,
     generalCategoryId,
     generalCategoryNames,
+    salesAreaId,
+    balanceType,
+    locationFilter,
+    locationType,
   ]);
 
   // Calcular totales generales
@@ -374,8 +427,6 @@ export default function InventoryBalanceReport() {
         trasladosEnviados:
           acc.trasladosEnviados + generalCategory.totalTrasladosEnviados,
         saldoFinal: acc.saldoFinal + generalCategory.totalSaldoFinal,
-        variacionPrecio:
-          acc.variacionPrecio + generalCategory.totalVariacionPrecio,
       }),
       {
         saldoInicial: 0,
@@ -384,7 +435,6 @@ export default function InventoryBalanceReport() {
         ventas: 0,
         trasladosEnviados: 0,
         saldoFinal: 0,
-        variacionPrecio: 0,
       },
     );
   }, [inventoryBalanceByGeneralCategory]);
@@ -393,6 +443,10 @@ export default function InventoryBalanceReport() {
     setDateFrom(format(startOfMonth(new Date()), "dd/MM/yyyy"));
     setDateTo(format(endOfMonth(new Date()), "dd/MM/yyyy"));
     setGeneralCategoryId("all");
+    setSalesAreaId("all");
+    setBalanceType("costPrice");
+    setLocationFilter("all");
+    setLocationType("store");
   };
 
   const exportToExcel = () => {
@@ -409,7 +463,6 @@ export default function InventoryBalanceReport() {
         Ventas: "",
         "Traslados Enviados": "",
         "Saldo Final": "",
-        "Variación de Precio": "",
       });
 
       // Categorías dentro de la categoría general
@@ -423,7 +476,6 @@ export default function InventoryBalanceReport() {
           Ventas: category.ventas,
           "Traslados Enviados": category.trasladosEnviados,
           "Saldo Final": category.saldoFinal,
-          "Variación de Precio": category.variacionPrecio,
         });
       });
 
@@ -437,7 +489,6 @@ export default function InventoryBalanceReport() {
         Ventas: generalCategory.totalVentas,
         "Traslados Enviados": generalCategory.totalTrasladosEnviados,
         "Saldo Final": generalCategory.totalSaldoFinal,
-        "Variación de Precio": generalCategory.totalVariacionPrecio,
       });
 
       // Línea en blanco
@@ -454,7 +505,6 @@ export default function InventoryBalanceReport() {
       Ventas: grandTotals.ventas,
       "Traslados Enviados": grandTotals.trasladosEnviados,
       "Saldo Final": grandTotals.saldoFinal,
-      "Variación de Precio": grandTotals.variacionPrecio,
     });
 
     const ws = utils.json_to_sheet(data);
@@ -477,7 +527,19 @@ export default function InventoryBalanceReport() {
     });
 
     doc.setFontSize(16);
-    doc.text("Cuadre del Inventario al Costo", 14, 15);
+    const locationText =
+      locationType === "store"
+        ? "Toda la Tienda"
+        : locationType === "warehouse"
+          ? warehouses.find((w) => w.id === locationFilter)?.name || "Almacén"
+          : salesAreas.find((sa) => sa.id === locationFilter)?.name ||
+            "Área de Venta";
+
+    doc.text(
+      `Cuadre del Inventario al ${balanceType === "costPrice" ? "Costo" : "Precio Venta"} - ${locationText}`,
+      14,
+      15,
+    );
     doc.setFontSize(10);
     doc.text(`Período: ${dateFrom} - ${dateTo}`, 14, 22);
 
@@ -504,13 +566,30 @@ export default function InventoryBalanceReport() {
       const tableData = generalCategory.categories.map((category: any) => [
         category.categoryId,
         category.categoryName,
-        formatCurrency(category.saldoInicial, "cost"),
-        formatCurrency(category.compras, "cost"),
-        formatCurrency(category.trasladosRecibidos, "cost"),
-        formatCurrency(category.ventas, "cost"),
-        formatCurrency(category.trasladosEnviados, "cost"),
-        formatCurrency(category.saldoFinal, "cost"),
-        formatCurrency(category.variacionPrecio, "cost"),
+        formatCurrency(
+          category.saldoInicial,
+          balanceType === "costPrice" ? "cost" : undefined,
+        ),
+        formatCurrency(
+          category.compras,
+          balanceType === "costPrice" ? "cost" : undefined,
+        ),
+        formatCurrency(
+          category.trasladosRecibidos,
+          balanceType === "costPrice" ? "cost" : undefined,
+        ),
+        formatCurrency(
+          category.ventas,
+          balanceType === "costPrice" ? "cost" : undefined,
+        ),
+        formatCurrency(
+          category.trasladosEnviados,
+          balanceType === "costPrice" ? "cost" : undefined,
+        ),
+        formatCurrency(
+          category.saldoFinal,
+          balanceType === "costPrice" ? "cost" : undefined,
+        ),
       ]);
 
       autoTable(doc, {
@@ -524,7 +603,6 @@ export default function InventoryBalanceReport() {
             "Ventas",
             "Traslados Enviados",
             "Saldo Final",
-            "Variación de Precio",
           ],
         ],
         body: tableData,
@@ -532,13 +610,30 @@ export default function InventoryBalanceReport() {
           [
             "SUBTOTAL",
             "",
-            formatCurrency(generalCategory.totalSaldoInicial, "cost"),
-            formatCurrency(generalCategory.totalCompras, "cost"),
-            formatCurrency(generalCategory.totalTrasladosRecibidos, "cost"),
-            formatCurrency(generalCategory.totalVentas, "cost"),
-            formatCurrency(generalCategory.totalTrasladosEnviados, "cost"),
-            formatCurrency(generalCategory.totalSaldoFinal, "cost"),
-            formatCurrency(generalCategory.totalVariacionPrecio, "cost"),
+            formatCurrency(
+              generalCategory.totalSaldoInicial,
+              balanceType === "costPrice" ? "cost" : undefined,
+            ),
+            formatCurrency(
+              generalCategory.totalCompras,
+              balanceType === "costPrice" ? "cost" : undefined,
+            ),
+            formatCurrency(
+              generalCategory.totalTrasladosRecibidos,
+              balanceType === "costPrice" ? "cost" : undefined,
+            ),
+            formatCurrency(
+              generalCategory.totalVentas,
+              balanceType === "costPrice" ? "cost" : undefined,
+            ),
+            formatCurrency(
+              generalCategory.totalTrasladosEnviados,
+              balanceType === "costPrice" ? "cost" : undefined,
+            ),
+            formatCurrency(
+              generalCategory.totalSaldoFinal,
+              balanceType === "costPrice" ? "cost" : undefined,
+            ),
           ],
         ],
         startY: startY,
@@ -561,7 +656,6 @@ export default function InventoryBalanceReport() {
           5: { halign: "right", cellWidth: 18 },
           6: { halign: "right", cellWidth: 22 },
           7: { halign: "right", cellWidth: 20 },
-          8: { halign: "right", cellWidth: 22 },
         },
       });
 
@@ -579,13 +673,30 @@ export default function InventoryBalanceReport() {
         [
           "TOTAL GENERAL",
           "",
-          formatCurrency(grandTotals.saldoInicial, "cost"),
-          formatCurrency(grandTotals.compras, "cost"),
-          formatCurrency(grandTotals.trasladosRecibidos, "cost"),
-          formatCurrency(grandTotals.ventas, "cost"),
-          formatCurrency(grandTotals.trasladosEnviados, "cost"),
-          formatCurrency(grandTotals.saldoFinal, "cost"),
-          formatCurrency(grandTotals.variacionPrecio, "cost"),
+          formatCurrency(
+            grandTotals.saldoInicial,
+            balanceType === "costPrice" ? "cost" : undefined,
+          ),
+          formatCurrency(
+            grandTotals.compras,
+            balanceType === "costPrice" ? "cost" : undefined,
+          ),
+          formatCurrency(
+            grandTotals.trasladosRecibidos,
+            balanceType === "costPrice" ? "cost" : undefined,
+          ),
+          formatCurrency(
+            grandTotals.ventas,
+            balanceType === "costPrice" ? "cost" : undefined,
+          ),
+          formatCurrency(
+            grandTotals.trasladosEnviados,
+            balanceType === "costPrice" ? "cost" : undefined,
+          ),
+          formatCurrency(
+            grandTotals.saldoFinal,
+            balanceType === "costPrice" ? "cost" : undefined,
+          ),
         ],
       ],
       startY: startY,
@@ -602,7 +713,6 @@ export default function InventoryBalanceReport() {
         5: { halign: "right", cellWidth: 18 },
         6: { halign: "right", cellWidth: 22 },
         7: { halign: "right", cellWidth: 20 },
-        8: { halign: "right", cellWidth: 22 },
       },
     });
 
@@ -635,9 +745,64 @@ export default function InventoryBalanceReport() {
             />
           </div>
           <div className="grid gap-2">
+            <Label htmlFor="locationType" className="pl-1">
+              Ubicación
+            </Label>
+            <ComboboxPlus
+              name="locationType"
+              className="w-full min-w-0 sm:min-w-40"
+              options={[
+                { value: "store", label: "Toda la Tienda" },
+                { value: "warehouse", label: "Almacén" },
+                { value: "salesArea", label: "Área de Venta" },
+              ]}
+              value={locationType}
+              onChange={(value) => {
+                setLocationType(value);
+                setLocationFilter("all"); // Reset filter when type changes
+              }}
+            />
+          </div>
+          {((locationType === "warehouse" && warehouses.length > 0) ||
+            (locationType === "salesArea" && salesAreas.length > 0)) && (
+            <div className="grid gap-2">
+              <Label htmlFor="locationFilter" className="pl-1">
+                {locationType === "warehouse" ? "Almacén" : "Área de Venta"}
+              </Label>
+              <ComboboxPlus
+                name="locationFilter"
+                className="w-full min-w-0 sm:min-w-40"
+                options={
+                  locationType === "warehouse"
+                    ? [
+                        { value: "all", label: "Todos los almacenes" },
+                        ...warehouses.map((wh) => ({
+                          value: wh.id,
+                          label: wh.name,
+                        })),
+                      ]
+                    : [
+                        { value: "all", label: "Todas las áreas" },
+                        ...salesAreas.map((sa) => ({
+                          value: sa.id,
+                          label: sa.name,
+                        })),
+                      ]
+                }
+                value={locationFilter}
+                onChange={(value) => setLocationFilter(value)}
+                disable={false}
+              />
+            </div>
+          )}
+          <div className="grid gap-2">
             <Label className="pl-1">Tipo de Saldo</Label>
-            <RadioGroup defaultValue="costPrice" className="w-fit flex">
-              <div className="flex items-center gap-2">
+            <RadioGroup
+              value={balanceType}
+              onValueChange={setBalanceType}
+              className="flex items-center gap-2"
+            >
+              <div className="flex gap-2">
                 <RadioGroupItem id="r1" value="costPrice" />
                 <Label htmlFor="r1">Precio Costo</Label>
               </div>
@@ -648,9 +813,12 @@ export default function InventoryBalanceReport() {
             </RadioGroup>
           </div>
           <div className="grid gap-2">
-            <Label className="pl-1">Categoría</Label>
+            <Label className="pl-1">Nombre de Categoría</Label>
             <div className="flex items-center gap-2">
-              <Switch />
+              <Switch
+                checked={showCategoryName}
+                onCheckedChange={setShowCategoryName}
+              />
               <Label>Mostrar</Label>
             </div>
           </div>
@@ -682,30 +850,31 @@ export default function InventoryBalanceReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-semibold">ID Categoría</TableHead>
-                <TableHead className="font-semibold">
-                  Nombre Categoría
+                <TableHead className="font-semibold text-xs sm:text-sm">
+                  ID Categoría
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                {showCategoryName && (
+                  <TableHead className="font-semibold text-xs sm:text-sm">
+                    Categoría
+                  </TableHead>
+                )}
+                <TableHead className="text-right font-semibold text-xs sm:text-sm">
                   Saldo Inicial
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right font-semibold text-xs sm:text-sm">
                   Compras
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right font-semibold text-xs sm:text-sm">
                   Traslados Recibidos
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right font-semibold text-xs sm:text-sm">
                   Ventas
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right font-semibold text-xs sm:text-sm">
                   Traslados Enviados
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right font-semibold text-xs sm:text-sm">
                   Saldo Final
-                </TableHead>
-                <TableHead className="text-right font-semibold">
-                  Variación de Precio
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -713,17 +882,14 @@ export default function InventoryBalanceReport() {
               {inventoryBalanceByGeneralCategory.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={showCategoryName ? 8 : 7}
                     className="text-center text-muted-foreground py-8"
                   >
                     <div className="flex flex-col items-center gap-4">
-                      <PackageIcon className="size-32" />
-                      <p className="font-semibold">
+                      <BoxesIcon className="size-20 sm:size-32" />
+                      <p className="font-semibold text-sm sm:text-base px-4">
                         No hay datos disponibles para el rango seleccionado.
                       </p>
-                      <Button onClick={clearFilters} variant="outline">
-                        Limpiar filtros
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -733,8 +899,8 @@ export default function InventoryBalanceReport() {
                     <>
                       <TableRow>
                         <TableCell
-                          colSpan={9}
-                          className="text-center font-semibold bg-primary/10"
+                          colSpan={showCategoryName ? 8 : 7}
+                          className="text-center font-semibold"
                         >
                           {generalCategory.generalCategoryId}:{" "}
                           {generalCategory.generalCategoryName}
@@ -747,73 +913,98 @@ export default function InventoryBalanceReport() {
                             className={index % 2 === 0 ? "bg-secondary" : ""}
                           >
                             <TableCell>{category.categoryId}</TableCell>
-                            <TableCell>{category.categoryName}</TableCell>
+                            {showCategoryName && (
+                              <TableCell>{category.categoryName}</TableCell>
+                            )}
                             <TableCell className="text-right">
-                              {formatCurrency(category.saldoInicial, "cost")}
+                              {formatCurrency(
+                                category.saldoInicial,
+                                balanceType === "costPrice"
+                                  ? "cost"
+                                  : undefined,
+                              )}
                             </TableCell>
                             <TableCell className="text-right">
-                              {formatCurrency(category.compras, "cost")}
+                              {formatCurrency(
+                                category.compras,
+                                balanceType === "costPrice"
+                                  ? "cost"
+                                  : undefined,
+                              )}
                             </TableCell>
                             <TableCell className="text-right">
                               {formatCurrency(
                                 category.trasladosRecibidos,
-                                "cost",
+                                balanceType === "costPrice"
+                                  ? "cost"
+                                  : undefined,
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              {formatCurrency(category.ventas, "cost")}
+                              {formatCurrency(
+                                category.ventas,
+                                balanceType === "costPrice"
+                                  ? "cost"
+                                  : undefined,
+                              )}
                             </TableCell>
                             <TableCell className="text-right">
                               {formatCurrency(
                                 category.trasladosEnviados,
-                                "cost",
+                                balanceType === "costPrice"
+                                  ? "cost"
+                                  : undefined,
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              {formatCurrency(category.saldoFinal, "cost")}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(category.variacionPrecio, "cost")}
+                              {formatCurrency(
+                                category.saldoFinal,
+                                balanceType === "costPrice"
+                                  ? "cost"
+                                  : undefined,
+                              )}
                             </TableCell>
                           </TableRow>
                         ),
                       )}
-                      <TableRow className="font-semibold bg-muted">
-                        <TableCell colSpan={2}>SUBTOTAL</TableCell>
+                      <TableRow className="font-semibold">
+                        <TableCell colSpan={showCategoryName ? 2 : 1}>
+                          SUBTOTAL
+                        </TableCell>
                         <TableCell className="text-right">
                           {formatCurrency(
                             generalCategory.totalSaldoInicial,
-                            "cost",
+                            balanceType === "costPrice" ? "cost" : undefined,
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(generalCategory.totalCompras, "cost")}
+                          {formatCurrency(
+                            generalCategory.totalCompras,
+                            balanceType === "costPrice" ? "cost" : undefined,
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           {formatCurrency(
                             generalCategory.totalTrasladosRecibidos,
-                            "cost",
+                            balanceType === "costPrice" ? "cost" : undefined,
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(generalCategory.totalVentas, "cost")}
+                          {formatCurrency(
+                            generalCategory.totalVentas,
+                            balanceType === "costPrice" ? "cost" : undefined,
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           {formatCurrency(
                             generalCategory.totalTrasladosEnviados,
-                            "cost",
+                            balanceType === "costPrice" ? "cost" : undefined,
                           )}
                         </TableCell>
                         <TableCell className="text-right">
                           {formatCurrency(
                             generalCategory.totalSaldoFinal,
-                            "cost",
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(
-                            generalCategory.totalVariacionPrecio,
-                            "cost",
+                            balanceType === "costPrice" ? "cost" : undefined,
                           )}
                         </TableCell>
                       </TableRow>
@@ -824,27 +1015,42 @@ export default function InventoryBalanceReport() {
             </TableBody>
             <TableFooter>
               <TableRow className="font-semibold bg-secondary">
-                <TableCell colSpan={2}>TOTAL</TableCell>
+                <TableCell colSpan={showCategoryName ? 2 : 1}>TOTAL</TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(grandTotals.saldoInicial, "cost")}
+                  {formatCurrency(
+                    grandTotals.saldoInicial,
+                    balanceType === "costPrice" ? "cost" : undefined,
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(grandTotals.compras, "cost")}
+                  {formatCurrency(
+                    grandTotals.compras,
+                    balanceType === "costPrice" ? "cost" : undefined,
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(grandTotals.trasladosRecibidos, "cost")}
+                  {formatCurrency(
+                    grandTotals.trasladosRecibidos,
+                    balanceType === "costPrice" ? "cost" : undefined,
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(grandTotals.ventas, "cost")}
+                  {formatCurrency(
+                    grandTotals.ventas,
+                    balanceType === "costPrice" ? "cost" : undefined,
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(grandTotals.trasladosEnviados, "cost")}
+                  {formatCurrency(
+                    grandTotals.trasladosEnviados,
+                    balanceType === "costPrice" ? "cost" : undefined,
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(grandTotals.saldoFinal, "cost")}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(grandTotals.variacionPrecio, "cost")}
+                  {formatCurrency(
+                    grandTotals.saldoFinal,
+                    balanceType === "costPrice" ? "cost" : undefined,
+                  )}
                 </TableCell>
               </TableRow>
             </TableFooter>

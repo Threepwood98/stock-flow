@@ -802,7 +802,7 @@ export default function Inflow() {
                   Producto
                 </TableHead>
                 <TableHead className="text-right font-semibold text-xs sm:text-sm">
-                  Cant.
+                  Cantidad
                 </TableHead>
                 <TableHead className="text-right font-semibold text-xs sm:text-sm hidden lg:table-cell">
                   Costo
