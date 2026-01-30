@@ -62,6 +62,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   }));
 
   const categories = await prisma.category.findMany({
+    include: {
+      generalCategory: true,
+    },
     orderBy: { name: "asc" },
   });
 
@@ -219,11 +222,11 @@ export default function Main({ loaderData }: Route.ComponentProps) {
   } = loaderData;
 
   const [selectedStoreId, setSelectedStoreId] = useState(
-    userStores[0]?.storeId || ""
+    userStores[0]?.storeId || "",
   );
 
   const currrentStore = userStores.find(
-    (us) => us.storeId === selectedStoreId
+    (us) => us.storeId === selectedStoreId,
   )?.store;
 
   const warehouses = currrentStore?.warehouses || [];
@@ -240,13 +243,13 @@ export default function Main({ loaderData }: Route.ComponentProps) {
 
   const filteredInflows = useMemo(() => {
     return inflows.filter(
-      (inflow) => inflow.warehouse.storeId === selectedStoreId
+      (inflow) => inflow.warehouse.storeId === selectedStoreId,
     );
   }, [inflows, selectedStoreId]);
 
   const filteredOutflows = useMemo(() => {
     return outflows.filter(
-      (outflow) => outflow.warehouse.storeId === selectedStoreId
+      (outflow) => outflow.warehouse.storeId === selectedStoreId,
     );
   }, [outflows, selectedStoreId]);
 

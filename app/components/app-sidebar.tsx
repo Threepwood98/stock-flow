@@ -115,6 +115,11 @@ const data = {
           url: "/main/report/sales-category-report",
           isActive: true,
         },
+        {
+          title: "Saldo del Inventario",
+          url: "/main/report/inventory-balance-report",
+          isActive: true,
+        },
       ],
     },
     {
