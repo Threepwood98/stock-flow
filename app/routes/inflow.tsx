@@ -718,7 +718,9 @@ export default function Inflow() {
                 value={formValues.quantity}
                 onChange={(event) => {
                   const value = event.target.value;
-                  const product = products.find((p) => p.id === formValues.productId);
+                  const product = products.find(
+                    (p) => p.id === formValues.productId,
+                  );
                   if (product?.unit === "un") {
                     // Solo permitir números enteros positivos
                     if (value === "" || /^\d+$/.test(value)) {
@@ -732,8 +734,18 @@ export default function Inflow() {
                   }
                 }}
                 type="text"
-                inputMode={products.find((p) => p.id === formValues.productId)?.unit === "un" ? "numeric" : "decimal"}
-                placeholder={products.find((p) => p.id === formValues.productId)?.unit === "un" ? "0" : "0.00"}
+                inputMode={
+                  products.find((p) => p.id === formValues.productId)?.unit ===
+                  "un"
+                    ? "numeric"
+                    : "decimal"
+                }
+                placeholder={
+                  products.find((p) => p.id === formValues.productId)?.unit ===
+                  "un"
+                    ? "0"
+                    : "0.00"
+                }
                 className="w-full h-10 min-w-0 sm:min-w-40"
                 required
               />

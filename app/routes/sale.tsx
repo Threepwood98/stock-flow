@@ -609,7 +609,9 @@ export default function Sale() {
                 value={formValues.quantity}
                 onChange={(event) => {
                   const value = event.target.value;
-                  const product = availableProducts.find((p) => p.id === formValues.productId);
+                  const product = availableProducts.find(
+                    (p) => p.id === formValues.productId,
+                  );
                   if (product?.unit === "un") {
                     // Solo permitir números enteros positivos
                     if (value === "" || /^\d+$/.test(value)) {
@@ -623,8 +625,18 @@ export default function Sale() {
                   }
                 }}
                 type="text"
-                inputMode={availableProducts.find((p) => p.id === formValues.productId)?.unit === "un" ? "numeric" : "decimal"}
-                placeholder={availableProducts.find((p) => p.id === formValues.productId)?.unit === "un" ? "0" : "0.00"}
+                inputMode={
+                  availableProducts.find((p) => p.id === formValues.productId)
+                    ?.unit === "un"
+                    ? "numeric"
+                    : "decimal"
+                }
+                placeholder={
+                  availableProducts.find((p) => p.id === formValues.productId)
+                    ?.unit === "un"
+                    ? "0"
+                    : "0.00"
+                }
                 className="w-full min-w-0 sm:min-w-40"
                 required
               />
