@@ -135,7 +135,7 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Fecha inválida: ${row.date}`);
       }
 
-      const quantity = parseInt(row.quantity, 10);
+      const quantity = parseFloat(row.quantity);
       if (isNaN(quantity) || quantity <= 0) {
         throw new Error(`Cantidad inválida: ${row.quantity}`);
       }
@@ -269,7 +269,7 @@ export default function Sale() {
       quantity: string
     ): { costAmount: number; saleAmount: number } => {
       const product = availableProducts.find((prod) => prod.id === productId);
-      const qty = parseInt(quantity, 10);
+      const qty = parseFloat(quantity);
 
       if (!product || isNaN(qty) || qty <= 0) {
         return { costAmount: 0, saleAmount: 0 };
@@ -286,7 +286,7 @@ export default function Sale() {
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
-      const quantity = parseInt(formValues.quantity, 10);
+      const quantity = parseFloat(formValues.quantity);
 
       // Validaciones
       if (quantity <= 0) {
@@ -611,7 +611,13 @@ export default function Sale() {
                   handleChange("quantity", event.target.value)
                 }
                 type="number"
-                min={1}
+                min={0.01}
+                step={
+                  availableProducts.find((p) => p.id === formValues.productId)
+                    ?.unit === "un"
+                    ? 1
+                    : 0.01
+                }
                 className="w-full min-w-0 sm:min-w-40"
                 required
               />
@@ -702,14 +708,14 @@ export default function Sale() {
                     <TableCell>{row.salesAreaName}</TableCell>
                     <TableCell>{row.payMethod}</TableCell>
                     <TableCell>{row.productName}</TableCell>
-                    <TableCell className="text-right">{row.quantity}</TableCell>
+                    <TableCell className="text-right">{parseFloat(row.quantity).toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(row.costAmount, "cost")}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(row.saleAmount)}
                     </TableCell>
-                    <TableCell className="text-right">{row.stock}</TableCell>
+                    <TableCell className="text-right">{row.stock.toFixed(2)}</TableCell>
                     <TableCell>
                       <div className="flex">
                         <Button
