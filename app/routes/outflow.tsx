@@ -822,16 +822,35 @@ export default function Outflow() {
                 id="quantity"
                 name="quantity"
                 value={formValues.quantity}
-                onChange={(event) =>
-                  handleChange("quantity", event.target.value)
-                }
-                type="number"
-                min={0.01}
-                step={
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const product = availableProducts.find(
+                    (p) => p.id === formValues.productId,
+                  );
+                  if (product?.unit === "un") {
+                    // Solo permitir números enteros positivos
+                    if (value === "" || /^\d+$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  } else {
+                    // Permitir números decimales positivos
+                    if (value === "" || /^\d*([.,]\d*)?$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  }
+                }}
+                type="text"
+                inputMode={
                   availableProducts.find((p) => p.id === formValues.productId)
                     ?.unit === "un"
-                    ? 1
-                    : 0.01
+                    ? "numeric"
+                    : "decimal"
+                }
+                placeholder={
+                  availableProducts.find((p) => p.id === formValues.productId)
+                    ?.unit === "un"
+                    ? "0"
+                    : "0.00"
                 }
                 className="w-full min-w-40"
                 required
@@ -932,7 +951,9 @@ export default function Outflow() {
                       {row.outNumber}
                     </TableCell>
                     <TableCell>{row.productName}</TableCell>
-                    <TableCell className="text-right">{parseFloat(row.quantity).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      {parseFloat(row.quantity).toFixed(2)}
+                    </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(row.costAmount, "cost")}
                     </TableCell>

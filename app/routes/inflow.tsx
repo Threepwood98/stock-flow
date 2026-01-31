@@ -716,17 +716,24 @@ export default function Inflow() {
                 id="quantity"
                 name="quantity"
                 value={formValues.quantity}
-                onChange={(event) =>
-                  handleChange("quantity", event.target.value)
-                }
-                type="number"
-                min={0.01}
-                step={
-                  products.find((p) => p.id === formValues.productId)?.unit ===
-                  "un"
-                    ? 1
-                    : 0.01
-                }
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const product = products.find((p) => p.id === formValues.productId);
+                  if (product?.unit === "un") {
+                    // Solo permitir números enteros positivos
+                    if (value === "" || /^\d+$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  } else {
+                    // Permitir números decimales positivos
+                    if (value === "" || /^\d*([.,]\d*)?$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  }
+                }}
+                type="text"
+                inputMode={products.find((p) => p.id === formValues.productId)?.unit === "un" ? "numeric" : "decimal"}
+                placeholder={products.find((p) => p.id === formValues.productId)?.unit === "un" ? "0" : "0.00"}
                 className="w-full h-10 min-w-0 sm:min-w-40"
                 required
               />
