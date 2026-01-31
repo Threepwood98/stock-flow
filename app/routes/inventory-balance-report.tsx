@@ -82,7 +82,7 @@ export default function InventoryBalanceReport() {
   const [generalCategoryId, setGeneralCategoryId] = useState<string>("all");
   const [showCategoryName, setShowCategoryName] = useState<boolean>(false);
   const [salesAreaId, setSalesAreaId] = useState<string>("all");
-  const [balanceType, setBalanceType] = useState<string>("costPrice");
+  const [balanceType, setBalanceType] = useState<string>("salePrice");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [locationType, setLocationType] = useState<string>("store"); // "store", "warehouse", "salesArea"
 
@@ -199,10 +199,14 @@ export default function InventoryBalanceReport() {
         warehouse.warehouseInventories.forEach((inventory: any) => {
           const product = products.find((p) => p.id === inventory.productId);
           if (product && categoryBalance[product.categoryId]) {
+            const quantity =
+              typeof inventory.quantity === "number"
+                ? inventory.quantity
+                : parseFloat(inventory.quantity?.toString() || "0");
             const amount =
               balanceType === "costPrice"
-                ? product.costPrice * inventory.quantity
-                : product.salePrice * inventory.quantity;
+                ? product.costPrice * quantity
+                : product.salePrice * quantity;
             categoryBalance[product.categoryId].saldoInicial += amount;
           }
         });
@@ -218,10 +222,14 @@ export default function InventoryBalanceReport() {
         salesArea.salesAreaInventories.forEach((inventory: any) => {
           const product = products.find((p) => p.id === inventory.productId);
           if (product && categoryBalance[product.categoryId]) {
+            const quantity =
+              typeof inventory.quantity === "number"
+                ? inventory.quantity
+                : parseFloat(inventory.quantity?.toString() || "0");
             const amount =
               balanceType === "costPrice"
-                ? product.costPrice * inventory.quantity
-                : product.salePrice * inventory.quantity;
+                ? product.costPrice * quantity
+                : product.salePrice * quantity;
             categoryBalance[product.categoryId].saldoInicial += amount;
           }
         });
@@ -399,9 +407,9 @@ export default function InventoryBalanceReport() {
       );
     }
 
-    // Ordenar por nombre de categoría general
+    // Ordenar por ID de categoría general alfabéticamente
     return result.sort((a, b) =>
-      a.generalCategoryName.localeCompare(b.generalCategoryName),
+      a.generalCategoryId.localeCompare(b.generalCategoryId),
     );
   }, [
     inflows,
@@ -806,13 +814,13 @@ export default function InventoryBalanceReport() {
               onValueChange={setBalanceType}
               className="flex items-center gap-2"
             >
-              <div className="flex gap-2">
-                <RadioGroupItem id="r1" value="costPrice" />
-                <Label htmlFor="r1">Precio Costo</Label>
-              </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem id="r2" value="salePrice" />
                 <Label htmlFor="r2">Precio Venta</Label>
+              </div>
+              <div className="flex gap-2">
+                <RadioGroupItem id="r1" value="costPrice" />
+                <Label htmlFor="r1">Precio Costo</Label>
               </div>
             </RadioGroup>
           </div>

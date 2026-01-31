@@ -135,6 +135,8 @@ export async function loader({ request }: Route.LoaderArgs) {
           ...wh,
           warehouseInventories: wh.warehouseInventories.map((inv) => ({
             ...inv,
+            quantity: inv.quantity.toNumber(),
+            minStock: inv.minStock?.toNumber() || 0,
             product: {
               ...inv.product,
               costPrice: inv.product.costPrice.toNumber(),
@@ -146,6 +148,8 @@ export async function loader({ request }: Route.LoaderArgs) {
           ...sa,
           salesAreaInventories: sa.salesAreaInventories.map((inv) => ({
             ...inv,
+            quantity: inv.quantity.toNumber(),
+            minStock: inv.minStock?.toNumber() || 0,
             product: {
               ...inv.product,
               costPrice: inv.product.costPrice.toNumber(),
@@ -164,7 +168,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       date: inflow.date.toISOString().split("T")[0],
       providerName: inflow.providerCompany?.name ?? inflow.providerStore?.name,
       productName: inflow.product.name,
-      quantity: inflow.quantity,
+      quantity: inflow.quantity.toNumber(),
       costAmount: inflow.costAmount.toNumber(),
       saleAmount: inflow.saleAmount.toNumber(),
     })),
@@ -177,7 +181,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       productName: outflow.product.name,
       categoryId: outflow.product.categoryId,
       categoryName: outflow.product.category.name,
-      quantity: outflow.quantity,
+      quantity: outflow.quantity.toNumber(),
       costAmount: outflow.costAmount.toNumber(),
       saleAmount: outflow.saleAmount.toNumber(),
     })),
@@ -187,7 +191,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       productName: sale.product.name,
       categoryId: sale.product.categoryId,
       categoryName: sale.product.category.name,
-      quantity: sale.quantity,
+      quantity: sale.quantity.toNumber(),
       saleAmount: sale.saleAmount.toNumber(),
       costAmount: sale.costAmount.toNumber(),
       salesAreaName: sale.salesArea.name,

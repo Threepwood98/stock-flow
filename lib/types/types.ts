@@ -50,7 +50,10 @@ export interface Destination {
 
 export interface SalesAreaInventory {
   id: string;
+  salesAreaId: string;
+  productId: string;
   quantity: number;
+  minStock: number;
   product: Product;
 }
 
