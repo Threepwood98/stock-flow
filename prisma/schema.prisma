@@ -232,8 +232,8 @@ model WarehouseInventory {
   id          String   @id @default(cuid())
   warehouseId String
   productId   String
-  quantity    Int      @default(0)
-  minStock    Int?     @default(0)
+  quantity    Decimal  @default(0) @db.Decimal(18, 2)
+  minStock    Decimal? @default(0) @db.Decimal(18, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -250,8 +250,8 @@ model SalesAreaInventory {
   id          String   @id @default(cuid())
   salesAreaId String
   productId   String
-  quantity    Int      @default(0)
-  minStock    Int?     @default(0)
+  quantity    Decimal  @default(0) @db.Decimal(18, 2)
+  minStock    Decimal? @default(0) @db.Decimal(18, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -280,7 +280,7 @@ model Inflow {
   invoiceNumber     String?
   inNumber          String
   productId         String
-  quantity          Int      @default(0)
+  quantity          Decimal  @default(0) @db.Decimal(18, 2)
   costAmount        Decimal  @db.Decimal(18, 2)
   saleAmount        Decimal  @db.Decimal(18, 2)
   createdAt         DateTime @default(now())
@@ -312,7 +312,7 @@ model Outflow {
   payMethod              String?
   outNumber              String
   productId              String
-  quantity               Int      @default(0)
+  quantity               Decimal  @default(0) @db.Decimal(18, 2)
   saleAmount             Decimal  @db.Decimal(18, 2)
   costAmount             Decimal  @db.Decimal(18, 2)
   createdAt              DateTime @default(now())
@@ -340,7 +340,7 @@ model Sale {
   date        DateTime @default(now()) @db.Date
   payMethod   String
   productId   String
-  quantity    Int      @default(0)
+  quantity    Decimal  @default(0) @db.Decimal(18, 2)
   saleAmount  Decimal  @db.Decimal(18, 2)
   costAmount  Decimal  @db.Decimal(18, 2)
   createdAt   DateTime @default(now())
@@ -384,7 +384,7 @@ model Movement {
   destinationWarehouseId  String?
   destinationSalesAreaId  String?
   productId         String
-  quantity          Int      @default(0)
+  quantity          Decimal  @default(0) @db.Decimal(18, 2)
   costAmount        Decimal  @db.Decimal(18, 2)
   saleAmount        Decimal  @db.Decimal(18, 2)
   createdAt         DateTime @default(now())

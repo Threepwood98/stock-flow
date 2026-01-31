@@ -136,7 +136,7 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Fecha inválida: ${row.date}`);
       }
 
-      const quantity = parseInt(row.quantity, 10);
+      const quantity = parseFloat(row.quantity);
       if (isNaN(quantity) || quantity <= 0) {
         throw new Error(`Cantidad inválida: ${row.quantity}`);
       }
@@ -154,7 +154,7 @@ export async function action({ request }: Route.ActionArgs) {
         invoiceNumber: isFACTURA ? row.invoiceNumber : null,
         inNumber: row.inNumber,
         productId: row.productId,
-        quantity,
+        quantity: new Decimal(quantity),
         costAmount: new Decimal(row.costAmount ?? 0),
         saleAmount: new Decimal(row.saleAmount ?? 0),
       };
@@ -289,7 +289,7 @@ export default function Inflow() {
     quantity: string,
   ): { costAmount: number; saleAmount: number } => {
     const product = products.find((p) => p.id === productId);
-    const qty = parseInt(quantity, 10);
+    const qty = parseFloat(quantity);
 
     if (!product || isNaN(qty) || qty <= 0) {
       return { costAmount: 0, saleAmount: 0 };
@@ -303,7 +303,7 @@ export default function Inflow() {
   const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const quantity = parseInt(formValues.quantity, 10);
+    const quantity = parseFloat(formValues.quantity);
 
     if (quantity <= 0) {
       toast.error("La cantidad debe ser mayor a 0.");
@@ -720,7 +720,13 @@ export default function Inflow() {
                   handleChange("quantity", event.target.value)
                 }
                 type="number"
-                min={1}
+                min={0.01}
+                step={
+                  products.find((p) => p.id === formValues.productId)?.unit ===
+                  "un"
+                    ? 1
+                    : 0.01
+                }
                 className="w-full h-10 min-w-0 sm:min-w-40"
                 required
               />
@@ -860,7 +866,7 @@ export default function Inflow() {
                       {row.productName}
                     </TableCell>
                     <TableCell className="text-right text-xs sm:text-sm">
-                      {row.quantity}
+                      {parseFloat(row.quantity).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right text-xs sm:text-sm hidden lg:table-cell">
                       {formatCurrency(row.costAmount, "cost")}
