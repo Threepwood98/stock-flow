@@ -143,7 +143,7 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Fecha inválida: ${row.date}`);
       }
 
-      const quantity = parseInt(row.quantity, 10);
+      const quantity = parseFloat(row.quantity);
       if (isNaN(quantity) || quantity <= 0) {
         throw new Error(`Cantidad inválida: ${row.quantity}`);
       }
@@ -343,7 +343,7 @@ export default function Outflow() {
     quantity: string,
   ): { costAmount: number; saleAmount: number } => {
     const product = availableProducts.find((prod) => prod.id === productId);
-    const qty = parseInt(quantity, 10);
+    const qty = parseFloat(quantity);
 
     if (!product || isNaN(qty) || qty <= 0) {
       return { costAmount: 0, saleAmount: 0 };
@@ -357,7 +357,7 @@ export default function Outflow() {
   const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const quantity = parseInt(formValues.quantity, 10);
+    const quantity = parseFloat(formValues.quantity);
 
     if (quantity <= 0) {
       toast.error("La cantidad debe ser mayor a 0.");
@@ -822,11 +822,36 @@ export default function Outflow() {
                 id="quantity"
                 name="quantity"
                 value={formValues.quantity}
-                onChange={(event) =>
-                  handleChange("quantity", event.target.value)
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const product = availableProducts.find(
+                    (p) => p.id === formValues.productId,
+                  );
+                  if (product?.unit === "un") {
+                    // Solo permitir números enteros positivos
+                    if (value === "" || /^\d+$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  } else {
+                    // Permitir números decimales positivos
+                    if (value === "" || /^\d*([.,]\d*)?$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  }
+                }}
+                type="text"
+                inputMode={
+                  availableProducts.find((p) => p.id === formValues.productId)
+                    ?.unit === "un"
+                    ? "numeric"
+                    : "decimal"
                 }
-                type="number"
-                min={1}
+                placeholder={
+                  availableProducts.find((p) => p.id === formValues.productId)
+                    ?.unit === "un"
+                    ? "0"
+                    : "0.00"
+                }
                 className="w-full min-w-40"
                 required
               />
@@ -926,7 +951,9 @@ export default function Outflow() {
                       {row.outNumber}
                     </TableCell>
                     <TableCell>{row.productName}</TableCell>
-                    <TableCell className="text-right">{row.quantity}</TableCell>
+                    <TableCell className="text-right">
+                      {parseFloat(row.quantity).toFixed(2)}
+                    </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(row.costAmount, "cost")}
                     </TableCell>

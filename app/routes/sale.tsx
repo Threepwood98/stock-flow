@@ -106,7 +106,7 @@ export async function action({ request }: Route.ActionArgs) {
   if (!rawRows) {
     return new Response(
       JSON.stringify({ error: "No hay datos para insertar." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -116,14 +116,14 @@ export async function action({ request }: Route.ActionArgs) {
   } catch {
     return new Response(
       JSON.stringify({ error: "Formato inválido de datos." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return new Response(
       JSON.stringify({ error: "No hay filas para insertar." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -135,7 +135,7 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Fecha inválida: ${row.date}`);
       }
 
-      const quantity = parseInt(row.quantity, 10);
+      const quantity = parseFloat(row.quantity);
       if (isNaN(quantity) || quantity <= 0) {
         throw new Error(`Cantidad inválida: ${row.quantity}`);
       }
@@ -173,10 +173,10 @@ export async function action({ request }: Route.ActionArgs) {
             });
           } else {
             throw new Error(
-              `No hay inventario del producto en el área de venta`
+              `No hay inventario del producto en el área de venta`,
             );
           }
-        })
+        }),
       );
     });
 
@@ -187,7 +187,7 @@ export async function action({ request }: Route.ActionArgs) {
       JSON.stringify({
         error: error.message || "Error al guardar en la base de datos.",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }
@@ -266,10 +266,10 @@ export default function Sale() {
   const calculateAmount = useCallback(
     (
       productId: string,
-      quantity: string
+      quantity: string,
     ): { costAmount: number; saleAmount: number } => {
       const product = availableProducts.find((prod) => prod.id === productId);
-      const qty = parseInt(quantity, 10);
+      const qty = parseFloat(quantity);
 
       if (!product || isNaN(qty) || qty <= 0) {
         return { costAmount: 0, saleAmount: 0 };
@@ -279,14 +279,14 @@ export default function Sale() {
       const salePrice = product.salePrice;
       return { costAmount: qty * costPrice, saleAmount: qty * salePrice };
     },
-    [availableProducts]
+    [availableProducts],
   );
 
   const handleAddOrSave = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
-      const quantity = parseInt(formValues.quantity, 10);
+      const quantity = parseFloat(formValues.quantity);
 
       // Validaciones
       if (quantity <= 0) {
@@ -315,7 +315,7 @@ export default function Sale() {
       }
 
       const product = availableProducts.find(
-        (avp) => avp.id === formValues.productId
+        (avp) => avp.id === formValues.productId,
       );
 
       if (!product) {
@@ -325,7 +325,7 @@ export default function Sale() {
 
       if (quantity > product.availableQuantity) {
         toast.error(
-          `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`
+          `Solo hay ${product.availableQuantity} ${product.unit} disponibles.`,
         );
         return;
       }
@@ -341,7 +341,7 @@ export default function Sale() {
 
       if (editIndex !== null) {
         setRows((prev) =>
-          prev.map((row, i) => (i === editIndex ? rowWithAmount : row))
+          prev.map((row, i) => (i === editIndex ? rowWithAmount : row)),
         );
         toast.success("Fila actualizada correctamente.");
       } else {
@@ -352,7 +352,7 @@ export default function Sale() {
       // Preserve locked fields when adding to table
       handleCancel();
     },
-    [formValues, availableProducts, calculateAmount, editIndex]
+    [formValues, availableProducts, calculateAmount, editIndex],
   );
 
   const handleClean = useCallback(() => {
@@ -410,7 +410,7 @@ export default function Sale() {
       setFormValues({ ...row });
       setEditIndex(index);
     },
-    [rows]
+    [rows],
   );
 
   const handleRemove = useCallback((index: number) => {
@@ -426,12 +426,12 @@ export default function Sale() {
 
   const totalCostAmount = useMemo(
     () => rows.reduce((sum, row) => sum + (row.costAmount || 0), 0),
-    [rows]
+    [rows],
   );
 
   const totalSaleAmount = useMemo(
     () => rows.reduce((sum, row) => sum + (row.saleAmount || 0), 0),
-    [rows]
+    [rows],
   );
 
   const formatCurrency = useCallback((value: number, type?: string) => {
@@ -607,11 +607,36 @@ export default function Sale() {
                 id="quantity"
                 name="quantity"
                 value={formValues.quantity}
-                onChange={(event) =>
-                  handleChange("quantity", event.target.value)
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const product = availableProducts.find(
+                    (p) => p.id === formValues.productId,
+                  );
+                  if (product?.unit === "un") {
+                    // Solo permitir números enteros positivos
+                    if (value === "" || /^\d+$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  } else {
+                    // Permitir números decimales positivos
+                    if (value === "" || /^\d*([.,]\d*)?$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  }
+                }}
+                type="text"
+                inputMode={
+                  availableProducts.find((p) => p.id === formValues.productId)
+                    ?.unit === "un"
+                    ? "numeric"
+                    : "decimal"
                 }
-                type="number"
-                min={1}
+                placeholder={
+                  availableProducts.find((p) => p.id === formValues.productId)
+                    ?.unit === "un"
+                    ? "0"
+                    : "0.00"
+                }
                 className="w-full min-w-0 sm:min-w-40"
                 required
               />
@@ -702,14 +727,18 @@ export default function Sale() {
                     <TableCell>{row.salesAreaName}</TableCell>
                     <TableCell>{row.payMethod}</TableCell>
                     <TableCell>{row.productName}</TableCell>
-                    <TableCell className="text-right">{row.quantity}</TableCell>
+                    <TableCell className="text-right">
+                      {parseFloat(row.quantity).toFixed(2)}
+                    </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(row.costAmount, "cost")}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(row.saleAmount)}
                     </TableCell>
-                    <TableCell className="text-right">{row.stock}</TableCell>
+                    <TableCell className="text-right">
+                      {row.stock.toFixed(2)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex">
                         <Button
