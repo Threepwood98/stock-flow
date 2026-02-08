@@ -21,13 +21,12 @@ export default [
     index("routes/dashboard.tsx"),
     route("warehouse/inflow", "routes/inflow.tsx"),
     route("warehouse/outflow", "routes/outflow.tsx"),
-    route("warehouse/inventory", "routes/warehouse-inventory.tsx"),
 
     route("sale-area/sale", "routes/sale.tsx"),
     route("sale-area/withdraw", "routes/withdraw.tsx"),
     route("sale-area/movement", "routes/movement.tsx"),
-    route("sale-area/inventory", "routes/sales-area-inventory.tsx"),
 
+    route("report/inventory-report", "routes/inventory-report.tsx"),
     route("report/inflows-report", "routes/inflows-report.tsx"),
     route("report/outflows-report", "routes/outflows-report.tsx"),
     route("report/sales-report", "routes/sales-report.tsx"),

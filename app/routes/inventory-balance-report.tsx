@@ -764,7 +764,7 @@ export default function InventoryBalanceReport() {
               name="locationType"
               className="w-full min-w-0 sm:min-w-40"
               options={[
-                { value: "store", label: "Toda la Tienda" },
+                { value: "store", label: "Tienda" },
                 { value: "warehouse", label: "Almacén" },
                 { value: "salesArea", label: "Área de Venta" },
               ]}

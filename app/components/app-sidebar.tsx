@@ -50,12 +50,6 @@ const data = {
           icon: PackageMinus,
           isActive: true,
         },
-        {
-          title: "Inventario",
-          url: "/main/warehouse/inventory",
-          icon: BoxesIcon,
-          isActive: true,
-        },
       ],
     },
     {
@@ -81,12 +75,6 @@ const data = {
           icon: ArrowLeftRightIcon,
           isActive: true,
         },
-        {
-          title: "Inventario",
-          url: "/main/sale-area/inventory",
-          icon: BoxesIcon,
-          isActive: true,
-        },
       ],
     },
     {
@@ -95,6 +83,11 @@ const data = {
       icon: ClipboardListIcon,
       isActive: true,
       items: [
+        {
+          title: "Inventario",
+          url: "/main/report/inventory-report",
+          isActive: true,
+        },
         {
           title: "Entradas al Almacén",
           url: "/main/report/inflows-report",
