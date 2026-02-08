@@ -274,34 +274,13 @@ export default function Main({ loaderData }: Route.ComponentProps) {
         onStoreChange={setSelectedStoreId}
       />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 z-50 bg-background">
+          <div className="flex flex-1 items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            {/* {userStores.length === 1 && <p>{userStores[0].store.name}</p>}
-            {userStores.length > 1 && (
-              <Select
-                defaultValue={selectedStoreId}
-                onValueChange={setSelectedStoreId}
-              >
-                <SelectTrigger
-                  className="w-64"
-                  style={{ color: "oklch(0.205 0 0)" }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {userStores.map((us) => (
-                    <SelectItem key={us.storeId} value={us.storeId}>
-                      {us.store.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )} */}
           </div>
         </header>
         <Outlet

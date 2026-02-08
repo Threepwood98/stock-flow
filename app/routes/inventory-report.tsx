@@ -205,8 +205,8 @@ export default function InventoryReport() {
         costValue: sum.costValue + item.costAmount,
         saleValue: sum.saleValue + item.saleAmount,
       }),
-      { 
-        totalCostAmount: 0, 
+      {
+        totalCostAmount: 0,
         totalSaleAmount: 0,
         quantity: 0,
         costValue: 0,
@@ -417,7 +417,7 @@ export default function InventoryReport() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+    <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-amber-300">
       <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
@@ -489,7 +489,7 @@ export default function InventoryReport() {
           </div>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="flex flex-1">
         <CardHeader>
           <CardTitle>
             Inventario
@@ -521,18 +521,18 @@ export default function InventoryReport() {
           </CardAction>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            {filteredInventory.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 py-12">
-                <PackageIcon className="size-32 text-gray-300" />
-                <p className="font-semibold text-gray-600">
-                  No hay productos en inventario para los filtros seleccionados.
-                </p>
-                <Button onClick={clearFilters} variant="outline" size="sm">
-                  Limpiar filtros
-                </Button>
-              </div>
-            ) : (
+          {filteredInventory.length === 0 ? (
+            <div className="flex flex-col items-center gap-4 py-12">
+              <PackageIcon className="size-32 text-gray-300" />
+              <p className="font-semibold text-gray-600">
+                No hay productos en inventario para los filtros seleccionados.
+              </p>
+              <Button onClick={clearFilters} variant="outline" size="sm">
+                Limpiar filtros
+              </Button>
+            </div>
+          ) : (
+            <div className="h-dvh overflow-y-scroll">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -557,7 +557,7 @@ export default function InventoryReport() {
                     <TableHead className="font-semibold">Estado</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="">
                   {filteredInventory.map((item, index) => (
                     <TableRow
                       key={`${item.locationId}_${item.productId}`}
@@ -635,8 +635,8 @@ export default function InventoryReport() {
                   </TableRow>
                 </TableFooter>
               </Table>
-            )}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
