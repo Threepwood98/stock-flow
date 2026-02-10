@@ -114,8 +114,8 @@ export interface Sale {
   quantity: number;
   saleAmount: number;
   costAmount: number;
-  profit: number;
-  payMethod: string;
+  profit?: number;
+  payMethod?: string;
   salesAreaId: string;
   salesAreaName: string;
   storeId: string;
@@ -143,6 +143,24 @@ export interface UserStores {
     id: string;
     name: string;
   };
+}
+
+export interface InventoryReportData {
+  locationId: string;
+  locationName: string;
+  locationType: "warehouse" | "salesArea";
+  productId: string;
+  productName: string;
+  categoryId: string;
+  categoryName: string;
+  quantity: number;
+  minStock: number;
+  costPrice: number;
+  salePrice: number;
+  costAmount: number;
+  saleAmount: number;
+  unit: string;
+  isLowStock: boolean;
 }
 
 export interface OutletContext {

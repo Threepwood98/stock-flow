@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useOutletContext } from "react-router";
+import { useLoaderData } from "react-router";
 import {
   Table,
   TableBody,
@@ -11,8 +11,7 @@ import {
 } from "~/components/ui/table";
 import { Label } from "~/components/ui/label";
 import { ComboboxPlus } from "~/components/combobox-plus";
-import type { OutletContext } from "@/lib/types/types";
-import { PackageIcon, AlertTriangle } from "lucide-react";
+import { PackageIcon } from "lucide-react";
 import { writeFile, utils } from "xlsx";
 import {
   Card,
@@ -26,24 +25,123 @@ import { IconFileTypePdf, IconFileTypeXls } from "@tabler/icons-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Input } from "~/components/ui/input";
+import type { Route } from "./+types/inventory-report";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-type InventoryItem = {
-  locationId: string;
-  locationName: string;
-  locationType: "warehouse" | "salesArea";
-  productId: string;
-  productName: string;
-  categoryId: string;
-  categoryName: string;
-  quantity: number;
-  minStock: number;
-  costPrice: number;
-  salePrice: number;
-  costAmount: number;
-  saleAmount: number;
-  unit: string;
-  isLowStock: boolean;
-};
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+
+  const user = session.user;
+  const userStores = await prisma.userStore.findMany({
+    where: { userId: user.id },
+    select: { storeId: true },
+  });
+
+  const storeIds = userStores.map((us) => us.storeId);
+
+  const [
+    warehouseInventories,
+    salesAreaInventories,
+    categories,
+    warehouses,
+    salesAreas,
+  ] = await Promise.all([
+    prisma.warehouseInventory.findMany({
+      where: { warehouse: { storeId: { in: storeIds } } },
+      include: { warehouse: true, product: { include: { category: true } } },
+      orderBy: [{ warehouse: { name: "asc" } }, { product: { name: "asc" } }],
+    }),
+    prisma.salesAreaInventory.findMany({
+      where: { salesArea: { storeId: { in: storeIds } } },
+      include: { salesArea: true, product: { include: { category: true } } },
+      orderBy: [{ salesArea: { name: "asc" } }, { product: { name: "asc" } }],
+    }),
+    prisma.category.findMany({
+      include: { generalCategory: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.warehouse.findMany({
+      where: { storeId: { in: storeIds } },
+      orderBy: { name: "asc" },
+    }),
+    prisma.salesArea.findMany({
+      where: { storeId: { in: storeIds } },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
+  const warehouseData = warehouseInventories.map((inv) => {
+    const quantity = inv.quantity.toNumber();
+    const costPrice = inv.product.costPrice.toNumber();
+    const salePrice = inv.product.salePrice.toNumber();
+    const minStock = inv.minStock?.toNumber() || 0;
+
+    return {
+      locationId: inv.warehouse.id,
+      locationName: inv.warehouse.name,
+      locationType: "warehouse" as const,
+      productId: inv.product.id,
+      productName: inv.product.name,
+      categoryId: inv.product.category.id,
+      categoryName: inv.product.category.name,
+      quantity,
+      minStock,
+      costPrice,
+      salePrice,
+      costAmount: costPrice * quantity,
+      saleAmount: salePrice * quantity,
+      unit: inv.product.unit,
+      isLowStock: quantity <= minStock,
+    };
+  });
+
+  const salesAreaData = salesAreaInventories.map((inv) => {
+    const quantity = inv.quantity.toNumber();
+    const costPrice = inv.product.costPrice.toNumber();
+    const salePrice = inv.product.salePrice.toNumber();
+    const minStock = inv.minStock?.toNumber() || 0;
+
+    return {
+      locationId: inv.salesArea.id,
+      locationName: inv.salesArea.name,
+      locationType: "salesArea" as const,
+      productId: inv.product.id,
+      productName: inv.product.name,
+      categoryId: inv.product.category.id,
+      categoryName: inv.product.category.name,
+      quantity,
+      minStock,
+      costPrice,
+      salePrice,
+      costAmount: costPrice * quantity,
+      saleAmount: salePrice * quantity,
+      unit: inv.product.unit,
+      isLowStock: quantity <= minStock,
+    };
+  });
+
+  const inventoryData = [...warehouseData, ...salesAreaData].sort((a, b) => {
+    if (a.locationType !== b.locationType) {
+      return a.locationType.localeCompare(b.locationType);
+    }
+    if (a.locationName !== b.locationName) {
+      return a.locationName.localeCompare(b.locationName);
+    }
+    return a.productName.localeCompare(b.productName);
+  });
+
+  return {
+    inventoryData,
+    categories,
+    warehouses,
+    salesAreas,
+  };
+}
 
 const locations = [
   { value: "all", label: "Todas" },
@@ -52,8 +150,8 @@ const locations = [
 ];
 
 export default function InventoryReport() {
-  const { warehouses, salesAreas, products, categories } =
-    useOutletContext<OutletContext>();
+  const { inventoryData, categories, warehouses, salesAreas } =
+    useLoaderData<typeof loader>();
   const [selectedLocationId, setSelectedLocationId] = useState<string>("all");
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
@@ -68,156 +166,58 @@ export default function InventoryReport() {
     }).format(value);
   };
 
-  // Procesar inventario combinado
-  const inventoryData = useMemo(() => {
-    const inventory: InventoryItem[] = [];
-
-    // Inventario de almacenes
-    warehouses.forEach((warehouse) => {
-      if (selectedLocation === "all" || selectedLocation === "warehouse") {
+  const filteredInventory = useMemo(() => {
+    return inventoryData.filter((item: any) => {
+      // Filtrar por ubicación
+      if (selectedLocation !== "all") {
+        if (item.locationType !== selectedLocation) {
+          return false;
+        }
         if (
-          selectedLocationId === "all" ||
-          warehouse.id === selectedLocationId
+          selectedLocationId !== "all" &&
+          item.locationId !== selectedLocationId
         ) {
-          warehouse.warehouseInventories?.forEach((inv) => {
-            const product = products.find((p) => p.id === inv.productId);
-            if (!product) return;
-
-            const category = categories.find(
-              (c) => c.id === product.categoryId,
-            );
-            const costPrice = Number(product.costPrice);
-            const salePrice = Number(product.salePrice);
-            const quantity = inv.quantity;
-
-            inventory.push({
-              locationId: warehouse.id,
-              locationName: warehouse.name,
-              locationType: "warehouse",
-              productId: product.id,
-              productName: product.name,
-              categoryId: product.categoryId,
-              categoryName: category?.name || "Sin categoría",
-              quantity: quantity,
-              minStock: inv.minStock || 0,
-              costPrice: costPrice,
-              salePrice: salePrice,
-              costAmount: costPrice * quantity,
-              saleAmount: salePrice * quantity,
-              unit: product.unit,
-              isLowStock: quantity <= (inv.minStock || 0),
-            });
-          });
+          return false;
         }
       }
-    });
 
-    // Inventario de áreas de ventas
-    salesAreas.forEach((salesArea) => {
-      if (selectedLocation === "all" || selectedLocation === "salesArea") {
+      // Filtrar por categoría si está seleccionada
+      if (
+        selectedCategoryId !== "all" &&
+        item.categoryId !== selectedCategoryId
+      ) {
+        return false;
+      }
+
+      // Filtrar por término de búsqueda
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
         if (
-          selectedLocationId === "all" ||
-          salesArea.id === selectedLocationId
+          !item.productName.toLowerCase().includes(search) &&
+          !item.productId.toLowerCase().includes(search)
         ) {
-          salesArea.salesAreaInventories?.forEach((inv) => {
-            const product = products.find((p) => p.id === inv.productId);
-            if (!product) return;
-
-            const category = categories.find(
-              (c) => c.id === product.categoryId,
-            );
-            const costPrice = Number(product.costPrice);
-            const salePrice = Number(product.salePrice);
-            const quantity = inv.quantity;
-
-            inventory.push({
-              locationId: salesArea.id,
-              locationName: salesArea.name,
-              locationType: "salesArea",
-              productId: product.id,
-              productName: product.name,
-              categoryId: product.categoryId,
-              categoryName: category?.name || "Sin categoría",
-              quantity: quantity,
-              minStock: inv.minStock || 0,
-              costPrice: costPrice,
-              salePrice: salePrice,
-              costAmount: costPrice * quantity,
-              saleAmount: salePrice * quantity,
-              unit: product.unit,
-              isLowStock: quantity <= (inv.minStock || 0),
-            });
-          });
+          return false;
         }
       }
-    });
 
-    return inventory;
+      return true;
+    });
   }, [
-    warehouses,
-    salesAreas,
-    products,
-    categories,
+    inventoryData,
     selectedLocation,
     selectedLocationId,
+    selectedCategoryId,
+    searchTerm,
   ]);
 
-  // Filtrar inventario
-  const filteredInventory = useMemo(() => {
-    let filtered = inventoryData;
-
-    // Filtrar por categoría
-    if (selectedCategoryId !== "all") {
-      filtered = filtered.filter(
-        (item) => item.categoryId === selectedCategoryId,
-      );
-    }
-
-    // Filtrar por búsqueda
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.productName.toLowerCase().includes(search) ||
-          item.productId.toLowerCase().includes(search),
-      );
-    }
-
-    // Ordenar por ubicación y luego por nombre de producto
-    return filtered.sort((a, b) => {
-      if (a.locationType !== b.locationType) {
-        return a.locationType.localeCompare(b.locationType);
-      }
-      if (a.locationName !== b.locationName) {
-        return a.locationName.localeCompare(b.locationName);
-      }
-      return a.productName.localeCompare(b.productName);
-    });
-  }, [inventoryData, selectedCategoryId, searchTerm]);
-
-  // Calcular totales
   const totals = useMemo(() => {
     return filteredInventory.reduce(
       (sum, item) => ({
-        totalCostAmount: sum.totalCostAmount + item.costAmount,
-        totalSaleAmount: sum.totalSaleAmount + item.saleAmount,
-        quantity: sum.quantity + item.quantity,
-        costValue: sum.costValue + item.costAmount,
-        saleValue: sum.saleValue + item.saleAmount,
+        costAmount: sum.costAmount + item.costAmount,
+        saleAmount: sum.saleAmount + item.saleAmount,
       }),
-      {
-        totalCostAmount: 0,
-        totalSaleAmount: 0,
-        quantity: 0,
-        costValue: 0,
-        saleValue: 0,
-      },
+      { costAmount: 0, saleAmount: 0 },
     );
-  }, [filteredInventory]);
-
-  // Productos con stock bajo
-  const lowStockItems = useMemo(() => {
-    return filteredInventory.filter((item) => item.isLowStock);
   }, [filteredInventory]);
 
   const clearFilters = () => {
@@ -228,7 +228,8 @@ export default function InventoryReport() {
   };
 
   const exportToExcel = () => {
-    const data = filteredInventory.map((item) => ({
+    // Reutilizar filteredInventory en lugar de duplicar el filtro
+    const exportData = filteredInventory.map((item: any) => ({
       Ubicación: item.locationName,
       Tipo: item.locationType === "warehouse" ? "Almacén" : "Área de Venta",
       "ID Producto": item.productId,
@@ -244,24 +245,34 @@ export default function InventoryReport() {
       Estado: item.isLowStock ? "STOCK BAJO" : "OK",
     }));
 
+    // Calcular totales del filtro
+    const filteredTotals = filteredInventory.reduce(
+      (sum: any, item: any) => ({
+        quantity: sum.quantity + item.quantity,
+        costValue: sum.costValue + item.costAmount,
+        saleValue: sum.saleValue + item.saleAmount,
+      }),
+      { quantity: 0, costValue: 0, saleValue: 0 },
+    );
+
     // Agregar fila de totales
-    data.push({
+    exportData.push({
       Ubicación: "TOTALES",
       Tipo: "",
       "ID Producto": "",
       Producto: "",
       Categoría: "",
-      Cantidad: totals.quantity,
+      Cantidad: filteredTotals.quantity,
       Unidad: "",
       "Stock Mínimo": 0,
       "Precio Costo": 0,
-      "Valor al Costo": totals.costValue,
+      "Valor al Costo": filteredTotals.costValue,
       "Precio Venta": 0,
-      "Valor a la Venta": totals.saleValue,
+      "Valor a la Venta": filteredTotals.saleValue,
       Estado: "",
     });
 
-    const ws = utils.json_to_sheet(data);
+    const ws = utils.json_to_sheet(exportData);
     const wb = utils.book_new();
     utils.book_append_sheet(wb, ws, "Inventario");
 
@@ -305,7 +316,8 @@ export default function InventoryReport() {
       }
     }
 
-    const tableData = filteredInventory.map((item) => [
+    // Reutilizar filteredInventory que ya incluye todos los filtros
+    const tableData = filteredInventory.map((item: any) => [
       item.locationName,
       item.locationType === "warehouse" ? "Almacén" : "Área Venta",
       item.productId,
@@ -347,13 +359,25 @@ export default function InventoryReport() {
           "",
           "",
           "",
-          totals.quantity.toString(),
+          filteredInventory
+            .reduce((sum: number, item: any) => sum + item.quantity, 0)
+            .toString(),
           "",
           "",
           "",
-          formatCurrency(totals.costValue),
+          formatCurrency(
+            filteredInventory.reduce(
+              (sum: number, item: any) => sum + item.costAmount,
+              0,
+            ),
+          ),
           "",
-          formatCurrency(totals.saleValue),
+          formatCurrency(
+            filteredInventory.reduce(
+              (sum: number, item: any) => sum + item.saleAmount,
+              0,
+            ),
+          ),
           "",
         ],
       ],
@@ -417,9 +441,9 @@ export default function InventoryReport() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0 bg-amber-300">
-      <Card>
-        <CardHeader>
+    <div className="flex h-dvh -mt-12 flex-col pt-16 pb-4 px-4 gap-2">
+      <Card className="p-4">
+        <CardHeader className="p-0">
           <CardTitle>Filtros</CardTitle>
           <CardAction>
             <Button onClick={clearFilters} variant="outline">
@@ -427,7 +451,7 @@ export default function InventoryReport() {
             </Button>
           </CardAction>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-4">
+        <CardContent className="p-0 grid gap-2 md:grid-cols-4">
           <div className="grid gap-2">
             <Label htmlFor="location" className="pl-1">
               Ubicación
@@ -489,8 +513,8 @@ export default function InventoryReport() {
           </div>
         </CardContent>
       </Card>
-      <Card className="flex flex-1">
-        <CardHeader>
+      <Card className="flex flex-1 min-h-0 p-4">
+        <CardHeader className="p-0">
           <CardTitle>
             Inventario
             {selectedLocation === "store" && " de la Tienda"}
@@ -501,7 +525,7 @@ export default function InventoryReport() {
               selectedLocationId !== "all" &&
               ` - ${salesAreas.find((sa) => sa.id === selectedLocationId)?.name}`}
           </CardTitle>
-          <CardAction className="grid grid-cols-2 gap-4">
+          <CardAction className="grid grid-cols-2 gap-2">
             <Button
               onClick={exportToExcel}
               disabled={filteredInventory.length === 0}
@@ -520,9 +544,9 @@ export default function InventoryReport() {
             </Button>
           </CardAction>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 flex overflow-auto min-h-0">
           {filteredInventory.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-12">
+            <div className="flex flex-col items-center gap-4 py-12 p-6">
               <PackageIcon className="size-32 text-gray-300" />
               <p className="font-semibold text-gray-600">
                 No hay productos en inventario para los filtros seleccionados.
@@ -532,39 +556,40 @@ export default function InventoryReport() {
               </Button>
             </div>
           ) : (
-            <div className="h-dvh overflow-y-scroll">
-              <Table>
-                <TableHeader>
-                  <TableRow>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary">
+                  {selectedLocation === "all" ||
+                  selectedLocationId === "all" ? (
                     <TableHead className="font-semibold">Ubicación</TableHead>
-                    <TableHead className="font-semibold">Producto</TableHead>
-                    <TableHead className="font-semibold">Categoría</TableHead>
-                    <TableHead className="text-right font-semibold">
-                      Cantidad
-                    </TableHead>
-                    <TableHead className="text-right font-semibold">
-                      Precio Costo
-                    </TableHead>
-                    <TableHead className="text-right font-semibold">
-                      Precio Venta
-                    </TableHead>
-                    <TableHead className="text-right font-semibold">
-                      Imp. Costo
-                    </TableHead>
-                    <TableHead className="text-right font-semibold">
-                      Imp. Venta
-                    </TableHead>
-                    <TableHead className="font-semibold">Estado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="">
-                  {filteredInventory.map((item, index) => (
-                    <TableRow
-                      key={`${item.locationId}_${item.productId}`}
-                      className={`${index % 2 === 0 ? "bg-secondary" : ""} ${
-                        item.isLowStock ? "bg-orange-50" : ""
-                      }`}
-                    >
+                  ) : null}
+                  <TableHead className="font-semibold">Producto</TableHead>
+                  <TableHead className="font-semibold">Categoría</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Cantidad
+                  </TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Precio Costo
+                  </TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Precio Venta
+                  </TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Imp. Costo
+                  </TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Imp. Venta
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInventory.map((item: any, index: number) => (
+                  <TableRow
+                    key={`${item.locationId}_${item.productId}`}
+                    className={`${item.isLowStock ? "bg-red-50" : ""}`}
+                  >
+                    {selectedLocation === "all" ||
+                    selectedLocationId === "all" ? (
                       <TableCell>
                         <div>{item.locationName}</div>
                         <div className="text-xs text-muted-foreground">
@@ -573,69 +598,62 @@ export default function InventoryReport() {
                             : "Área Venta"}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div>{item.productName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.productId}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>{item.categoryName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.categoryId}
-                        </div>
-                      </TableCell>
-                      <TableCell
-                        className={`text-right ${
-                          item.isLowStock ? "text-orange-600" : ""
-                        }`}
-                      >
-                        {item.quantity}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(item.costPrice, "cost")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(item.salePrice)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(item.costAmount, "cost")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(item.saleAmount)}
-                      </TableCell>
-                      <TableCell>
-                        {item.isLowStock ? (
-                          <div className="flex items-center gap-1 text-orange-600">
-                            <AlertTriangle className="h-4 w-4" />
-                            <span className="text-xs">Bajo</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <div className="h-2 w-2 rounded-full bg-green-600" />
-                            <span className="text-xs">OK</span>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow className="font-semibold bg-secondary">
-                    <TableCell colSpan={6} className="text-right">
-                      TOTAL:
+                    ) : null}
+                    <TableCell>
+                      <div>{item.productName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {item.productId}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>{item.categoryName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {item.categoryId}
+                      </div>
+                    </TableCell>
+                    <TableCell
+                      className={`text-right ${
+                        item.isLowStock ? "text-red-600" : ""
+                      }`}
+                    >
+                      {item.quantity}
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(totals.totalCostAmount, "cost")}
+                      {formatCurrency(item.costPrice, "cost")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(totals.totalSaleAmount)}
+                      {formatCurrency(item.salePrice)}
                     </TableCell>
-                    <TableCell />
+                    <TableCell className="text-right">
+                      {formatCurrency(item.costAmount, "cost")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(item.saleAmount)}
+                    </TableCell>
                   </TableRow>
-                </TableFooter>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow className="font-semibold bg-secondary">
+                  <TableCell
+                    colSpan={
+                      selectedLocation === "all" || selectedLocationId === "all"
+                        ? 6
+                        : 5
+                    }
+                    className="text-right"
+                  >
+                    TOTAL:
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(totals.costAmount, "cost")}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(totals.saleAmount)}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
           )}
         </CardContent>
       </Card>

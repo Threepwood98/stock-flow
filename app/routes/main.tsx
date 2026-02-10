@@ -28,7 +28,11 @@ export async function loader({ request }: Route.LoaderArgs) {
           warehouses: {
             include: {
               warehouseInventories: {
-                include: { product: true },
+                include: {
+                  product: {
+                    include: { category: true },
+                  },
+                },
                 orderBy: { product: { name: "asc" } },
               },
             },
@@ -37,7 +41,11 @@ export async function loader({ request }: Route.LoaderArgs) {
           salesAreas: {
             include: {
               salesAreaInventories: {
-                include: { product: true },
+                include: {
+                  product: {
+                    include: { category: true },
+                  },
+                },
                 orderBy: { product: { name: "asc" } },
               },
             },
@@ -53,7 +61,18 @@ export async function loader({ request }: Route.LoaderArgs) {
     orderBy: { name: "asc" },
   });
 
-  const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
+  const [products, categories] = await Promise.all([
+    prisma.product.findMany({
+      orderBy: { name: "asc" },
+      include: { category: true },
+    }),
+    prisma.category.findMany({
+      include: {
+        generalCategory: true,
+      },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   const productsDTO = products.map((p) => ({
     ...p,
@@ -61,18 +80,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     salePrice: p.salePrice.toNumber(),
   }));
 
-  const categories = await prisma.category.findMany({
-    include: {
-      generalCategory: true,
-    },
-    orderBy: { name: "asc" },
-  });
-
   const storeIds = userStores.map((us) => us.storeId);
 
-  const inflows =
+  const [inflows, outflows, sales, withdraws] = await Promise.all([
     storeIds.length > 0
-      ? await prisma.inflow.findMany({
+      ? prisma.inflow.findMany({
           where: { userId: user.id, warehouse: { storeId: { in: storeIds } } },
           include: {
             warehouse: true,
@@ -82,11 +94,9 @@ export async function loader({ request }: Route.LoaderArgs) {
           },
           orderBy: { date: "desc" },
         })
-      : [];
-
-  const outflows =
+      : [],
     storeIds.length > 0
-      ? await prisma.outflow.findMany({
+      ? prisma.outflow.findMany({
           where: { userId: user.id, warehouse: { storeId: { in: storeIds } } },
           include: {
             warehouse: true,
@@ -96,11 +106,9 @@ export async function loader({ request }: Route.LoaderArgs) {
           },
           orderBy: { date: "desc" },
         })
-      : [];
-
-  const sales =
+      : [],
     storeIds.length > 0
-      ? await prisma.sale.findMany({
+      ? prisma.sale.findMany({
           where: {
             salesArea: { storeId: { in: storeIds } },
           },
@@ -111,11 +119,9 @@ export async function loader({ request }: Route.LoaderArgs) {
           },
           orderBy: { date: "desc" },
         })
-      : [];
-
-  const withdraws =
+      : [],
     storeIds.length > 0
-      ? await prisma.withdraw.findMany({
+      ? prisma.withdraw.findMany({
           where: { salesArea: { storeId: { in: storeIds } } },
           include: {
             salesArea: { include: { store: true } },
@@ -123,7 +129,8 @@ export async function loader({ request }: Route.LoaderArgs) {
           },
           orderBy: { date: "desc" },
         })
-      : [];
+      : [],
+  ]);
 
   return {
     user,
