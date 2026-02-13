@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   redirect,
   useFetcher,
-  useOutletContext,
+  useLoaderData,
   useSearchParams,
 } from "react-router";
 import {
@@ -44,15 +44,16 @@ import {
   BanIcon,
   CalculatorIcon,
   EraserIcon,
-  LockIcon,
-  LockOpenIcon,
+  PinIcon,
+  PinOffIcon,
   PencilLineIcon,
   PlusIcon,
   SaveIcon,
   StoreIcon,
   Trash2Icon,
+  Loader2Icon,
 } from "lucide-react";
-import type { OutletContext } from "@/lib/types/types";
+import { auth } from "@/lib/auth";
 import {
   Card,
   CardAction,
@@ -97,6 +98,58 @@ const initialFormValues: SaleRow = {
   costAmount: 0,
   stock: 0,
 };
+
+// Loader Function
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+
+  const user = session.user;
+  const userStores = await prisma.userStore.findMany({
+    where: { userId: user.id },
+    select: { storeId: true },
+  });
+
+  const storeIds = userStores.map((us) => us.storeId);
+
+  const salesAreas = await prisma.salesArea.findMany({
+    where: { storeId: { in: storeIds } },
+    include: {
+      salesAreaInventories: {
+        include: {
+          product: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  const parsedSalesAreas = salesAreas.map((sa) => ({
+    ...sa,
+    salesAreaInventories: sa.salesAreaInventories.map((inv) => ({
+      ...inv,
+      quantity: inv.quantity.toNumber(),
+      minStock: inv.minStock?.toNumber() || 0,
+      product: {
+        ...inv.product,
+        costPrice: inv.product.costPrice.toNumber(),
+        salePrice: inv.product.salePrice.toNumber(),
+      },
+    })),
+  }));
+
+  return {
+    user,
+    salesAreas: parsedSalesAreas,
+  };
+}
 
 // Server Action
 export async function action({ request }: Route.ActionArgs) {
@@ -194,7 +247,7 @@ export async function action({ request }: Route.ActionArgs) {
 
 // Component
 export default function Sale() {
-  const { user, salesAreas } = useOutletContext<OutletContext>();
+  const { user, salesAreas } = useLoaderData<typeof loader>();
 
   const [searchParams] = useSearchParams();
   const [rows, setRows] = useState<SaleRow[]>([]);
@@ -207,17 +260,19 @@ export default function Sale() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [isDateLocked, setIsDateLocked] = useState(false);
-  const [isSalesAreaLocked, setIsSalesAreaLocked] = useState(false);
-  const [isPayMethodLocked, setIsPayMethodLocked] = useState(false);
+  const [isDateFixed, setIsDateFixed] = useState(false);
+  const [isSalesAreaFixed, setIsSalesAreaFixed] = useState(false);
+  const [isPayMethodFixed, setIsPayMethodFixed] = useState(false);
 
   const availableProducts = useMemo(() => {
-    const salesArea = salesAreas.find((sa) => sa.id === formValues.salesAreaId);
+    const salesArea = salesAreas.find(
+      (sa: any) => sa.id === formValues.salesAreaId,
+    );
     if (!salesArea) return [];
 
     return salesArea.salesAreaInventories
-      .filter((inv) => inv.quantity > 0)
-      .map((inv) => ({
+      .filter((inv: any) => inv.quantity > 0)
+      .map((inv: any) => ({
         id: inv.product.id,
         name: inv.product.name,
         costPrice: inv.product.costPrice,
@@ -268,7 +323,9 @@ export default function Sale() {
       productId: string,
       quantity: string,
     ): { costAmount: number; saleAmount: number } => {
-      const product = availableProducts.find((prod) => prod.id === productId);
+      const product = availableProducts.find(
+        (prod: any) => prod.id === productId,
+      );
       const qty = parseFloat(quantity);
 
       if (!product || isNaN(qty) || qty <= 0) {
@@ -315,7 +372,7 @@ export default function Sale() {
       }
 
       const product = availableProducts.find(
-        (avp) => avp.id === formValues.productId,
+        (avp: any) => avp.id === formValues.productId,
       );
 
       if (!product) {
@@ -359,14 +416,14 @@ export default function Sale() {
     setFormValues({
       ...initialFormValues,
       userId: user.id,
-      salesAreaId: isSalesAreaLocked
+      salesAreaId: isSalesAreaFixed
         ? formValues.salesAreaId
         : salesAreas[0]?.id || "",
-      salesAreaName: isSalesAreaLocked
+      salesAreaName: isSalesAreaFixed
         ? formValues.salesAreaName
         : salesAreas[0]?.name || "",
-      date: isDateLocked ? formValues.date : initialFormValues.date,
-      payMethod: isPayMethodLocked
+      date: isDateFixed ? formValues.date : initialFormValues.date,
+      payMethod: isPayMethodFixed
         ? formValues.payMethod
         : initialFormValues.payMethod,
     });
@@ -374,23 +431,23 @@ export default function Sale() {
     user.id,
     salesAreas,
     formValues,
-    isDateLocked,
-    isSalesAreaLocked,
-    isPayMethodLocked,
+    isDateFixed,
+    isSalesAreaFixed,
+    isPayMethodFixed,
   ]);
 
   const handleCancel = useCallback(() => {
     setFormValues({
       ...initialFormValues,
       userId: user.id,
-      salesAreaId: isSalesAreaLocked
+      salesAreaId: isSalesAreaFixed
         ? formValues.salesAreaId
         : salesAreas[0]?.id || "",
-      salesAreaName: isSalesAreaLocked
+      salesAreaName: isSalesAreaFixed
         ? formValues.salesAreaName
         : salesAreas[0]?.name || "",
-      date: isDateLocked ? formValues.date : initialFormValues.date,
-      payMethod: isPayMethodLocked
+      date: isDateFixed ? formValues.date : initialFormValues.date,
+      payMethod: isPayMethodFixed
         ? formValues.payMethod
         : initialFormValues.payMethod,
     });
@@ -399,9 +456,9 @@ export default function Sale() {
     user.id,
     salesAreas,
     formValues,
-    isDateLocked,
-    isSalesAreaLocked,
-    isPayMethodLocked,
+    isDateFixed,
+    isSalesAreaFixed,
+    isPayMethodFixed,
   ]);
 
   const handleEdit = useCallback(
@@ -444,206 +501,12 @@ export default function Sale() {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      {/* Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">Venta</CardTitle>
-        </CardHeader>
-        <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
-          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <input
-              type="hidden"
-              name="userId"
-              defaultValue={user.id}
-              required
-            />
-            <div className="grid gap-2">
-              <Label htmlFor="date" className="pl-1 text-sm font-medium">
-                Fecha
-              </Label>
-              <InputGroup>
-                <DatePicker
-                  name="date"
-                  className="w-full min-w-0 sm:min-w-40"
-                  value={formValues.date}
-                  onChange={(value) => handleChange("date", value)}
-                  disabled={isDateLocked}
-                  required
-                />
-                <Toggle
-                  pressed={isDateLocked}
-                  onPressedChange={setIsDateLocked}
-                  aria-label={
-                    isDateLocked ? "Desbloquear fecha" : "Bloquear fecha"
-                  }
-                  title={
-                    isDateLocked ? "Fecha bloqueada" : "Fecha desbloqueada"
-                  }
-                  className="hover:bg-transparent data-[state=on]:bg-transparent"
-                >
-                  {isDateLocked ? <LockOpenIcon /> : <LockIcon />}
-                </Toggle>
-              </InputGroup>
-            </div>
-            {salesAreas.length > 1 && (
-              <div className="grid gap-2">
-                <Label
-                  htmlFor="salesAreaId"
-                  className="pl-1 text-sm font-medium"
-                >
-                  Área de Venta
-                </Label>
-                <InputGroup>
-                  <ComboboxPlus
-                    name="salesAreaId"
-                    className="w-full min-w-0 sm:min-w-40"
-                    options={salesAreas.map((sa) => ({
-                      value: sa.id,
-                      label: sa.name,
-                    }))}
-                    value={formValues.salesAreaId}
-                    onChange={(value) => {
-                      const sa = salesAreas.find((s) => s.id === value);
-                      if (sa) {
-                        handleChange("salesAreaId", value);
-                        setFormValues((prev) => ({
-                          ...prev,
-                          salesAreaName: sa.name,
-                        }));
-                      }
-                    }}
-                    disable={isSalesAreaLocked}
-                    required
-                  />
-                  <Toggle
-                    pressed={isSalesAreaLocked}
-                    onPressedChange={setIsSalesAreaLocked}
-                    aria-label={
-                      isSalesAreaLocked
-                        ? "Desbloquear área de venta"
-                        : "Bloquear área de venta"
-                    }
-                    title={
-                      isSalesAreaLocked
-                        ? "Área de venta bloqueada"
-                        : "Área de venta desbloqueada"
-                    }
-                    className="hover:bg-transparent data-[state=on]:bg-transparent"
-                  >
-                    {isSalesAreaLocked ? <LockOpenIcon /> : <LockIcon />}
-                  </Toggle>
-                </InputGroup>
-              </div>
-            )}
-            <div className="grid gap-2">
-              <Label htmlFor="payMethod" className="pl-1 text-sm font-medium">
-                Método de Pago
-              </Label>
-              <InputGroup>
-                <SelectList
-                  name="payMethod"
-                  className="w-full min-w-0 sm:min-w-40"
-                  options={payMethods}
-                  value={formValues.payMethod}
-                  onChange={(value) => handleChange("payMethod", value)}
-                  disabled={isPayMethodLocked}
-                  required
-                />
-                <Toggle
-                  pressed={isPayMethodLocked}
-                  onPressedChange={setIsPayMethodLocked}
-                  aria-label={
-                    isPayMethodLocked
-                      ? "Desbloquear método de pago"
-                      : "Bloquear método de pago"
-                  }
-                  title={
-                    isPayMethodLocked
-                      ? "Método de pago bloqueado"
-                      : "Método de pago desbloqueado"
-                  }
-                  className="hover:bg-transparent data-[state=on]:bg-transparent"
-                >
-                  {isPayMethodLocked ? <LockOpenIcon /> : <LockIcon />}
-                </Toggle>
-              </InputGroup>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="product" className="pl-1 text-sm font-medium">
-                Producto
-              </Label>
-              <ComboboxPlus
-                name="product"
-                className="w-full min-w-0 sm:min-w-40"
-                placeholder={
-                  availableProducts.length === 0
-                    ? "Sin productos disponibles"
-                    : "Selecciona..."
-                }
-                options={availableProducts.map((prod) => ({
-                  value: prod.id,
-                  label: `${prod.name} (${prod.availableQuantity} ${prod.unit})`,
-                }))}
-                value={formValues.productId}
-                onChange={(value) => {
-                  const prod = availableProducts.find((p) => p.id === value);
-                  if (prod) {
-                    setFormValues((prev) => ({
-                      ...prev,
-                      productId: prod.id,
-                      productName: prod.name,
-                    }));
-                  }
-                }}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="quantity" className="pl-1 text-sm font-medium">
-                Cantidad
-              </Label>
-              <Input
-                id="quantity"
-                name="quantity"
-                value={formValues.quantity}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  const product = availableProducts.find(
-                    (p) => p.id === formValues.productId,
-                  );
-                  if (product?.unit === "un") {
-                    // Solo permitir números enteros positivos
-                    if (value === "" || /^\d+$/.test(value)) {
-                      handleChange("quantity", value);
-                    }
-                  } else {
-                    // Permitir números decimales positivos
-                    if (value === "" || /^\d*([.,]\d*)?$/.test(value)) {
-                      handleChange("quantity", value);
-                    }
-                  }
-                }}
-                type="text"
-                inputMode={
-                  availableProducts.find((p) => p.id === formValues.productId)
-                    ?.unit === "un"
-                    ? "numeric"
-                    : "decimal"
-                }
-                placeholder={
-                  availableProducts.find((p) => p.id === formValues.productId)
-                    ?.unit === "un"
-                    ? "0"
-                    : "0.00"
-                }
-                className="w-full min-w-0 sm:min-w-40"
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <CardAction className="grid grid-cols-2 gap-4">
+    <div className="flex flex-col h-dvh -mt-12 pt-16 pb-4 px-4 gap-2">
+      <Card className="p-4">
+        <form className="flex flex-col gap-2" onSubmit={handleAddOrSave}>
+          <CardHeader className="p-0">
+            <CardTitle>Venta</CardTitle>
+            <CardAction className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -660,7 +523,7 @@ export default function Sale() {
                   </div>
                 )}
               </Button>
-              <Button type="submit" className="min-w-32">
+              <Button type="submit" className="min-w-32 cursor-pointer">
                 {editIndex !== null ? (
                   <div className="flex items-center gap-2">
                     Guardar <SaveIcon />
@@ -672,57 +535,217 @@ export default function Sale() {
                 )}
               </Button>
             </CardAction>
-          </CardFooter>
+          </CardHeader>
+          <CardContent className="p-0 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+            <input
+              type="hidden"
+              name="userId"
+              defaultValue={user.id}
+              required
+            />
+            <div className="grid gap-2">
+              <Label htmlFor="date" className="pl-1">
+                Fecha
+              </Label>
+              <InputGroup>
+                <DatePicker
+                  name="date"
+                  className="w-full min-w-40"
+                  value={formValues.date}
+                  onChange={(value) => handleChange("date", value)}
+                  disabled={isDateFixed}
+                  required
+                />
+                <Toggle
+                  pressed={isDateFixed}
+                  onPressedChange={setIsDateFixed}
+                  title={isDateFixed ? "Soltar" : "Fijar"}
+                  className="hover:bg-transparent cursor-pointer data-[state=on]:bg-transparent"
+                >
+                  {isDateFixed ? <PinOffIcon /> : <PinIcon />}
+                </Toggle>
+              </InputGroup>
+            </div>
+            {salesAreas.length > 1 && (
+              <div className="grid gap-2">
+                <Label htmlFor="salesAreaId" className="pl-1">
+                  Área de Venta
+                </Label>
+                <InputGroup>
+                  <ComboboxPlus
+                    name="salesAreaId"
+                    className="w-full min-w-40"
+                    options={salesAreas.map((sa: any) => ({
+                      value: sa.id,
+                      label: sa.name,
+                    }))}
+                    value={formValues.salesAreaId}
+                    onChange={(value) => {
+                      const sa = salesAreas.find((s: any) => s.id === value);
+                      if (sa) {
+                        handleChange("salesAreaId", value);
+                        setFormValues((prev) => ({
+                          ...prev,
+                          salesAreaName: sa.name,
+                        }));
+                      }
+                    }}
+                    disable={isSalesAreaFixed}
+                    required
+                  />
+                  <Toggle
+                    pressed={isSalesAreaFixed}
+                    onPressedChange={setIsSalesAreaFixed}
+                    title={isSalesAreaFixed ? "Soltar" : "Fijar"}
+                    className="hover:bg-transparent cursor-pointer data-[state=on]:bg-transparent"
+                  >
+                    {isSalesAreaFixed ? <PinOffIcon /> : <PinIcon />}
+                  </Toggle>
+                </InputGroup>
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="payMethod" className="pl-1">
+                Método de Pago
+              </Label>
+              <InputGroup>
+                <SelectList
+                  name="payMethod"
+                  className="w-full min-w-40"
+                  options={payMethods}
+                  value={formValues.payMethod}
+                  onChange={(value) => handleChange("payMethod", value)}
+                  disabled={isPayMethodFixed}
+                  required
+                />
+                <Toggle
+                  pressed={isPayMethodFixed}
+                  onPressedChange={setIsPayMethodFixed}
+                  title={isPayMethodFixed ? "Soltar" : "Fijar"}
+                  className="hover:bg-transparent cursor-pointer data-[state=on]:bg-transparent"
+                >
+                  {isPayMethodFixed ? <PinOffIcon /> : <PinIcon />}
+                </Toggle>
+              </InputGroup>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="product" className="pl-1">
+                Producto
+              </Label>
+              <ComboboxPlus
+                name="product"
+                className="w-full min-w-40"
+                placeholder={
+                  availableProducts.length === 0
+                    ? "Sin productos disponibles"
+                    : "Selecciona..."
+                }
+                options={availableProducts.map((prod: any) => ({
+                  value: prod.id,
+                  label: `${prod.name} [${prod.availableQuantity} ${prod.unit}]`,
+                }))}
+                value={formValues.productId}
+                onChange={(value) => {
+                  const prod = availableProducts.find(
+                    (p: any) => p.id === value,
+                  );
+                  if (prod) {
+                    setFormValues((prev) => ({
+                      ...prev,
+                      productId: prod.id,
+                      productName: prod.name,
+                    }));
+                  }
+                }}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="quantity" className="pl-1">
+                Cantidad
+              </Label>
+              <Input
+                id="quantity"
+                name="quantity"
+                value={formValues.quantity}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const product = availableProducts.find(
+                    (p: any) => p.id === formValues.productId,
+                  );
+                  if (product?.unit === "un") {
+                    // Solo permitir números enteros positivos
+                    if (value === "" || /^\d+$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  } else {
+                    // Permitir números decimales positivos
+                    if (value === "" || /^\d*([.,]\d*)?$/.test(value)) {
+                      handleChange("quantity", value);
+                    }
+                  }
+                }}
+                type="text"
+                inputMode={
+                  availableProducts.find(
+                    (p: any) => p.id === formValues.productId,
+                  )?.unit === "un"
+                    ? "numeric"
+                    : "decimal"
+                }
+                placeholder={
+                  availableProducts.find(
+                    (p: any) => p.id === formValues.productId,
+                  )?.unit === "un"
+                    ? "0"
+                    : "0.00"
+                }
+                className="w-full min-w-0 sm:min-w-40"
+                required
+              />
+            </div>
+          </CardContent>
         </form>
       </Card>
-      {/* Table */}
-      <Card>
-        <CardContent className="relative">
+      <Card className="flex flex-1 min-h-0 p-4">
+        <CardContent className="relative p-0 flex flex-1 overflow-auto min-h-0">
           {editIndex !== null && (
             <div className="absolute inset-0 bg-white/50 cursor-not-allowed z-10 rounded-lg" />
           )}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="font-semibold">Fecha</TableHead>
-                <TableHead className="font-semibold">Área de Venta</TableHead>
-                <TableHead className="font-semibold">Método de Pago</TableHead>
-                <TableHead className="font-semibold">Producto</TableHead>
-                <TableHead className="text-right font-semibold">
-                  Cantidad
-                </TableHead>
-                <TableHead className=" text-right font-semibold">
-                  Importe al Costo
-                </TableHead>
-                <TableHead className="text-right font-semibold">
-                  Importe a la Venta
-                </TableHead>
-                <TableHead className="font-semibold">Existencia</TableHead>
-                <TableHead className="font-semibold">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
+          {rows.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 m-auto text-muted-foreground text-center">
+              <StoreIcon className="size-32" />
+              <p className="font-semibold">
+                No hay ventas agregadas. Complete el formulario y haga clic en
+                "Agregar".
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader className="bg-secondary">
                 <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="text-center text-muted-foreground py-8"
-                  >
-                    <div className="flex flex-col items-center gap-4">
-                      <StoreIcon className="size-32" />
-                      <p className="font-semibold">
-                        No hay ventas agregadas. Complete el formulario y haga
-                        clic en "Agregar".
-                      </p>
-                    </div>
-                  </TableCell>
+                  <TableHead className="font-semibold">Fecha</TableHead>
+                  <TableHead className="font-semibold">Área de Venta</TableHead>
+                  <TableHead className="font-semibold">
+                    Método de Pago
+                  </TableHead>
+                  <TableHead className="font-semibold">Producto</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Cantidad
+                  </TableHead>
+                  <TableHead className=" text-right font-semibold">
+                    Importe al Costo
+                  </TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Importe a la Venta
+                  </TableHead>
+                  <TableHead className="font-semibold">Existencia</TableHead>
+                  <TableHead className="font-semibold">Acciones</TableHead>
                 </TableRow>
-              ) : (
-                rows.map((row, index) => (
-                  <TableRow
-                    key={index}
-                    className={`${index % 2 === 0 ? "bg-secondary" : ""}`}
-                  >
+              </TableHeader>
+              <TableBody>
+                {rows.map((row, index) => (
+                  <TableRow key={index}>
                     <TableCell>{row.date}</TableCell>
                     <TableCell>{row.salesAreaName}</TableCell>
                     <TableCell>{row.payMethod}</TableCell>
@@ -762,20 +785,24 @@ export default function Sale() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-            <TableFooter>
-              <TableRow className="text-right font-semibold">
-                <TableCell colSpan={5}>TOTAL</TableCell>
-                <TableCell>{formatCurrency(totalCostAmount, "cost")}</TableCell>
-                <TableCell>{formatCurrency(totalSaleAmount)}</TableCell>
-                <TableCell />
-              </TableRow>
-            </TableFooter>
-          </Table>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow className="text-right font-semibold bg-secondary">
+                  <TableCell colSpan={5} className="">
+                    TOTAL
+                  </TableCell>
+                  <TableCell>
+                    {formatCurrency(totalCostAmount, "cost")}
+                  </TableCell>
+                  <TableCell>{formatCurrency(totalSaleAmount)}</TableCell>
+                  <TableCell colSpan={2} />
+                </TableRow>
+              </TableFooter>
+            </Table>
+          )}
         </CardContent>
-        <CardFooter className="flex justify-end">
+        <CardFooter className="flex justify-end p-0">
           <CardAction>
             <Button
               className="min-w-32"
@@ -788,8 +815,6 @@ export default function Sale() {
           </CardAction>
         </CardFooter>
       </Card>
-
-      {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -805,14 +830,19 @@ export default function Sale() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>
+            <AlertDialogCancel disabled={isSubmitting} className="min-w-32">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmSubmit}
               disabled={isSubmitting}
+              className="min-w-32"
             >
-              {isSubmitting ? "Procesando..." : "Confirmar"}
+              {isSubmitting ? (
+                <Loader2Icon className="animate-spin" />
+              ) : (
+                "Confirmar"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

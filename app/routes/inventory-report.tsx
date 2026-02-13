@@ -11,7 +11,7 @@ import {
 } from "~/components/ui/table";
 import { Label } from "~/components/ui/label";
 import { ComboboxPlus } from "~/components/combobox-plus";
-import { PackageIcon } from "lucide-react";
+import { BoxesIcon, PackageIcon } from "lucide-react";
 import { writeFile, utils } from "xlsx";
 import {
   Card,
@@ -441,7 +441,7 @@ export default function InventoryReport() {
   };
 
   return (
-    <div className="flex h-dvh -mt-12 flex-col pt-16 pb-4 px-4 gap-2">
+    <div className="flex flex-col h-dvh -mt-12 pt-16 pb-4 px-4 gap-2">
       <Card className="p-4">
         <CardHeader className="p-0">
           <CardTitle>Filtros</CardTitle>
@@ -451,7 +451,7 @@ export default function InventoryReport() {
             </Button>
           </CardAction>
         </CardHeader>
-        <CardContent className="p-0 grid gap-2 md:grid-cols-4">
+        <CardContent className="p-0 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
           <div className="grid gap-2">
             <Label htmlFor="location" className="pl-1">
               Ubicación
@@ -546,13 +546,17 @@ export default function InventoryReport() {
         </CardHeader>
         <CardContent className="p-0 flex overflow-auto min-h-0">
           {filteredInventory.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-12 p-6">
-              <PackageIcon className="size-32 text-gray-300" />
-              <p className="font-semibold text-gray-600">
+            <div className="flex flex-col items-center gap-2 m-auto text-muted-foreground text-center">
+              <BoxesIcon className="size-32" />
+              <p className="font-semibold">
                 No hay productos en inventario para los filtros seleccionados.
               </p>
-              <Button onClick={clearFilters} variant="outline" size="sm">
-                Limpiar filtros
+              <Button
+                onClick={clearFilters}
+                variant="outline"
+                className="min-w-32"
+              >
+                Limpiar
               </Button>
             </div>
           ) : (
@@ -643,7 +647,7 @@ export default function InventoryReport() {
                     }
                     className="text-right"
                   >
-                    TOTAL:
+                    TOTAL
                   </TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(totals.costAmount, "cost")}

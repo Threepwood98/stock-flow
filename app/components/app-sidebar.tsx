@@ -86,6 +86,7 @@ const data = {
         {
           title: "Inventario",
           url: "/main/report/inventory-report",
+          icon: BoxesIcon,
           isActive: true,
         },
         {

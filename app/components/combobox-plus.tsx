@@ -37,7 +37,7 @@ interface ComboboxProps {
 
 export function ComboboxPlus({
   name,
-  placeholder = "Selecciona...",
+  placeholder = "",
   className,
   options = [],
   value,
@@ -77,7 +77,7 @@ export function ComboboxPlus({
               <span
                 className={cn(
                   "truncate",
-                  selectedLabel === placeholder && "text-muted-foreground"
+                  selectedLabel === placeholder && "text-muted-foreground",
                 )}
               >
                 {selectedLabel}
@@ -122,7 +122,7 @@ export function ComboboxPlus({
                     <Check
                       className={cn(
                         "ml-auto",
-                        value === option.value ? "opacity-100" : "opacity-0"
+                        value === option.value ? "opacity-100" : "opacity-0",
                       )}
                     />
                   </CommandItem>
