@@ -23,6 +23,7 @@ interface AddPrductProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: (newProduct: Product) => void;
   categories: Category[];
+  selectedStoreId: string;
 }
 
 export function AddProduct({
@@ -30,6 +31,7 @@ export function AddProduct({
   onOpenChange,
   onSuccess,
   categories: initialCategories = [],
+  selectedStoreId,
 }: AddPrductProps) {
   const fetcher = useFetcher<{
     success: boolean;
@@ -72,6 +74,7 @@ export function AddProduct({
               Complete la información del nuevo producto.
             </DialogDescription>
           </DialogHeader>
+          <input type="hidden" name="storeId" value={selectedStoreId} />
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="id" className="pl-1">

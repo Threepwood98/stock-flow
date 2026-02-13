@@ -213,6 +213,7 @@ export default function Inflow() {
     providers,
     products: initialProducts,
     categories,
+    selectedStoreId,
   } = useOutletContext<OutletContext>();
 
   const [searchParams] = useSearchParams();
@@ -996,6 +997,7 @@ export default function Inflow() {
         onOpenChange={setAddProductOpen}
         onSuccess={handleNewProduct}
         categories={categories}
+        selectedStoreId={selectedStoreId}
       />
       <AddProvider
         open={addProviderOpen}

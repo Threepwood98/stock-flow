@@ -182,4 +182,5 @@ export interface OutletContext {
   sales: Sale[];
   withdraws: Withdraw[];
   userStores: UserStores[];
+  selectedStoreId: string;
 }

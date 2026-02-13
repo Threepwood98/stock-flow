@@ -61,8 +61,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     orderBy: { name: "asc" },
   });
 
+  const storeIds = userStores.map((us) => us.storeId);
+
   const [products, categories] = await Promise.all([
     prisma.product.findMany({
+      where: { storeId: { in: storeIds } },
       orderBy: { name: "asc" },
       include: { category: true },
     }),
@@ -79,8 +82,6 @@ export async function loader({ request }: Route.LoaderArgs) {
     costPrice: p.costPrice.toNumber(),
     salePrice: p.salePrice.toNumber(),
   }));
-
-  const storeIds = userStores.map((us) => us.storeId);
 
   const [inflows, outflows, sales, withdraws] = await Promise.all([
     storeIds.length > 0
@@ -304,6 +305,7 @@ export default function Main({ loaderData }: Route.ComponentProps) {
             sales: filteredSales,
             withdraws: filteredWithdraws,
             userStores,
+            selectedStoreId,
           }}
         />
       </SidebarInset>
