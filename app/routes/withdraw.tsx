@@ -1,4 +1,10 @@
-import { useState, useCallback, useMemo, type FormEvent, useEffect } from "react";
+import {
+  useState,
+  useCallback,
+  useMemo,
+  type FormEvent,
+  useEffect,
+} from "react";
 import { toast } from "sonner";
 import {
   Form,
@@ -40,6 +46,7 @@ import {
   BanIcon,
   CalculatorIcon,
   EraserIcon,
+  Loader2Icon,
   LockIcon,
   LockOpenIcon,
   PencilLineIcon,
@@ -82,7 +89,7 @@ export async function action({ request }: Route.ActionArgs) {
   if (!rawRows) {
     return new Response(
       JSON.stringify({ error: "No hay datos para insertar." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -96,14 +103,14 @@ export async function action({ request }: Route.ActionArgs) {
   } catch {
     return new Response(
       JSON.stringify({ error: "Formato inválido de datos." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
   if (rows.length === 0) {
     return new Response(
       JSON.stringify({ error: "No hay filas para insertar." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -115,7 +122,7 @@ export async function action({ request }: Route.ActionArgs) {
         throw new Error(`Fecha inválida: ${row.date}`);
       }
 
-const amount = row.amount;
+      const amount = row.amount;
       if (isNaN(amount) || amount <= 0) {
         throw new Error(`Cantidad inválida: ${amount}`);
       }
@@ -156,8 +163,8 @@ const amount = row.amount;
             `La extracción de ${
               entry.amount
             } excede el efectivo disponible de ${availableCash.toFixed(
-              2
-            )} para el ${format(entry.date, "dd/MM/yyyy")}`
+              2,
+            )} para el ${format(entry.date, "dd/MM/yyyy")}`,
           );
         }
 
@@ -172,7 +179,7 @@ const amount = row.amount;
       JSON.stringify({
         error: error.message || "Error al guardar en la base de datos.",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }
@@ -200,19 +207,35 @@ export default function Withdraw() {
   const fetcher = useFetcher();
 
   // Memoized functions
-  const resetForm = useCallback((preserveLocks: boolean = false) => {
-    setFormValues({
-      ...initialFormValues,
-      userId: user.id,
-      salesAreaId: preserveLocks && isSalesAreaLocked
-        ? formValues.salesAreaId
-        : salesAreas[0]?.id || "",
-      salesAreaName: preserveLocks && isSalesAreaLocked
-        ? formValues.salesAreaName
-        : salesAreas[0]?.name || "",
-      date: preserveLocks && isDateLocked ? formValues.date : initialFormValues.date,
-    });
-  }, [user.id, salesAreas, isSalesAreaLocked, isDateLocked, formValues.salesAreaId, formValues.salesAreaName, formValues.date]);
+  const resetForm = useCallback(
+    (preserveLocks: boolean = false) => {
+      setFormValues({
+        ...initialFormValues,
+        userId: user.id,
+        salesAreaId:
+          preserveLocks && isSalesAreaLocked
+            ? formValues.salesAreaId
+            : salesAreas[0]?.id || "",
+        salesAreaName:
+          preserveLocks && isSalesAreaLocked
+            ? formValues.salesAreaName
+            : salesAreas[0]?.name || "",
+        date:
+          preserveLocks && isDateLocked
+            ? formValues.date
+            : initialFormValues.date,
+      });
+    },
+    [
+      user.id,
+      salesAreas,
+      isSalesAreaLocked,
+      isDateLocked,
+      formValues.salesAreaId,
+      formValues.salesAreaName,
+      formValues.date,
+    ],
+  );
 
   const handleClean = useCallback(() => {
     resetForm(true);
@@ -248,7 +271,7 @@ export default function Withdraw() {
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchAvailableCash = async () => {
       if (!formValues.salesAreaId || !formValues.date) return;
 
@@ -261,11 +284,11 @@ export default function Withdraw() {
         const response = await fetch(
           `/api/get-available-cash?salesAreaId=${
             formValues.salesAreaId
-          }&date=${format(parsedDate, "yyyy-MM-dd")}`
+          }&date=${format(parsedDate, "yyyy-MM-dd")}`,
         );
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
+
         const data = await response.json();
 
         if (data.success && isMounted) {
@@ -273,7 +296,9 @@ export default function Withdraw() {
         }
       } catch (error) {
         if (isMounted) {
-          toast.error(`Error al obtener efectivo disponible: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          toast.error(
+            `Error al obtener efectivo disponible: ${error instanceof Error ? error.message : "Unknown error"}`,
+          );
         }
       } finally {
         if (isMounted) {
@@ -283,7 +308,7 @@ export default function Withdraw() {
     };
 
     fetchAvailableCash();
-    
+
     return () => {
       isMounted = false;
     };
@@ -301,10 +326,10 @@ export default function Withdraw() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editIndex, handleCancel]);
 
-const handleChange = useCallback((name: keyof WithdrawRow, value: string) => {
+  const handleChange = useCallback((name: keyof WithdrawRow, value: string) => {
     if (name === "amount") {
       // Allow only valid decimal numbers
-      const cleanValue = value.replace(/[^\d.]/g, '');
+      const cleanValue = value.replace(/[^\d.]/g, "");
       const numValue = parseFloat(cleanValue) || 0;
       setFormValues((prev) => ({ ...prev, [name]: Math.max(0, numValue) }));
     } else {
@@ -312,7 +337,7 @@ const handleChange = useCallback((name: keyof WithdrawRow, value: string) => {
     }
   }, []);
 
-const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
+  const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const amount = formValues.amount;
@@ -327,12 +352,12 @@ const handleAddOrSave = (event: FormEvent<HTMLFormElement>) => {
       return;
     }
 
-const totalWithdrawsForDate = rows
+    const totalWithdrawsForDate = rows
       .filter(
         (row) =>
           row.date === formValues.date &&
           row.salesAreaId === formValues.salesAreaId &&
-          (editIndex === null || rows.indexOf(row) !== editIndex)
+          (editIndex === null || rows.indexOf(row) !== editIndex),
       )
       .reduce((sum, row) => sum + row.amount, 0);
 
@@ -341,8 +366,8 @@ const totalWithdrawsForDate = rows
     if (amount > remainingCash) {
       toast.error(
         `El retiro excede el efectivo disponible. Disponible: $${remainingCash.toFixed(
-          2
-        )}`
+          2,
+        )}`,
       );
 
       return;
@@ -350,7 +375,7 @@ const totalWithdrawsForDate = rows
 
     if (editIndex !== null) {
       setRows((prev) =>
-        prev.map((row, i) => (i === editIndex ? formValues : row))
+        prev.map((row, i) => (i === editIndex ? formValues : row)),
       );
       toast.success("Fila actualizada correctamente.");
     } else {
@@ -360,8 +385,6 @@ const totalWithdrawsForDate = rows
 
     handleCancel();
   };
-
-
 
   const handleEdit = (index: number) => {
     const row = rows[index];
@@ -380,9 +403,9 @@ const totalWithdrawsForDate = rows
     fetcher.submit({ rows: JSON.stringify(rows) }, { method: "post" });
   };
 
-  const totalAmount = useMemo(() => 
-    rows.reduce((sum, row) => sum + row.amount, 0),
-    [rows]
+  const totalAmount = useMemo(
+    () => rows.reduce((sum, row) => sum + row.amount, 0),
+    [rows],
   );
 
   const formatCurrency = useCallback((value: number, type?: string) => {
@@ -395,13 +418,42 @@ const totalWithdrawsForDate = rows
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <Card>
-        <CardHeader>
-          <CardTitle>Caja Extra</CardTitle>
-        </CardHeader>
-        <form className="flex flex-col gap-4" onSubmit={handleAddOrSave}>
-          <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+    <div className="flex flex-col h-dvh -mt-12 pt-16 pb-4 px-4 gap-2">
+      <Card className="p-4">
+        <form className="flex flex-col gap-2" onSubmit={handleAddOrSave}>
+          <CardHeader className="p-0">
+            <CardTitle>Caja Extra</CardTitle>
+            <CardAction className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-w-32 cursor-pointer"
+                onClick={editIndex !== null ? handleCancel : handleClean}
+              >
+                {editIndex !== null ? (
+                  <div className="flex items-center gap-2">
+                    Cancelar <BanIcon />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    Borrar <EraserIcon />
+                  </div>
+                )}
+              </Button>
+              <Button type="submit" className="min-w-32 cursor-pointer">
+                {editIndex !== null ? (
+                  <div className="flex items-center gap-2">
+                    Guardar <SaveIcon />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    Agregar <PlusIcon />
+                  </div>
+                )}
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="p-0 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
             <input
               name="userId"
               defaultValue={user.id}
@@ -484,12 +536,16 @@ const totalWithdrawsForDate = rows
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="amount" className="pl-1">
-                Cantidad{" "}
-                {isLoadingCash
-                  ? "(Cargando...)"
-                  : `(Disponible: $${availableCash.toFixed(2)})`}
-              </Label>
+              <div className="flex justify-between px-1">
+                <Label htmlFor="amount">Cantidad</Label>
+                <Label className="text-muted-foreground">
+                  {isLoadingCash ? (
+                    <Loader2Icon className="animate-spin size-3.5" />
+                  ) : (
+                    `[${formatCurrency(availableCash)}]`
+                  )}
+                </Label>
+              </div>
               <Input
                 id="amount"
                 name="amount"
@@ -506,37 +562,7 @@ const totalWithdrawsForDate = rows
               />
             </div>
           </CardContent>
-          <CardFooter className="flex justify-end">
-            <CardAction className="grid grid-cols-2 gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-w-32 cursor-pointer"
-                onClick={editIndex !== null ? handleCancel : handleClean}
-              >
-                {editIndex !== null ? (
-                  <div className="flex items-center gap-2">
-                    Cancelar <BanIcon />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    Borrar <EraserIcon />
-                  </div>
-                )}
-              </Button>
-              <Button type="submit" className="min-w-32">
-                {editIndex !== null ? (
-                  <div className="flex items-center gap-2">
-                    Guardar <SaveIcon />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    Agregar <PlusIcon />
-                  </div>
-                )}
-              </Button>
-            </CardAction>
-          </CardFooter>
+          <CardFooter className="flex justify-end"></CardFooter>
         </form>
       </Card>
       {/* Table */}
@@ -573,42 +599,50 @@ const totalWithdrawsForDate = rows
                   </TableCell>
                 </TableRow>
               ) : (
-                useMemo(() => 
-                  rows.map((row, index) => (
-                    <TableRow
-                      key={`${index}-${row.date}-${row.salesAreaId}`}
-                      className={`${index % 2 === 0 ? "bg-secondary" : ""}`}
-                    >
-                      <TableCell>{row.date}</TableCell>
-                      <TableCell>{row.salesAreaName}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(row.amount)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1" role="group" aria-label="Acciones de fila">
-                          <Button
-                            className="cursor-pointer"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(index)}
-                            title="Editar fila"
-                            aria-label={`Editar fila ${index + 1}`}
+                useMemo(
+                  () =>
+                    rows.map((row, index) => (
+                      <TableRow
+                        key={`${index}-${row.date}-${row.salesAreaId}`}
+                        className={`${index % 2 === 0 ? "bg-secondary" : ""}`}
+                      >
+                        <TableCell>{row.date}</TableCell>
+                        <TableCell>{row.salesAreaName}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(row.amount)}
+                        </TableCell>
+                        <TableCell>
+                          <div
+                            className="flex gap-1"
+                            role="group"
+                            aria-label="Acciones de fila"
                           >
-                            <PencilLineIcon />
-                          </Button>
-                          <Button
-                            className="cursor-pointer"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemove(index)}
-                            title="Eliminar fila"
-                            aria-label={`Eliminar fila ${index + 1}`}
-                          >
-                            <Trash2Icon />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )),
-                [rows, formatCurrency, handleEdit, handleRemove])
+                            <Button
+                              className="cursor-pointer"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(index)}
+                              title="Editar fila"
+                              aria-label={`Editar fila ${index + 1}`}
+                            >
+                              <PencilLineIcon />
+                            </Button>
+                            <Button
+                              className="cursor-pointer"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemove(index)}
+                              title="Eliminar fila"
+                              aria-label={`Eliminar fila ${index + 1}`}
+                            >
+                              <Trash2Icon />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )),
+                  [rows, formatCurrency, handleEdit, handleRemove],
+                )
               )}
             </TableBody>
             <TableFooter>
@@ -624,7 +658,12 @@ const totalWithdrawsForDate = rows
           <CardAction>
             <Button
               className="min-w-32"
-              disabled={rows.length === 0 || editIndex !== null || isSubmitting || fetcher.state !== "idle"}
+              disabled={
+                rows.length === 0 ||
+                editIndex !== null ||
+                isSubmitting ||
+                fetcher.state !== "idle"
+              }
               onClick={() => setShowConfirmDialog(true)}
             >
               {isSubmitting || fetcher.state !== "idle" ? (

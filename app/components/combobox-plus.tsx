@@ -33,6 +33,7 @@ interface ComboboxProps {
   onAddClick?: () => void;
   required?: boolean;
   disable?: boolean;
+  renderLabel?: (option: ComboboxOption) => React.ReactNode;
 }
 
 export function ComboboxPlus({
@@ -46,11 +47,11 @@ export function ComboboxPlus({
   onAddClick,
   required = false,
   disable = false,
+  renderLabel,
 }: ComboboxProps) {
   const [open, setOpen] = useState<boolean>(false);
 
-  const selectedLabel =
-    options.find((opt) => opt.value === value)?.label ?? placeholder;
+  const selectedOption = options.find((opt) => opt.value === value);
 
   return (
     <div className={`${className}`}>
@@ -77,10 +78,12 @@ export function ComboboxPlus({
               <span
                 className={cn(
                   "truncate",
-                  selectedLabel === placeholder && "text-muted-foreground",
+                  !selectedOption && "text-muted-foreground",
                 )}
               >
-                {selectedLabel}
+                {selectedOption && renderLabel
+                  ? renderLabel(selectedOption)
+                  : selectedOption?.label ?? placeholder}
               </span>
               <ChevronsUpDown />
             </Button>
@@ -118,7 +121,7 @@ export function ComboboxPlus({
                       setOpen(false);
                     }}
                   >
-                    {option.label}
+                    {renderLabel ? renderLabel(option) : option.label}
                     <Check
                       className={cn(
                         "ml-auto",

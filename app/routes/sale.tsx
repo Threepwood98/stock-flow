@@ -645,6 +645,20 @@ export default function Sale() {
                   label: `${prod.name} [${prod.availableQuantity} ${prod.unit}]`,
                 }))}
                 value={formValues.productId}
+                renderLabel={(option) => {
+                  const match = option.label.match(/^(.+)\[(\d+(\.\d+)?)\s+(\w+)\]$/);
+                  if (match) {
+                    return (
+                      <>
+                        {match[1]}
+                        <span className="text-muted-foreground">
+                          [{match[2]} {match[4]}]
+                        </span>
+                      </>
+                    );
+                  }
+                  return option.label;
+                }}
                 onChange={(value) => {
                   const prod = availableProducts.find(
                     (p: any) => p.id === value,
