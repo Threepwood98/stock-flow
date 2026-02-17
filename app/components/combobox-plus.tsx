@@ -1,4 +1,4 @@
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Pin, PinOff } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import {
 } from "~/components/ui/popover";
 import { useState } from "react";
 import { ButtonGroup } from "./ui/button-group";
+import { Toggle } from "./ui/toggle";
 
 export interface ComboboxOption {
   value: string;
@@ -29,11 +30,13 @@ interface ComboboxProps {
   options?: ComboboxOption[];
   value?: string;
   onChange?: (value: string) => void;
-  showAddButton?: boolean;
+  add?: boolean;
   onAddClick?: () => void;
   required?: boolean;
   disable?: boolean;
   renderLabel?: (option: ComboboxOption) => React.ReactNode;
+  fixed?: boolean;
+  onFixedChange?: (fixed: boolean) => void;
 }
 
 export function ComboboxPlus({
@@ -43,13 +46,27 @@ export function ComboboxPlus({
   options = [],
   value,
   onChange,
-  showAddButton = false,
+  add = false,
   onAddClick,
   required = false,
   disable = false,
   renderLabel,
+  fixed,
+  onFixedChange,
 }: ComboboxProps) {
   const [open, setOpen] = useState<boolean>(false);
+  const [internalFixed, setInternalFixed] = useState<boolean>(false);
+
+  const isControlled = fixed !== undefined;
+  const isFixed = isControlled ? fixed : internalFixed;
+
+  const handleFixedChange = (newFixed: boolean) => {
+    if (isControlled) {
+      onFixedChange?.(newFixed);
+    } else {
+      setInternalFixed(newFixed);
+    }
+  };
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -72,7 +89,7 @@ export function ComboboxPlus({
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              disabled={disable}
+              disabled={disable || isFixed}
               className="font-normal justify-between flex-1"
             >
               <span
@@ -83,12 +100,12 @@ export function ComboboxPlus({
               >
                 {selectedOption && renderLabel
                   ? renderLabel(selectedOption)
-                  : selectedOption?.label ?? placeholder}
+                  : (selectedOption?.label ?? placeholder)}
               </span>
               <ChevronsUpDown />
             </Button>
           </PopoverTrigger>
-          {showAddButton && (
+          {add && (
             <Button
               type="button"
               variant="outline"
@@ -96,11 +113,22 @@ export function ComboboxPlus({
                 e.stopPropagation();
                 onAddClick?.();
               }}
-              disabled={disable}
+              disabled={disable || isFixed}
               aria-label="Agregar nuevo"
             >
               <Plus />
             </Button>
+          )}
+          {fixed !== undefined && (
+            <Toggle
+              variant="outline"
+              pressed={isFixed}
+              onPressedChange={handleFixedChange}
+              title={isFixed ? "Soltar" : "Fijar"}
+              className="cursor-pointer"
+            >
+              {isFixed ? <PinOff /> : <Pin />}
+            </Toggle>
           )}
         </ButtonGroup>
         <PopoverContent

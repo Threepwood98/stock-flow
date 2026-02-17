@@ -1,5 +1,5 @@
 import { ArrowRightIcon } from "lucide-react";
-import { DatePicker } from "./date-picker";
+import { DatePickerPlus } from "./date-picker-plus";
 import { useState, useEffect } from "react";
 import {
   endOfMonth,
@@ -73,9 +73,8 @@ export function DateRangePicker({
   };
 
   // Estado interno (solo si no está controlado)
-  const [internalDateFrom, setInternalDateFrom] = useState(
-    getInitialDateFrom()
-  );
+  const [internalDateFrom, setInternalDateFrom] =
+    useState(getInitialDateFrom());
   const [internalDateTo, setInternalDateTo] = useState(getInitialDateTo());
   const [error, setError] = useState<string>("");
 
@@ -141,7 +140,7 @@ export function DateRangePicker({
   return (
     <div className={`flex shrin flex-col gap-2 ${className}`}>
       <div className="flex gap-2 items-center">
-        <DatePicker
+        <DatePickerPlus
           name="dateFrom"
           placeholder={placeholderFrom}
           value={dateFrom}
@@ -149,7 +148,7 @@ export function DateRangePicker({
           required={required}
         />
         <ArrowRightIcon className="shrink-0 text-muted-foreground" />
-        <DatePicker
+        <DatePickerPlus
           name="dateTo"
           placeholder={placeholderTo}
           value={dateTo}

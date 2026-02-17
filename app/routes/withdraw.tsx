@@ -38,7 +38,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { format, parse, isValid } from "date-fns";
-import { DatePicker } from "~/components/date-picker";
+import { DatePickerPlus } from "~/components/date-picker-plus";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/withdraw";
 import { prisma } from "@/lib/prisma";
@@ -50,6 +50,8 @@ import {
   LockIcon,
   LockOpenIcon,
   PencilLineIcon,
+  PinIcon,
+  PinOffIcon,
   PlusIcon,
   SaveIcon,
   StoreIcon,
@@ -201,7 +203,7 @@ export default function Withdraw() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [availableCash, setAvailableCash] = useState<number>(0);
   const [isLoadingCash, setIsLoadingCash] = useState(false);
-  const [isDateLocked, setIsDateLocked] = useState(false);
+  const [isDateFixed, setIsDateFixed] = useState(false);
   const [isSalesAreaLocked, setIsSalesAreaLocked] = useState(false);
 
   const fetcher = useFetcher();
@@ -221,7 +223,7 @@ export default function Withdraw() {
             ? formValues.salesAreaName
             : salesAreas[0]?.name || "",
         date:
-          preserveLocks && isDateLocked
+          preserveLocks && isDateFixed
             ? formValues.date
             : initialFormValues.date,
       });
@@ -230,7 +232,7 @@ export default function Withdraw() {
       user.id,
       salesAreas,
       isSalesAreaLocked,
-      isDateLocked,
+      isDateFixed,
       formValues.salesAreaId,
       formValues.salesAreaName,
       formValues.date,
@@ -465,26 +467,21 @@ export default function Withdraw() {
                 Fecha
               </Label>
               <InputGroup>
-                <DatePicker
+                <DatePickerPlus
                   name="date"
                   className="w-full min-w-40"
                   value={formValues.date}
                   onChange={(value) => handleChange("date", value)}
-                  disabled={isDateLocked}
+                  disabled={isDateFixed}
                   required
                 />
                 <Toggle
-                  pressed={isDateLocked}
-                  onPressedChange={setIsDateLocked}
-                  aria-label={
-                    isDateLocked ? "Desbloquear fecha" : "Bloquear fecha"
-                  }
-                  title={
-                    isDateLocked ? "Fecha bloqueada" : "Fecha desbloqueada"
-                  }
+                  pressed={isDateFixed}
+                  onPressedChange={setIsDateFixed}
+                  title={isDateFixed ? "Soltar" : "Fijar"}
                   className="hover:bg-transparent data-[state=on]:bg-transparent"
                 >
-                  {isDateLocked ? <LockOpenIcon /> : <LockIcon />}
+                  {isDateFixed ? <PinOffIcon /> : <PinIcon />}
                 </Toggle>
               </InputGroup>
             </div>

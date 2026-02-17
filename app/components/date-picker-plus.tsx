@@ -8,13 +8,14 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Calendar } from "~/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Pin, PinOff } from "lucide-react";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "~/components/ui/input-group";
+import { Toggle } from "./ui/toggle";
 
 type DatePickerProps = {
   name?: string;
@@ -25,9 +26,11 @@ type DatePickerProps = {
   required?: boolean;
   disabled?: boolean;
   errorMessage?: string;
+  fixed?: boolean;
+  onFixedChange?: (fixed: boolean) => void;
 };
 
-export function DatePicker({
+export function DatePickerPlus({
   name,
   placeholder = "dd/mm/aaaa",
   className,
@@ -36,9 +39,23 @@ export function DatePicker({
   required = false,
   disabled = false,
   errorMessage,
+  fixed,
+  onFixedChange,
 }: DatePickerProps) {
-  const [openCalendar, setOpenCalendar] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [internalFixed, setInternalFixed] = useState<boolean>(false);
   const currentYear = new Date().getFullYear();
+
+  const isControlled = fixed !== undefined;
+  const isFixed = isControlled ? fixed : internalFixed;
+
+  const handleFixedChange = (newFixed: boolean) => {
+    if (isControlled) {
+      onFixedChange?.(newFixed);
+    } else {
+      setInternalFixed(newFixed);
+    }
+  };
 
   // Memoized date parsing to avoid repeated parsing
   const parsedDate = useMemo(() => {
@@ -144,14 +161,14 @@ export function DatePicker({
 
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date && isValid(date)) {
-      const formattedDate = formatDate(date);
-      if (onChange) onChange(formattedDate);
+      const formatedDate = formatDate(date);
+      if (onChange) onChange(formatedDate);
       setMonth(date);
     } else {
       if (onChange) onChange("");
       setMonth(undefined);
     }
-    setOpenCalendar(false);
+    setOpen(false);
   };
 
   const handleBlur = () => {
@@ -173,7 +190,7 @@ export function DatePicker({
     <div className={cn("space-y-2", className)}>
       <InputGroup
         className={cn(
-          hasError && "border-destructive focus-within:ring-destructive"
+          hasError && "border-destructive focus-within:ring-destructive",
         )}
       >
         <InputGroupInput
@@ -184,29 +201,29 @@ export function DatePicker({
           value={value}
           onChange={handleInputChange}
           onBlur={handleBlur}
-          disabled={disabled}
+          disabled={disabled || isFixed}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();
-              setOpenCalendar(true);
+              setOpen(true);
             }
             if (e.key === "Escape") {
               e.preventDefault();
-              setOpenCalendar(false);
+              setOpen(false);
             }
           }}
           aria-label={placeholder}
           aria-invalid={hasError ? "true" : "false"}
           aria-describedby={cn(name && `${name}-description`, errorId)}
         />
-        <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
+        <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 variant="ghost"
-                disabled={disabled}
+                disabled={disabled || isFixed}
                 aria-label="Abrir calendario"
-                aria-expanded={openCalendar}
+                aria-expanded={open}
                 aria-haspopup="dialog"
                 type="button"
               >
@@ -233,11 +250,23 @@ export function DatePicker({
                 formatMonthDropdown: (date) =>
                   date.toLocaleString("es", { month: "short" }),
               }}
-              fromDate={new Date(1900, 0, 1)}
-              toDate={new Date(currentYear, 11, 31)}
+              // fromDate={new Date(1900, 0, 1)}
+              // toDate={new Date(currentYear, 11, 31)}
             />
           </PopoverContent>
         </Popover>
+        {fixed !== undefined && (
+          <InputGroupAddon align="inline-end">
+            <Toggle
+              pressed={isFixed}
+              onPressedChange={handleFixedChange}
+              title={isFixed ? "Soltar" : "Fijar"}
+              className="hover:bg-transparent cursor-pointer data-[state=on]:bg-transparent"
+            >
+              {isFixed ? <PinOff /> : <Pin />}
+            </Toggle>
+          </InputGroupAddon>
+        )}
       </InputGroup>
       {hasError && (
         <p id={errorId} className="text-sm text-destructive" role="alert">

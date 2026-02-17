@@ -100,7 +100,7 @@ export function AddProduct({
                 }))}
                 value={categoryId}
                 onChange={setCategoryId}
-                showAddButton
+                add
                 onAddClick={() => setAddCategoryOpen(true)}
                 required
               />

@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { format, parse, isValid } from "date-fns";
-import { DatePicker } from "~/components/date-picker";
+import { DatePickerPlus } from "~/components/date-picker-plus";
 import { SelectList } from "~/components/select-list";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/inflow";
@@ -624,7 +624,7 @@ export default function Movement() {
                 Fecha
               </Label>
               <InputGroup>
-                <DatePicker
+                <DatePickerPlus
                   name="date"
                   className="w-full min-w-0 sm:min-w-40"
                   value={formValues.date}

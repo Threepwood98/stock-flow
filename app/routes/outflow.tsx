@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { format, parse, isValid } from "date-fns";
-import { DatePicker } from "~/components/date-picker";
+import { DatePickerPlus } from "~/components/date-picker-plus";
 import { SelectList } from "~/components/select-list";
 import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/outflow";
@@ -560,7 +560,7 @@ export default function Outflow() {
                 Fecha
               </Label>
               <InputGroup>
-                <DatePicker
+                <DatePickerPlus
                   name="date"
                   className="w-full min-w-40"
                   value={formValues.date}
@@ -669,7 +669,7 @@ export default function Outflow() {
                         }));
                       }
                     }}
-                    showAddButton={formValues.outType !== ""}
+                    add={formValues.outType !== ""}
                     onAddClick={() => setAddDestinationOpen(true)}
                     disable={isDestinationLocked}
                     required

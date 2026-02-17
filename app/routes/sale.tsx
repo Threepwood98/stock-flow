@@ -35,17 +35,12 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { format, parse, isValid } from "date-fns";
-import { DatePicker } from "~/components/date-picker";
-import { SelectList } from "~/components/select-list";
-import { ComboboxPlus } from "~/components/combobox-plus";
 import type { Route } from "./+types/sale";
 import { prisma } from "@/lib/prisma";
 import {
   BanIcon,
   CalculatorIcon,
   EraserIcon,
-  PinIcon,
-  PinOffIcon,
   PencilLineIcon,
   PlusIcon,
   SaveIcon,
@@ -62,8 +57,9 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { InputGroup } from "~/components/ui/input-group";
-import { Toggle } from "~/components/ui/toggle";
+import { ComboboxPlus2 } from "~/components/combobox-plus2";
+import { DatePickerPlus2 } from "~/components/date-picker-plus2";
+import { SelectListPlus } from "~/components/select-list-plus";
 
 interface SaleRow {
   userId: string;
@@ -79,11 +75,7 @@ interface SaleRow {
   stock: number;
 }
 
-const payMethods = [
-  { value: "EFECTIVO", label: "EFECTIVO" },
-  { value: "TRANSFERMOVIL", label: "TRANSFERMOVIL" },
-  { value: "ENZONA", label: "ENZONA" },
-];
+const payMethods = ["EFECTIVO", "TRANSFERMOVIL", "ENZONA"];
 
 const initialFormValues: SaleRow = {
   userId: "",
@@ -260,9 +252,9 @@ export default function Sale() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [isDateFixed, setIsDateFixed] = useState(false);
-  const [isSalesAreaFixed, setIsSalesAreaFixed] = useState(false);
-  const [isPayMethodFixed, setIsPayMethodFixed] = useState(false);
+  const [isDatePined, setIsDatePined] = useState(false);
+  const [isSalesAreaPined, setIsSalesAreaPined] = useState(false);
+  const [isPayMethodPined, setIsPayMethodPined] = useState(false);
 
   const availableProducts = useMemo(() => {
     const salesArea = salesAreas.find(
@@ -416,14 +408,14 @@ export default function Sale() {
     setFormValues({
       ...initialFormValues,
       userId: user.id,
-      salesAreaId: isSalesAreaFixed
+      salesAreaId: isSalesAreaPined
         ? formValues.salesAreaId
         : salesAreas[0]?.id || "",
-      salesAreaName: isSalesAreaFixed
+      salesAreaName: isSalesAreaPined
         ? formValues.salesAreaName
         : salesAreas[0]?.name || "",
-      date: isDateFixed ? formValues.date : initialFormValues.date,
-      payMethod: isPayMethodFixed
+      date: isDatePined ? formValues.date : initialFormValues.date,
+      payMethod: isPayMethodPined
         ? formValues.payMethod
         : initialFormValues.payMethod,
     });
@@ -431,23 +423,23 @@ export default function Sale() {
     user.id,
     salesAreas,
     formValues,
-    isDateFixed,
-    isSalesAreaFixed,
-    isPayMethodFixed,
+    isDatePined,
+    isSalesAreaPined,
+    isPayMethodPined,
   ]);
 
   const handleCancel = useCallback(() => {
     setFormValues({
       ...initialFormValues,
       userId: user.id,
-      salesAreaId: isSalesAreaFixed
+      salesAreaId: isSalesAreaPined
         ? formValues.salesAreaId
         : salesAreas[0]?.id || "",
-      salesAreaName: isSalesAreaFixed
+      salesAreaName: isSalesAreaPined
         ? formValues.salesAreaName
         : salesAreas[0]?.name || "",
-      date: isDateFixed ? formValues.date : initialFormValues.date,
-      payMethod: isPayMethodFixed
+      date: isDatePined ? formValues.date : initialFormValues.date,
+      payMethod: isPayMethodPined
         ? formValues.payMethod
         : initialFormValues.payMethod,
     });
@@ -456,9 +448,9 @@ export default function Sale() {
     user.id,
     salesAreas,
     formValues,
-    isDateFixed,
-    isSalesAreaFixed,
-    isPayMethodFixed,
+    isDatePined,
+    isSalesAreaPined,
+    isPayMethodPined,
   ]);
 
   const handleEdit = useCallback(
@@ -547,121 +539,92 @@ export default function Sale() {
               <Label htmlFor="date" className="pl-1">
                 Fecha
               </Label>
-              <InputGroup>
-                <DatePicker
-                  name="date"
-                  className="w-full min-w-40"
-                  value={formValues.date}
-                  onChange={(value) => handleChange("date", value)}
-                  disabled={isDateFixed}
-                  required
-                />
-                <Toggle
-                  pressed={isDateFixed}
-                  onPressedChange={setIsDateFixed}
-                  title={isDateFixed ? "Soltar" : "Fijar"}
-                  className="hover:bg-transparent cursor-pointer data-[state=on]:bg-transparent"
-                >
-                  {isDateFixed ? <PinOffIcon /> : <PinIcon />}
-                </Toggle>
-              </InputGroup>
+              <DatePickerPlus2
+                id="date"
+                name="date"
+                placeholder="dd/mm/aaaa"
+                required
+                value={formValues.date}
+                onChange={(value) => handleChange("date", value)}
+                pinButton={isDatePined}
+                onPinChange={setIsDatePined}
+              />
             </div>
             {salesAreas.length > 1 && (
               <div className="grid gap-2">
                 <Label htmlFor="salesAreaId" className="pl-1">
                   Área de Venta
                 </Label>
-                <InputGroup>
-                  <ComboboxPlus
-                    name="salesAreaId"
-                    className="w-full min-w-40"
-                    options={salesAreas.map((sa: any) => ({
-                      value: sa.id,
-                      label: sa.name,
-                    }))}
-                    value={formValues.salesAreaId}
-                    onChange={(value) => {
-                      const sa = salesAreas.find((s: any) => s.id === value);
-                      if (sa) {
-                        handleChange("salesAreaId", value);
-                        setFormValues((prev) => ({
-                          ...prev,
-                          salesAreaName: sa.name,
-                        }));
-                      }
-                    }}
-                    disable={isSalesAreaFixed}
-                    required
-                  />
-                  <Toggle
-                    pressed={isSalesAreaFixed}
-                    onPressedChange={setIsSalesAreaFixed}
-                    title={isSalesAreaFixed ? "Soltar" : "Fijar"}
-                    className="hover:bg-transparent cursor-pointer data-[state=on]:bg-transparent"
-                  >
-                    {isSalesAreaFixed ? <PinOffIcon /> : <PinIcon />}
-                  </Toggle>
-                </InputGroup>
+                <ComboboxPlus2
+                  id="salesAreaId"
+                  name="salesAreaId"
+                  placeholder="Selecciona el Área de Venta"
+                  required
+                  items={salesAreas.map((sa: any) => ({
+                    value: sa.id,
+                    label: sa.name,
+                  }))}
+                  value={{
+                    label: formValues.salesAreaName,
+                    value: formValues.salesAreaId,
+                  }}
+                  onValueChange={(value) => {
+                    const sa = salesAreas.find(
+                      (item: any) => item.id === value.value,
+                    );
+                    if (sa) {
+                      handleChange("salesAreaId", value.value);
+                      setFormValues((prev) => ({
+                        ...prev,
+                        salesAreaName: sa.name,
+                      }));
+                    }
+                  }}
+                  pin={isSalesAreaPined}
+                  onPinChange={setIsSalesAreaPined}
+                />
               </div>
             )}
             <div className="grid gap-2">
               <Label htmlFor="payMethod" className="pl-1">
                 Método de Pago
               </Label>
-              <InputGroup>
-                <SelectList
-                  name="payMethod"
-                  className="w-full min-w-40"
-                  options={payMethods}
-                  value={formValues.payMethod}
-                  onChange={(value) => handleChange("payMethod", value)}
-                  disabled={isPayMethodFixed}
-                  required
-                />
-                <Toggle
-                  pressed={isPayMethodFixed}
-                  onPressedChange={setIsPayMethodFixed}
-                  title={isPayMethodFixed ? "Soltar" : "Fijar"}
-                  className="hover:bg-transparent cursor-pointer data-[state=on]:bg-transparent"
-                >
-                  {isPayMethodFixed ? <PinOffIcon /> : <PinIcon />}
-                </Toggle>
-              </InputGroup>
+              <SelectListPlus
+                name="payMethod"
+                placeholder="Selecciona un Método de Pago"
+                required
+                items={payMethods}
+                value={formValues.payMethod}
+                onValueChange={(value) => handleChange("payMethod", value)}
+                pin={isPayMethodPined}
+                onPinChange={setIsPayMethodPined}
+                className="w-full"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="product" className="pl-1">
                 Producto
               </Label>
-              <ComboboxPlus
+              <ComboboxPlus2
+                id="product"
                 name="product"
-                className="w-full min-w-40"
                 placeholder={
                   availableProducts.length === 0
-                    ? "Sin productos disponibles"
-                    : "Selecciona..."
+                    ? "Productos no disponibles"
+                    : "Selecciona un Producto"
                 }
-                options={availableProducts.map((prod: any) => ({
+                required
+                items={availableProducts.map((prod: any) => ({
+                  label: prod.name,
                   value: prod.id,
-                  label: `${prod.name} [${prod.availableQuantity} ${prod.unit}]`,
                 }))}
-                value={formValues.productId}
-                renderLabel={(option) => {
-                  const match = option.label.match(/^(.+)\[(\d+(\.\d+)?)\s+(\w+)\]$/);
-                  if (match) {
-                    return (
-                      <>
-                        {match[1]}
-                        <span className="text-muted-foreground">
-                          [{match[2]} {match[4]}]
-                        </span>
-                      </>
-                    );
-                  }
-                  return option.label;
+                value={{
+                  label: formValues.productName,
+                  value: formValues.productId,
                 }}
-                onChange={(value) => {
+                onValueChange={(value) => {
                   const prod = availableProducts.find(
-                    (p: any) => p.id === value,
+                    (p: any) => p.id === value.value,
                   );
                   if (prod) {
                     setFormValues((prev) => ({
@@ -671,7 +634,20 @@ export default function Sale() {
                     }));
                   }
                 }}
-                required
+                renderItem={(item) => {
+                  const prod = availableProducts.find(
+                    (p: any) => p.id === item.value,
+                  );
+                  if (prod) {
+                    return (
+                      <div className="flex w-full gap-2 justify-between ">
+                        <span>{item.label}</span>
+                        <span className="text-muted-foreground">{`[${prod.availableQuantity} ${prod.unit}]`}</span>
+                      </div>
+                    );
+                  }
+                  return item.label;
+                }}
               />
             </div>
             <div className="grid gap-2">
@@ -816,18 +792,20 @@ export default function Sale() {
             </Table>
           )}
         </CardContent>
-        <CardFooter className="flex justify-end p-0">
-          <CardAction>
-            <Button
-              className="min-w-32"
-              disabled={rows.length === 0 || editIndex !== null || isSubmitting}
-              onClick={() => setShowConfirmDialog(true)}
-            >
-              {isSubmitting ? "Procesando..." : "Contabilizar"}{" "}
-              <CalculatorIcon />
-            </Button>
-          </CardAction>
-        </CardFooter>
+        {rows.length > 0 && (
+          <CardFooter className="flex justify-end p-0">
+            <CardAction>
+              <Button
+                className="min-w-32"
+                disabled={editIndex !== null || isSubmitting}
+                onClick={() => setShowConfirmDialog(true)}
+              >
+                {isSubmitting ? "Procesando..." : "Contabilizar"}{" "}
+                <CalculatorIcon />
+              </Button>
+            </CardAction>
+          </CardFooter>
+        )}
       </Card>
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>

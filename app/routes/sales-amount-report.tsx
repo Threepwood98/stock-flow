@@ -11,7 +11,7 @@ import {
   endOfDay,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { DateRangePicker } from "~/components/date-range-picker";
+
 import {
   Table,
   TableBody,
@@ -37,6 +37,8 @@ import { Button } from "~/components/ui/button";
 import { IconFileTypePdf, IconFileTypeXls } from "@tabler/icons-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { DatePickerRange2 } from "~/components/date-picker-range2";
+import type { DateRange } from "react-day-picker";
 
 type DailyCashData = {
   date: string;
@@ -52,14 +54,12 @@ const payMethods: Array<string> = ["EFECTIVO", "TRANSFERMOVIL", "ENZONA"];
 export default function SalesAmountReport() {
   const { sales, withdraws, outflows, salesAreas } =
     useOutletContext<OutletContext>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
 
   // Estados para filtros
-  const [dateFrom, setDateFrom] = useState(
-    format(startOfMonth(new Date()), "dd/MM/yyyy")
-  );
-  const [dateTo, setDateTo] = useState(
-    format(endOfMonth(new Date()), "dd/MM/yyyy")
-  );
   const [salesAreaId, setSalesAreaId] = useState<string>("all");
 
   const parseDate = (dateStr: string): Date | null => {
@@ -85,8 +85,8 @@ export default function SalesAmountReport() {
 
   // Procesar datos por día
   const dailyData = useMemo(() => {
-    const fromDate = parseDate(dateFrom);
-    const toDate = parseDate(dateTo);
+    const fromDate = dateRange?.from;
+    const toDate = dateRange?.to;
 
     if (!fromDate || !toDate) return [];
 
@@ -221,7 +221,7 @@ export default function SalesAmountReport() {
         // Sumar withdraws del día
         const totalWithdraws = dayWithdraws.reduce(
           (sum, withdraw) => sum + withdraw.amount,
-          0
+          0,
         );
 
         // Calcular efectivo neto (efectivo - withdraws)
@@ -241,7 +241,7 @@ export default function SalesAmountReport() {
       });
 
     return dailyReport;
-  }, [sales, withdraws, outflows, dateFrom, dateTo, salesAreaId]);
+  }, [sales, withdraws, outflows, dateRange, salesAreaId]);
 
   // Calcular totales generales
   const totals = useMemo(() => {
@@ -270,8 +270,10 @@ export default function SalesAmountReport() {
   }, [dailyData]);
 
   const clearFilters = () => {
-    setDateFrom(format(startOfMonth(new Date()), "dd/MM/yyyy"));
-    setDateTo(format(endOfMonth(new Date()), "dd/MM/yyyy"));
+    setDateRange({
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+    });
     setSalesAreaId("all");
   };
 
@@ -313,18 +315,16 @@ export default function SalesAmountReport() {
       }
     }
 
-    const dateFromFormatted = format(
-      parse(dateFrom, "dd/MM/yyyy", new Date()),
-      "yyyy-MM-dd"
-    );
-    const dateToFormatted = format(
-      parse(dateTo, "dd/MM/yyyy", new Date()),
-      "yyyy-MM-dd"
-    );
+    const dateFromFormatted = dateRange?.from
+      ? format(dateRange.from, "yyyy-MM-dd")
+      : "";
+    const dateToFormatted = dateRange?.to
+      ? format(dateRange.to, "yyyy-MM-dd")
+      : "";
 
     writeFile(
       wb,
-      `${dateFromFormatted}_${dateToFormatted}_desglose_importe.xlsx`
+      `${dateFromFormatted}_${dateToFormatted}_desglose_importe.xlsx`,
     );
   };
 
@@ -335,7 +335,11 @@ export default function SalesAmountReport() {
     doc.setFontSize(18);
     doc.text("Desglose del Importe por Día", 14, 20);
     doc.setFontSize(11);
-    doc.text(`Período: ${dateFrom} - ${dateTo}`, 14, 28);
+    const dateFromStr = dateRange?.from
+      ? format(dateRange.from, "dd/MM/yyyy")
+      : "";
+    const dateToStr = dateRange?.to ? format(dateRange.to, "dd/MM/yyyy") : "";
+    doc.text(`Período: ${dateFromStr} - ${dateToStr}`, 14, 28);
 
     if (salesAreaId !== "all") {
       const selectedArea = salesAreas.find((sa) => sa.id === salesAreaId);
@@ -402,7 +406,7 @@ export default function SalesAmountReport() {
     });
 
     // Descargar
-    doc.save(`desglose_importe_${dateFrom}_${dateTo}.pdf`);
+    doc.save(`desglose_importe_${dateFromStr}_${dateToStr}.pdf`);
   };
 
   return (
@@ -421,11 +425,10 @@ export default function SalesAmountReport() {
         >
           <div className="grid gap-2">
             <Label className="pl-1">Rango de Fecha</Label>
-            <DateRangePicker
-              dateFrom={dateFrom}
-              dateTo={dateTo}
-              onDateFromChange={setDateFrom}
-              onDateToChange={setDateTo}
+            <DatePickerRange2
+              placeholder="dd/mm/aaaa"
+              value={dateRange}
+              onChange={setDateRange}
             />
           </div>
           {salesAreas.length > 1 && (
